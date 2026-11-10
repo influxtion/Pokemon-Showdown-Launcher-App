@@ -24,6 +24,7 @@
   let dirty = false;
   let loaded = false;
   let imports = null;
+  let review = null;
 
   const resultError = (result, fallback) =>
     result && typeof result.error === 'string' && result.error ? result.error : fallback;
@@ -73,6 +74,7 @@
     ui.add.disabled = value;
     ui.export.disabled = value || !notes.length;
     imports?.setBusy(value);
+    review?.updateButton();
     if (value) setStatus(action);
     else if (editing) updateDirty();
   };
@@ -91,6 +93,7 @@
     storeDraft();
     if (desktop && typeof desktop.setReplayNoteDirty === 'function') desktop.setReplayNoteDirty(dirty);
     imports?.setBusy(pending);
+    review?.updateButton();
     if (!pending) setStatus(dirty ? 'Unsaved changes' : (selectedId ? 'Saved' : ''));
     ui.titleCount.textContent = `${ui.title.value.length} / 120`;
     ui.bodyCount.textContent = `${ui.body.value.length} / 5000`;
@@ -316,8 +319,8 @@
       notes = result.notes.sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)));
       renderFormats();
       const params = new URLSearchParams(location.search);
-      const requestedId = params.get('id');
-      const wantsDraft = params.get('draft') === '1';
+      const requestedId = params.get('review') || params.get('id');
+      const wantsDraft = !review.active && params.get('draft') === '1';
       const stored = readDraft();
       let prefill = null;
       let draftError = '';
@@ -340,12 +343,14 @@
       else if (requestedId && notes.some((note) => note.id === requestedId)) {
         const note = notes.find((item) => item.id === requestedId);
         showEditor(note, note);
-      } else if (notes.length) showEditor(notes[0], notes[0]);
+      } else if (review.active) showEmpty('This saved replay note was not found. Return to notes to choose another replay.');
+      else if (notes.length) showEditor(notes[0], notes[0]);
       else showEmpty('No replay notes yet. Choose Add replay to start.');
       renderList();
       if (draftError) setError(draftError);
       loaded = true;
       await imports.refreshUndo();
+      await review.start();
     } catch (error) {
       ui.count.textContent = 'Could not load';
       ui.listEmpty.hidden = false;
@@ -357,9 +362,11 @@
       dirty = Boolean(readDraft());
       if (desktop && typeof desktop.setReplayNoteDirty === 'function') desktop.setReplayNoteDirty(dirty);
       setError(error.message || 'Could not load replay notes.');
+      review.fail('Replay notes could not be loaded. Your saved file was not changed.');
     }
   };
 
+  review = new window.ReplayReviewUI({ call, selectedId: () => selectedId, isBusy: () => pending, showError: setError });
   imports = new window.ReplayImportUI({
     call, isReady: () => loaded, isDirty: () => dirty, isBusy: () => pending, setBusy: setPending, showError: setError,
     onApplied(result, message) {
@@ -387,6 +394,7 @@
     if (event.isComposing || event.altKey) return;
     const command = event.ctrlKey || event.metaKey;
     if (command && event.key.toLowerCase() === 'f') {
+      if (review.active) return;
       event.preventDefault();
       ui.search.focus();
       ui.search.select();

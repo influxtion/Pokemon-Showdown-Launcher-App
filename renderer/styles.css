@@ -485,6 +485,32 @@ a.list-row:hover { background: var(--bg-hover); text-decoration: none; }
 
 /* ---------- Replay notes split ---------- */
 
+.review-mode .split { grid-template-columns: minmax(0, 1fr) 320px; }
+.review-mode .split-list,
+.review-mode #add-replay,
+.review-mode #import-replays,
+.review-mode #export-replays,
+.review-mode #undo-import,
+.review-mode #delete-note,
+.review-mode #review-replay { display: none !important; }
+.review-mode .split-detail { border-left: 1px solid var(--border); min-width: 0; }
+.review-mode .split-detail-body { padding: var(--space-3); }
+.review-mode .split-detail-foot { padding: var(--space-2) var(--space-3); flex-wrap: wrap; }
+.review-mode .form-row { grid-template-columns: minmax(0, 1fr); }
+.review-mode .field-hint { flex-wrap: wrap; }
+.review-mode .field-hint .num { margin-left: auto; }
+.review-mode .meta { grid-template-columns: 52px minmax(0, 1fr); }
+.review-mode.review-wide .split { grid-template-columns: minmax(0, 1fr); }
+.review-mode.review-wide .split-detail { display: none; }
+.review-player { display: flex; flex-direction: column; min-height: 0; min-width: 0; }
+.review-toolbar { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2); flex: none; border-bottom: 1px solid var(--border); }
+.review-toolbar .spacer { flex: 1; }
+.review-toolbar .status { font-size: var(--fs-xs); min-width: 0; }
+.review-toolbar .btn { flex: none; }
+.review-view { flex: 1; min-height: 0; position: relative; background: var(--bg-app); display: grid; place-items: center; }
+.review-view .empty { overflow-wrap: anywhere; }
+.review-hint { font-size: var(--fs-xs); color: var(--text-2); padding: var(--space-2); margin: 0; flex: none; border-top: 1px solid var(--border); }
+
 .replay-import-dialog {
   width: min(1000px, calc(100vw - 48px));
   height: min(680px, calc(100vh - 48px));

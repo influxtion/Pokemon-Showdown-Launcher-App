@@ -1,0 +1,27 @@
+/* Replay-site chrome only. The upstream player owns battle rendering and controls.
+   Uses the --sd-* palette from client-theme.css; recheck selectors on upstream changes. */
+html, body { color: var(--sd-text) !important; background: var(--sd-app) !important; }
+html { scrollbar-width: thin !important; }
+body, input, select, button { font-family: "Segoe UI", system-ui, sans-serif !important; }
+body { margin: 0 !important; }
+body > div > header { display: none !important; }
+.main { margin: 0 !important; padding: 8px !important; }
+/* Upstream scales the battle from window width; leave its narrow viewport inset free. */
+@media (max-width: 660px) { .main { padding: 8px 0 !important; } }
+.section, .replay-controls, .battle-log {
+  background: var(--sd-panel) !important;
+  color: var(--sd-text) !important;
+  border-color: var(--sd-border) !important;
+  box-shadow: none !important;
+}
+.section { border-radius: 4px !important; }
+.section h1, .section h2, .replay-controls h1 { color: var(--sd-text) !important; }
+.section a, .replay-controls a { color: var(--sd-accent) !important; }
+.textbox, input[type="number"], select {
+  background: var(--sd-input) !important;
+  color: var(--sd-text) !important;
+  border-color: var(--sd-border-strong) !important;
+}
+.textbox, input[type="number"] { appearance: none !important; }
+.button, .textbox { box-shadow: none !important; text-shadow: none !important; }
+:focus-visible { outline: 2px solid var(--sd-accent) !important; outline-offset: 1px !important; }
