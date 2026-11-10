@@ -1,0 +1,39 @@
+diff --git a/src/main.ts b/src/main.ts
+index 001932d..c9feb1c 100644
+--- a/src/main.ts
++++ b/src/main.ts
+@@ -29,6 +29,9 @@ import { detectClassicHost, detectPreactHost } from '@showdex/utils/host';
+ import '@showdex/styles/global.scss';
+ 
+ const l = logger('@showdex/main');
++const reportDesktopStatus = (state: 'loaded' | 'failed'): void => {
++  Object.assign(window, { __SHOWDOWN_DESKTOP_SHOWDEX: { state, version: '1.4.2' } });
++};
+ 
+ l.debug('Starting', env('build-name', 'showdex'));
+ 
+@@ -134,5 +137,23 @@ void (async () => {
+     }
+   }
+ 
++  // The init mutex is set before async boot. Verify the classic room has rendered.
++  if (window.__SHOWDEX_HOST !== 'classic') {
++    throw new Error('Showdown Desktop requires the classic Showdown client.');
++  }
++
++  let rendered = false;
++  for (let attempt = 0; attempt < 100; attempt += 1) {
++    const room = window.app?.rooms?.['view-hellodex'];
++    rendered = Boolean(room && document.querySelector('[data-showdex-module="hellodex"]'));
++    if (rendered) break;
++    await new Promise((resolve) => setTimeout(resolve, 100));
++  }
++  if (!rendered) throw new Error('Hellodex did not render.');
++
++  reportDesktopStatus('loaded');
+   l.success(window.__SHOWDEX_INIT, 'for', window.__SHOWDEX_HOST, 'initialized!');
+-})();
++})().catch((error) => {
++  reportDesktopStatus('failed');
++  l.error('Showdown Desktop integration failed:', error);
++});

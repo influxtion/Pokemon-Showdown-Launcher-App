@@ -4,9 +4,10 @@ const { spawnSync } = require('node:child_process');
 const path = require('node:path');
 const env = { ...process.env };
 delete env.ELECTRON_RUN_AS_NODE;
-for (const file of ['desktop.cjs', 'replays-desktop.cjs', 'settings-desktop.cjs']) {
+const live = process.argv.includes('--showdex-live');
+for (const file of live ? ['showdex-live.cjs'] : ['desktop.cjs', 'replays-desktop.cjs', 'settings-desktop.cjs']) {
   const result = spawnSync(require('electron'), [path.join(__dirname, '..', 'tests', file)], {
-    stdio: 'inherit', env, timeout: 90000,
+    stdio: 'inherit', env, timeout: live ? 180000 : 90000,
   });
   if (result.error) console.error(result.error.message);
   if (result.status !== 0) {

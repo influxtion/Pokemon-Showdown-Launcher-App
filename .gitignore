@@ -6,6 +6,7 @@ node_modules/
 dist/
 out/
 release/
+vendor/showdex/dist/
 
 # Generated runtimes, credentials, local settings
 .env

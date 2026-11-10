@@ -2,7 +2,8 @@
 
 A desktop workspace for [Pokémon Showdown](https://play.pokemonshowdown.com/). It wraps the official client in a compact window that keeps your session, and adds space for tools and replay notes.
 
-Early prototype. Replay notes are stored locally. Showdex and practice are not implemented yet.
+Early prototype. Replay notes are stored locally. Showdex is an optional pinned integration;
+practice is not available yet.
 
 ## Run
 
@@ -57,4 +58,27 @@ Launcher reset removes settings, launcher preferences, and replay notes while ke
 Showdown partition. Both destructive actions ask for confirmation. Logs contain fixed event
 names and numeric error codes, not usernames, credentials, replay URLs or note content.
 
-Showdex, packaging, and licensing remain pending.
+## Optional Showdex integration
+
+```sh
+npm run build:showdex
+npm start
+```
+
+The first build needs network access, Git, Corepack, and Node.js 24. It checks out the pinned
+Showdex revision, applies the recorded readiness patch, and verifies every generated asset
+against the committed SHA-256 manifest. Generated runtime files stay out of Git. Build inputs,
+the upstream AGPL-3.0 license, and source details are in `vendor/showdex/SOURCE.md`.
+
+Enable Showdex in Settings, then reload the client explicitly. Preference changes never
+reload a battle automatically. The status says Loaded only after the pinned bootstrap has
+rendered its room; a failed integration leaves ordinary Showdown play available. Showdex
+runs inside the sandboxed client without Node or the launcher preload. It downloads public
+competitive data from upstream services.
+
+`npm run test:showdex:live` is an optional network-dependent smoke test with a temporary guest
+profile. It requires the local Showdex build; it never signs in, searches, or challenges.
+The default desktop suite uses simulated sessions instead.
+
+Packaging and the project's own licensing remain pending. The Showdex license is preserved;
+it does not choose a license for the rest of this project.

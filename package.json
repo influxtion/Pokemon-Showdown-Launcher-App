@@ -9,8 +9,10 @@
   },
   "scripts": {
     "start": "electron .",
+    "build:showdex": "node scripts/build-showdex.js",
     "test": "node --test tests/*.test.js",
     "test:desktop": "node scripts/test-desktop.js",
+    "test:showdex:live": "node scripts/test-desktop.js --showdex-live",
     "check": "node scripts/check.js"
   },
   "devDependencies": {
