@@ -20,7 +20,8 @@ let showdexApplied = false;
 let showdexLoadFailed = false;
 
 const RENDERER_DIR = path.join(__dirname, '..', 'renderer');
-const CLIENT_CSS = fs.readFileSync(path.join(__dirname, 'client-theme.css'), 'utf8');
+const CLIENT_CSS = ['client-theme.css', 'showdex-theme.css']
+  .map((file) => fs.readFileSync(path.join(__dirname, file), 'utf8')).join('\n');
 // Window and view fills shown before pages paint; match --bg-app in each theme.
 const BACKGROUND = { light: '#e6ecf5', dark: '#24304a' };
 const RENDERER_URL = pathToFileURL(RENDERER_DIR + path.sep).href;

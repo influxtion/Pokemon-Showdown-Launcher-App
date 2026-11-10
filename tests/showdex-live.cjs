@@ -63,17 +63,151 @@ app.whenReady().then(async () => {
   win.focus();
   const captures = path.join(__dirname, '..', 'out', 'desktop-smoke');
   fs.mkdirSync(captures, { recursive: true });
+  const readChrome = (module, selectors) => client.executeJavaScript(`(() => {
+    const root = Array.from(document.querySelectorAll('[data-showdex-module=' + ${JSON.stringify(module)} + ']'))
+      .find(el => el.getClientRects().length);
+    if (!root) return null;
+    const color = (token) => {
+      const probe = document.createElement('span');
+      probe.style.color = 'var(' + token + ')';
+      root.append(probe);
+      const value = getComputedStyle(probe).color;
+      probe.remove();
+      return value;
+    };
+    const read = (selector) => {
+      const element = root.querySelector(selector);
+      if (!element) return null;
+      const style = getComputedStyle(element);
+      return { background: style.backgroundColor, backgroundImage: style.backgroundImage,
+        shadow: style.boxShadow, textShadow: style.textShadow,
+        radius: style.borderRadius, filter: style.backdropFilter, color: style.color };
+    };
+    return { text: getComputedStyle(root).color,
+      app: getComputedStyle(root, '::before').backgroundColor,
+      expected: { app: color('--sd-app'), panel: color('--sd-panel'),
+        subtle: color('--sd-subtle'), text: color('--sd-text'), secondary: color('--sd-text-2') },
+      parts: Object.fromEntries(Object.entries(${JSON.stringify(selectors)}).map(([key, selector]) => [key, read(selector)])),
+    };
+  })()`);
+  const checkChrome = async (module, selectors, panelNames = []) => {
+    const state = await readChrome(module, selectors);
+    assert.ok(state, `${module} rendered`);
+    assert.equal(state.app, state.expected.app, `${module} app background`);
+    assert.equal(state.text, state.expected.text, `${module} text color`);
+    for (const name of panelNames) {
+      const part = state.parts[name];
+      assert.ok(part, `${module} ${name} present`);
+      assert.equal(part.background, state.expected[name === 'settingsOverlay' ? 'subtle' : 'panel'], `${module} ${name} background`);
+      assert.equal(part.shadow, 'none', `${module} ${name} flat`);
+      if (name !== 'settingsOverlay') assert.equal(part.radius, '4px', `${module} ${name} radius`);
+      assert.equal(part.filter, 'none', `${module} ${name} no blur`);
+    }
+    return state;
+  };
+  const click = async (selector) => {
+    const found = await client.executeJavaScript(`(() => {
+      const element = document.querySelector(${JSON.stringify(selector)});
+      if (!element) return false;
+      element.click();
+      return true;
+    })()`);
+    assert.equal(found, true, `clickable ${selector}`);
+  };
+  const capture = async (theme, screen, size) => {
+    win.setSize(size === 'minimum' ? 1024 : 1366, size === 'minimum' ? 640 : 768);
+    win.show();
+    win.focus();
+    await pause(250);
+    if (screen === 'hellodex' || screen === 'settings') {
+      assert.equal(await client.executeJavaScript(`(() => {
+        const button = document.querySelector('[data-showdex-module=hellodex] [class*=Hellodex-module-settingsButton--]');
+        const r = button.getBoundingClientRect();
+        return r.top >= 0 && r.bottom <= innerHeight && r.left >= 0 && r.right <= innerWidth;
+      })()`), true, `${theme} ${size} Settings shortcut stays visible`);
+    }
+    const png = await until(async () => (await client.capturePage()).toPNG(), `${theme} ${screen} ${size} capture`, 10000);
+    assert.ok(png.length > 10000, `${theme} ${screen} ${size} capture`);
+    fs.writeFileSync(path.join(captures, `showdex-live-${theme}-${screen}-${size}.png`), png);
+    if (screen === 'hellodex' && size === 'default') {
+      fs.writeFileSync(path.join(captures, `showdex-live-${theme}.png`), png);
+    }
+  };
+  const choose = async (field, index, value) => {
+    const selector = `input[id*=${JSON.stringify(field)}]`;
+    await client.executeJavaScript(`(() => {
+      const root = Array.from(document.querySelectorAll('[data-showdex-module=honkdex]')).find(el => el.getClientRects().length);
+      const input = root.querySelectorAll(${JSON.stringify(selector)})[${index}];
+      if (!input || input.disabled) throw new Error('Missing calculator field: ' + ${JSON.stringify(field)});
+      input.focus();
+    })()`);
+    await client.insertText(value);
+    await until(() => client.executeJavaScript(`(() => {
+      const root = Array.from(document.querySelectorAll('[data-showdex-module=honkdex]')).find(el => el.getClientRects().length);
+      const option = Array.from(root.querySelectorAll('[class*=Dropdown-module-option--]'))
+        .find(el => el.textContent.trim().startsWith(${JSON.stringify(value)}));
+      if (!option) return false;
+      option.click();
+      return true;
+    })()`), `select ${value}`, 10000);
+    await pause(150);
+  };
+  let typeColors;
   for (const theme of ['light', 'dark']) {
+    win.setSize(1366, 768);
     assert.equal((await desktop(`setSetting('theme', '${theme}')`)).ok, true);
     await until(() => client.executeJavaScript(`matchMedia('(prefers-color-scheme: dark)').matches === ${theme === 'dark'}`), `${theme} client theme`, 10000);
-    await pause(300);
-    const png = await until(async () => {
-      win.show();
-      win.focus();
-      return (await client.capturePage()).toPNG();
-    }, `${theme} visible client capture`, 10000);
-    assert.ok(png.length > 10000, `${theme} client capture`);
-    fs.writeFileSync(path.join(captures, `showdex-live-${theme}.png`), png);
+    await client.executeJavaScript("app.focusRoomRight('view-hellodex'); 0");
+    await until(() => client.executeJavaScript("Boolean(document.querySelector('[data-showdex-module=hellodex]'))"), `${theme} Hellodex`);
+    const hello = await checkChrome('hellodex', {
+      panel: '[class*="Hellodex-module-instancesContent--"]',
+      title: '[class*="Hellodex-module-extensionName--"]',
+    }, ['panel']);
+    assert.equal(hello.parts.title.backgroundImage, 'none', `${theme} Showdex title has no gradient`);
+    assert.equal(hello.parts.title.textShadow, 'none', `${theme} Showdex title has no glow`);
+    for (const size of ['default', 'minimum']) await capture(theme, 'hellodex', size);
+
+    await click('[data-showdex-module="hellodex"] [class*="Hellodex-module-settingsButton--"]');
+    await until(() => client.executeJavaScript("Boolean(document.querySelector('[data-showdex-module=hellodex] [class*=SettingsPane-module-container--]'))"), `${theme} Showdex settings`);
+    await checkChrome('hellodex', {
+      settingsOverlay: '[class*="SettingsPane-module-container--"]',
+      settingsGroup: '[class*="SettingsPane-module-settingsGroup--"]',
+    }, ['settingsOverlay', 'settingsGroup']);
+    for (const size of ['default', 'minimum']) await capture(theme, 'settings', size);
+    win.setSize(1366, 768);
+    await pause(250);
+    await click('[data-showdex-module="hellodex"] [class*="Hellodex-module-settingsButton--"]');
+    await until(() => client.executeJavaScript("!document.querySelector('[data-showdex-module=hellodex] [class*=SettingsPane-module-container--]')"), `${theme} settings closed`);
+
+    await click('[data-showdex-module="hellodex"] [class*="Hellodex-module-newInstanceButton--"]');
+    await until(() => client.executeJavaScript("Boolean(document.querySelector('[data-showdex-module=honkdex]'))"), `${theme} blank Honkdex calculator`);
+    await choose('SpeciesForme', 0, 'Pikachu');
+    await choose('SpeciesForme', 1, 'Charizard');
+    await choose(':Moves:0', 0, 'Thunderbolt');
+    const honk = await checkChrome('honkdex', {
+      card: '[data-showdex-layout="card"]',
+      moves: '[class*="PokeMoves-module-container--"]',
+      damage: '[class*="PokeMoves-module-damageButtonLabel--"]',
+      label: '[class*="PokeInfo-module-label--"]',
+      player: '[class*="PlayerCalc-module-container--"]',
+      field: '[class*="FieldCalc-module-container--"]',
+    }, ['card', 'moves']);
+    assert.equal(honk.parts.label.color, honk.expected.secondary, `${theme} calculator labels readable`);
+    assert.equal(honk.parts.damage.color, honk.expected.text, `${theme} damage range readable`);
+    const colors = await client.executeJavaScript(`(() => {
+      const root = Array.from(document.querySelectorAll('[data-showdex-module=honkdex]')).find(el => el.getClientRects().length);
+      return ['electric', 'fire', 'flying'].map(type => {
+        const pill = root.querySelector('[class*="PokeType-module-type-' + type + '--"]');
+        const label = pill?.querySelector('[class*="PokeType-module-label--"]');
+        return label && getComputedStyle(label).backgroundColor;
+      });
+    })()`);
+    assert.equal(new Set(colors).size, 3, 'calculator type colors remain distinct');
+    assert.ok(colors.every(color => color && color !== 'rgba(0, 0, 0, 0)'));
+    if (typeColors) assert.deepEqual(colors, typeColors, 'app appearance preserves upstream type colors');
+    typeColors = colors;
+    assert.ok(honk.parts.player && honk.parts.field, `${theme} Honkdex player and field controls`);
+    for (const size of ['default', 'minimum']) await capture(theme, 'honkdex', size);
   }
 
   const clientId = client.id;
@@ -106,6 +240,6 @@ app.whenReady().then(async () => {
   assert.equal(await client.executeJavaScript('typeof window.__SHOWDEX_INIT'), 'undefined');
   assert.equal(await client.executeJavaScript("Boolean(document.querySelector('[data-showdex-module=hellodex]'))"), false);
 
-  console.log('PASS Showdex live guest smoke: loaded, native captures, pending reload, disabled');
+  console.log('PASS Showdex live guest smoke: themed Hellodex, settings and populated Honkdex; type colors; visible footer; pending reload; disabled');
   app.exit(0);
 }).catch((error) => { console.error(error); app.exit(1); });

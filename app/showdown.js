@@ -104,7 +104,7 @@ function readSession() {
 function readFriends(expectedUserid, timeout) {
   if (!window.app || !app.user || !app.user.get('registered') ||
       app.user.get('userid') !== expectedUserid || app.isDisconnected ||
-      (window.__SD_FRIENDS_TIMED_OUT && window.__SD_FRIENDS_TIMED_OUT !== expectedUserid) ||
+      window.__SD_FRIENDS_TIMED_OUT ||
       typeof app.once !== 'function' || typeof app.off !== 'function' || typeof app.send !== 'function') return null;
   return new Promise((resolve) => {
     let finished = false;
@@ -116,14 +116,11 @@ function readFriends(expectedUserid, timeout) {
       app.off('response:friends', onResponse);
       resolve(app.user.get('userid') === expectedUserid ? value : null);
     };
-    const onResponse = (value) => {
-      delete window.__SD_FRIENDS_TIMED_OUT;
-      finish(value);
-    };
+    const onResponse = (value) => finish(value);
     app.once('response:friends', onResponse);
     timer = setTimeout(() => {
       // A late untagged reply could otherwise be mistaken for the next account's list.
-      window.__SD_FRIENDS_TIMED_OUT = expectedUserid;
+      window.__SD_FRIENDS_TIMED_OUT = true;
       finish(null);
     }, timeout);
     try { app.send('/cmd friends'); } catch { finish(null); }
