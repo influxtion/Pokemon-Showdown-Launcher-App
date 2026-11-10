@@ -2,6 +2,24 @@
 
 The alpha target is a Windows x64 NSIS installer. The same configuration can also produce an unpacked app for inspection and smoke testing. Neither command installs or publishes the app. The installer is unsigned and uses Electron's default icon until project licensing and release branding are settled.
 
+## Eventual downloadable app
+
+The release goal is a desktop app that players can download, install, and launch without
+Git, Node.js, terminal commands, or a source checkout. Windows comes first. The current
+local alpha installer is an intermediate step toward that experience.
+
+Before public distribution:
+
+- Resolve project and bundled-integration licensing; include required notices and source.
+- Bundle the runtimes needed for shipped features so players do not have to build them.
+- Finish the app icon and installer branding, and establish Windows code signing.
+- Test installation, first launch, upgrades, data preservation, and uninstall on clean Windows machines.
+- Provide a clear download page with versioned installers, system requirements, release notes,
+  and checksums, plus a straightforward way to find and install updates. Automatic updates
+  can follow once release delivery is reliable.
+
+This is planned release work. No public download or automatic update service is live yet.
+
 ## Profiles and build tools
 
 `electron-builder` 26.18.0 is pinned in the dependency lockfile. Package scripts always pass
