@@ -37,6 +37,7 @@ let lastPopups = null;
 let searchClickedAt = 0;
 // When the current search began, for the elapsed timer on the button.
 let searchSince = 0;
+let friendsKey = '';
 
 function tickSearch() {
   if (!searchSince) return;
@@ -68,6 +69,13 @@ function el(tag, className, text) {
   if (text !== undefined) node.textContent = text;
   return node;
 }
+
+const openFriends = el('button', 'btn', 'Open friends list');
+openFriends.type = 'button';
+openFriends.addEventListener('click', () => {
+  if (sessionReady && sessionConnected) act('friends');
+});
+els.friends.parentElement.querySelector('.friends-head').append(openFriends);
 
 function num(n) {
   return n === null || n === undefined ? '–' : n.toLocaleString('en-US');
@@ -271,28 +279,65 @@ function renderAccount() {
 }
 
 function renderFriends() {
-  const box = el('div', 'friends-note');
-  if (state.user.registered) {
-    box.append(
-      el('p', null, 'Your Showdown friends list opens in the client, where you can see who is online and send challenges.'),
-    );
-    const button = el('button', 'btn', 'Open friends list');
-    button.type = 'button';
-    button.addEventListener('click', () => act('friends'));
-    box.append(button);
-  } else {
-    box.append(el('p', null, 'Sign in to Showdown to see your friends and who is online.'));
-    const button = el('button', 'btn btn-primary', 'Sign in');
-    button.type = 'button';
-    button.addEventListener('click', () => act('login'));
-    box.append(button);
+  openFriends.hidden = !state.user.registered;
+  openFriends.disabled = !sessionReady || !sessionConnected;
+  const friends = state.friends;
+  const disconnected = !state.connected || (sessionReady && !sessionConnected);
+  const key = JSON.stringify([state.user.registered, disconnected, friends?.available, friends?.items]);
+  if (friendsKey !== key) {
+    friendsKey = key;
+    const children = [];
+    if (!state.user.registered) {
+      const box = el('div', 'friends-note');
+      box.append(el('p', null, 'Sign in to Showdown to see your friends and who is online.'));
+      const button = el('button', 'btn btn-primary', 'Sign in');
+      button.type = 'button';
+      button.addEventListener('click', () => act('login'));
+      box.append(button);
+      children.push(box);
+    } else if (disconnected) {
+      children.push(el('div', 'friends-note', 'Friends are unavailable while Showdown reconnects.'));
+    } else if (!friends?.available) {
+      children.push(el('div', 'friends-note', 'Friends are unavailable here. Open the list in Showdown.'));
+    } else if (!friends.items.length) {
+      children.push(el('div', 'friends-note', 'No friends added on Showdown.'));
+    } else {
+      for (const [status, label] of [
+        ['online', 'Online'], ['idle', 'Idle'], ['busy', 'Busy'], ['offline', 'Offline'],
+      ]) {
+        const group = friends.items.filter((friend) => friend.status === status)
+          .sort((a, b) => a.name.localeCompare(b.name));
+        if (!group.length) continue;
+        children.push(el('div', 'friends-group num', `${label} (${group.length})`));
+        for (const friend of group) {
+          const row = el('div', `friend ${friend.online ? 'friend--online' : 'friend--offline'}`);
+          const details = el('div', 'friend-text');
+          details.append(el('span', 'friend-name', friend.name), el('span', 'friend-status', label));
+          row.append(details);
+          if (friend.online) {
+            const challenge = el('button', 'btn', 'Challenge');
+            challenge.type = 'button';
+            challenge.dataset.friendChallenge = friend.userid;
+            challenge.setAttribute('aria-label', `Challenge ${friend.name}`);
+            row.append(challenge);
+          }
+          children.push(row);
+        }
+      }
+    }
+    els.friends.replaceChildren(...children);
   }
-  const key = state.user.registered ? 'in' : 'out';
-  if (els.friends.dataset.key !== key) {
-    els.friends.dataset.key = key;
-    els.friends.replaceChildren(box);
+  for (const button of els.friends.querySelectorAll('[data-friend-challenge]')) {
+    button.disabled = !sessionReady || !sessionConnected || !currentFormat();
   }
 }
+
+els.friends.addEventListener('click', (event) => {
+  const button = event.target.closest('[data-friend-challenge]');
+  if (!button || !sessionReady || !sessionConnected) return;
+  const format = currentFormat();
+  if (format) act('challenge', { user: button.dataset.friendChallenge, format: format.id });
+});
 
 function render() {
   if (!state.ready) return;
@@ -385,6 +430,7 @@ document.addEventListener('showdown-session', (event) => {
   if (state.ready) {
     renderAccount();
     renderHero();
+    renderFriends();
   }
   // Search state comes from the client, so it stays right across pages and restarts.
   const active = Boolean(session.search && (session.search.pending || session.search.formats.length > 0));

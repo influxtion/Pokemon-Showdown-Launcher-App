@@ -100,13 +100,19 @@ app.whenReady().then(async () => {
   assert.equal(await run("document.getElementById('note-url').value"), privateUrl);
 
   await fill('note-body', 'Pivot on turn 12. Preserve the weather setter.');
-  await click('save-note');
+  await run("document.dispatchEvent(new KeyboardEvent('keydown', {key:'s',ctrlKey:true,bubbles:true,cancelable:true}))");
   await until(async () => (await notes())[0].notes.includes('Preserve the weather setter.'), 'edited note saved');
   saved = (await notes())[0];
   assert.equal(saved.id.length, 36);
 
   await add('Random battle review', secondUrl, 'gen9randombattle', 'Early switch was risky.');
   await until(async () => (await notes()).length === 2, 'second note saved');
+  await run("document.dispatchEvent(new KeyboardEvent('keydown', {key:'f',ctrlKey:true,bubbles:true,cancelable:true}))");
+  assert.equal(await run("document.activeElement.id"), 'replay-search');
+  await fill('replay-search', 'no matching replay');
+  assert.equal(await run("document.getElementById('replay-list').children.length"), 0);
+  await run("document.activeElement.dispatchEvent(new KeyboardEvent('keydown', {key:'Escape',bubbles:true,cancelable:true}))");
+  assert.equal(await run("document.getElementById('replay-list').children.length"), 2);
 
   // The Play action opens a fresh editor when no battle is current, even with notes saved.
   await load('play.html');
