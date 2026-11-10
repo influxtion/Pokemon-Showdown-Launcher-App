@@ -164,6 +164,18 @@ function join(roomid) {
   return true;
 }
 
+function editTeam(index, name, format) {
+  app.joinRoom('teambuilder');
+  app.focusRoom('teambuilder');
+  const room = app.rooms.teambuilder;
+  // Keep unfinished set/import edits intact; the user can return to the list normally.
+  if (!room || room.curTeam || room.exportMode || typeof room.edit !== 'function' || index === null) return true;
+  const team = Storage.teams && Storage.teams[index];
+  // Home is polled: a deletion or reorder may have changed what this index refers to.
+  if (team && typeof team.name === 'string' && team.name.slice(0, 80) === name && team.format === format) room.edit(index);
+  return true;
+}
+
 function login() {
   app.addPopup(LoginPopup);
   return true;
@@ -445,6 +457,11 @@ class ShowdownBridge {
       case 'join':
         if (!(typeof args.room === 'string' && ROOM_ID.test(args.room))) return false;
         code = call(join, args.room);
+        break;
+      case 'edit-team':
+        if (args.team !== null && (!Number.isSafeInteger(args.team) || args.team < 0 || args.team > 9999 ||
+            typeof args.name !== 'string' || args.name.length > 80 || !(args.format === '' || isId(args.format)))) return false;
+        code = args.team === null ? call(editTeam, null, '', '') : call(editTeam, args.team, args.name, args.format);
         break;
       case 'cancel-search':
         code = call(cancelSearch);
