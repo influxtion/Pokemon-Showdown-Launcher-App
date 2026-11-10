@@ -107,9 +107,13 @@ test('guest, unavailable and malformed responses keep the fallback', async () =>
   assert.equal(timeout.listeners.size, 0);
   await bridge.snapshot();
   assert.equal(timeout.sends.length, 1, 'short failure cache avoids repeated queries');
+  bridge.friendsCache.clear();
+  await bridge.snapshot();
+  assert.equal(timeout.sends.length, 1, 'same-account retry stays latched after cache loss');
+  assert.equal(timeout.listeners.size, 0, 'no response listener remains after timeout');
   timeout.identity.userid = 'other';
   await bridge.snapshot();
-  assert.equal(timeout.sends.length, 1, 'timed-out untagged response cannot be assigned to another account');
+  assert.equal(timeout.sends.length, 1, 'late untagged response cannot be assigned to another account');
 });
 
 test('cache and concurrent snapshots do not duplicate queries or mix accounts', async () => {
