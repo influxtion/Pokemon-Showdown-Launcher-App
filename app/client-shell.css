@@ -1,0 +1,9 @@
+/* The launcher owns room navigation: its rail lists open rooms and its top bar names the
+   current one, so the client's own header, tabs and user bar are hidden and rooms fill the
+   view. Only for the live client; the replay and practice views keep their own chrome. */
+#header {
+  display: none !important;
+}
+.ps-room {
+  top: 0 !important;
+}

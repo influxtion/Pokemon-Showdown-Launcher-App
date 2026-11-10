@@ -101,6 +101,55 @@ app.whenReady().then(async () => {
   await pause(3400);
   current = { ...current, rooms: current.rooms.map((room) => room.id.endsWith('-2') ? { ...room, players: ['Tester', 'Opponent'] } : room) };
   await until(() => /play\.html$/.test(renderer.getURL()), 'player battle auto-switch');
+  // Launcher-owned room navigation: rail rows, top bar and the finished-battle bar.
+  const detail = (extra) => ({ kind: 'battle', battle: true, formatId: 'gen9randombattle', turn: 3, unread: false, ended: false, ...extra });
+  current = {
+    ...current, named: true, current: 'battle-test-2', menuUnread: false,
+    rooms: [
+      detail({ id: 'battle-test-2', title: 'Battle', players: ['Tester', 'Opponent'], format: 'Random Battle' }),
+      { id: 'lobby', title: 'Lobby', kind: 'chat', battle: false, players: [], format: '', formatId: '', ended: false, turn: null, unread: true },
+    ],
+  };
+  await load('play.html');
+  await until(() => run("document.querySelectorAll('[data-nav=rooms] .nav-room').length === 2"), 'rail rooms rendered');
+  assert.equal(await run("document.querySelector('[data-nav=rooms] .nav-room[aria-current=page] .nav-room-title').textContent"), 'vs. Opponent');
+  assert.equal(await run("document.querySelector('[data-nav=rooms] .nav-room-sub').textContent"), 'Random Battle · Turn 3');
+  assert.equal(await run("document.querySelectorAll('[data-nav=rooms] .nav-unread').length"), 1);
+  assert.equal(await run("document.querySelector('[data-nav=me]').textContent"), 'Tester');
+  assert.equal(await run("document.getElementById('room-title').textContent"), 'vs. Opponent');
+  assert.equal(await run("document.getElementById('room-format').textContent"), 'gen9randombattle');
+  assert.equal(await run("document.getElementById('room-status').textContent"), 'Turn 3');
+  assert.equal(await run("document.getElementById('save-note').hidden"), false);
+  assert.equal(await run("document.getElementById('result-bar').hidden"), true);
+  assert.equal(await run("!!document.querySelector('[data-action=reload-client]')"), false);
+  actions.length = 0;
+  await run("document.querySelector('[aria-label=\"Close Lobby\"]').click(); 0");
+  await until(() => actions.some((a) => a.action === 'leave-room'), 'close sends leave-room');
+  assert.deepEqual(actions.find((a) => a.action === 'leave-room'), { action: 'leave-room', args: { room: 'lobby' } });
+  assert.match(renderer.getURL(), /play.html$/);
+  await run("document.querySelector('[data-action=sounds]').click(); 0");
+  await until(() => actions.some((a) => a.action === 'sounds'), 'sound button');
+  current = { ...current, rooms: [detail({ ...current.rooms[0], ended: true }), current.rooms[1]] };
+  await until(() => run("!document.getElementById('result-bar').hidden"), 'result bar for finished own battle');
+  assert.equal(await run("document.getElementById('result-message').textContent"), 'Battle finished · vs. Opponent');
+  assert.equal(await run("document.getElementById('room-status').textContent"), 'Finished');
+  actions.length = 0;
+  await pause(1500);
+  assert.equal(actions.some((a) => a.action === 'search'), false, 'no search without a click');
+  fs.mkdirSync(path.join(__dirname, '..', 'out', 'desktop-smoke'), { recursive: true });
+  win.setAlwaysOnTop(true);
+  win.show();
+  win.focus();
+  for (const theme of ['light', 'dark']) {
+    await run(`window.desktop.setTheme('${theme}')`);
+    await pause(250);
+    fs.writeFileSync(path.join(__dirname, '..', 'out', 'desktop-smoke', `play-${theme}.png`), (await renderer.capturePage()).toPNG());
+  }
+  await run("document.getElementById('result-again').click(); 0");
+  await until(() => actions.some((a) => a.action === 'search'), 'Battle again search');
+  assert.deepEqual(actions.find((a) => a.action === 'search'), { action: 'search', args: { format: 'gen9randombattle', team: null } });
+  await until(() => /index.html$/.test(renderer.getURL()), 'Battle again returns to Home');
+  await load('play.html');
   win.setSize(1024, 640);
   await until(() => {
     try {
@@ -121,7 +170,7 @@ app.whenReady().then(async () => {
     await pause(250);
     fs.writeFileSync(path.join(captures, `home-${theme}.png`), (await renderer.capturePage()).toPNG());
   }
-  console.log('PASS desktop smoke: connection, view bounds/survival, themes, spectating, delayed battle identity, minimum width');
+  console.log('PASS desktop smoke: connection, view bounds/survival, themes, spectating, delayed battle identity, launcher rail rooms, room top bar, result bar, minimum width');
   app.exit(0);
 }).catch((error) => {
   console.error(error);

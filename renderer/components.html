@@ -103,6 +103,18 @@
       <div class="banner">Showdex changes apply the next time the client reloads.<button class="btn" type="button">Reload now</button></div>
       <div class="banner banner--warn">Connection to Showdown lost. Reconnecting…<button class="btn" type="button">Retry now</button></div>
       <div class="banner banner--err">Replay notes could not be read. Your file was left untouched.<button class="btn" type="button">Show file</button></div>
+      <div class="banner banner--bar banner--result"><span>Battle finished · vs. Rival</span><span class="spacer"></span><button class="btn" type="button">Save replay note</button><button class="btn" type="button">Close battle</button><button class="btn btn-primary" type="button">Battle again</button></div>
+    </div>
+  </section>
+
+  <section class="settings-section">
+    <h2>Rail section and room rows</h2>
+    <div class="rail" style="width:var(--rail-w); padding:var(--space-2) 0">
+      <div class="rail-section"><a class="rail-section-label" href="#">Showdown</a><button class="rail-icon-btn" type="button" aria-label="Join a room"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg></button></div>
+      <div class="rail-rooms">
+        <div class="nav-item nav-room nav-item--live" aria-current="page"><button class="nav-room-main" type="button"><span class="nav-room-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M5 3.5v9l7-4.5z"/></svg></span><span class="nav-room-text"><span class="nav-room-title nav-label">vs. Rival</span><span class="nav-room-sub">Random Battle · Turn 4</span></span></button><button class="rail-icon-btn nav-close" type="button" aria-label="Close vs. Rival"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8"/></svg></button></div>
+        <div class="nav-item nav-room"><button class="nav-room-main" type="button"><span class="nav-room-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M2.5 3.5h11v7h-6l-3 2.5v-2.5h-2z"/></svg></span><span class="nav-room-text"><span class="nav-room-title nav-label">Lobby</span></span><span class="nav-unread"></span></button><button class="rail-icon-btn nav-close" type="button" aria-label="Close Lobby"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8"/></svg></button></div>
+      </div>
     </div>
   </section>
 
