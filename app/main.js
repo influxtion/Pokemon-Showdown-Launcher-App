@@ -5,6 +5,7 @@ const path = require('node:path');
 const { pathToFileURL } = require('node:url');
 const { app, BrowserWindow, WebContentsView, Menu, ipcMain, nativeTheme, shell, dialog,
   protocol, session: electronSession } = require('electron');
+require('./profile').configureProfile(app);
 const { Settings } = require('./settings');
 const { ShowdownBridge } = require('./showdown');
 const { Replays } = require('./replays');
