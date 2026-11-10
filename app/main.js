@@ -11,6 +11,8 @@ const { ShowdownBridge } = require('./showdown');
 const { Replays } = require('./replays');
 const { ReplayImports } = require('./replay-imports');
 const { ReplayReview } = require('./replay-review');
+const { PracticeRuntime } = require('./practice-runtime');
+const { PracticeView } = require('./practice-view');
 const { Logger } = require('./logging');
 const { WindowState } = require('./window-state');
 const { ShowdexIntegration, registerShowdexScheme } = require('./showdex-integration');
@@ -41,6 +43,8 @@ let settings = null;
 let replays = null;
 let replayImports = null;
 let replayReview = null;
+let practice = null;
+let practiceView = null;
 let choosingReplayImport = false;
 let undoingReplayImport = false;
 let replayDirty = false;
@@ -185,6 +189,13 @@ function createWindow() {
 
   const currentWindow = win;
   replayReview = new ReplayReview({ window: win, css: REPLAY_CSS, background: background() });
+  const practiceRoot = path.join(__dirname, '..', 'vendor', 'laplace', 'dist');
+  practice = new PracticeRuntime({ root: practiceRoot, scripts: path.join(__dirname, '..', 'scripts', 'laplace') });
+  practiceView = new PracticeView({ window: win, root: path.join(practiceRoot, 'client'), css: CLIENT_CSS,
+    background: background(), onFailure: token => practice?.clientFailed(token) });
+  practice.on('ready', connection => { logger.write('practice-ready'); practiceView?.open(connection); });
+  practice.on('failure', code => logger.write('practice-failed', { start: 1, exited: 2, timeout: 3, client: 4 }[code] || 0));
+  practice.on('change', state => { if (state.state === 'failed' || state.state === 'idle') practiceView?.close(); });
   let windowSaveTimer;
   const persistWindow = () => {
     if (!currentWindow.isDestroyed()) windowState.save({
@@ -214,7 +225,12 @@ function createWindow() {
     if (details.isMainFrame && !details.isSameDocument) {
       hideClient();
       replayReview?.close();
+      practiceView?.hide();
     }
+  });
+  contents.on('did-navigate', () => {
+    // An outgoing page's ResizeObserver can enqueue bounds during navigation.
+    if (!parseUrl(contents.getURL())?.pathname.endsWith('/practice.html')) practiceView?.hide();
   });
 
   win.on('close', (event) => {
@@ -225,6 +241,11 @@ function createWindow() {
     (async () => {
       if (maintenance) return;
       if (replayDirty && !(await confirmDiscardReplay())) return;
+      if (settings.get('confirmOnClose') && practice?.battle && !practice.battle.finished) {
+        const result = await dialog.showMessageBox(win, { type: 'question', buttons: ['Keep playing', 'Close app'],
+          defaultId: 0, cancelId: 0, message: 'Close during local practice?', detail: 'The local battle will end.' });
+        if (result.response !== 1) return;
+      }
       if (settings.get('confirmOnClose') && !(await confirmClientInterruption('Close app', 'Close the app?'))) return;
       if (win) {
         allowClose = true;
@@ -242,6 +263,10 @@ function createWindow() {
     if (client && !client.webContents.isDestroyed()) client.webContents.close();
     replayReview?.close();
     replayReview = null;
+    practice?.stop();
+    practiceView?.close();
+    practice = null;
+    practiceView = null;
     win = null;
     client = null;
     allowClose = false;
@@ -250,6 +275,41 @@ function createWindow() {
   win.loadFile(path.join(RENDERER_DIR, pages[settings.get('startPage')] || 'index.html'));
   ensureClient();
 }
+
+function isPracticeFrame(event) {
+  return isLauncherFrame(event) && parseUrl(event.senderFrame.url)?.pathname.endsWith('/practice.html') &&
+    parseUrl(win.webContents.getURL())?.pathname.endsWith('/practice.html');
+}
+
+ipcMain.handle('practice:status', async event => {
+  if (!isLauncherFrame(event)) return null;
+  const clientState = await practiceView.status();
+  return { ...practice.status(), clientState: clientState.state, clientError: clientState.error };
+});
+ipcMain.handle('practice:start', (event, preset) => {
+  if (!isPracticeFrame(event)) return { ok: false };
+  return practice.start(preset);
+});
+ipcMain.handle('practice:stop', async event => {
+  if (!isPracticeFrame(event)) return { ok: false };
+  if (practice.battle && !practice.battle.finished) {
+    const result = await dialog.showMessageBox(win, { type: 'question', buttons: ['Keep playing', 'Stop practice'],
+      defaultId: 0, cancelId: 0, message: 'Stop this practice session?', detail: 'The local battle will end.' });
+    if (result.response !== 1) return { ok: false, cancelled: true };
+  }
+  return practice.stop();
+});
+ipcMain.handle('practice:show', (event, bounds) => {
+  if (!isPracticeFrame(event)) return { ok: false };
+  return { ok: practiceView.show(bounds) };
+});
+ipcMain.handle('practice:next', async event => {
+  if (!isPracticeFrame(event) || !practice.battle?.finished || !practiceView.view) return { ok: false };
+  try {
+    const ok = await practiceView.view.webContents.executeJavaScript('Boolean(window.desktopPracticeStart?.())');
+    return { ok };
+  } catch { return { ok: false, error: 'Could not start another battle. Stop and try again.' }; }
+});
 
 ipcMain.on('client:show', (event, value) => {
   if (!isLauncherFrame(event)) return;
@@ -612,6 +672,10 @@ nativeTheme.on('updated', () => {
   if (win) win.setBackgroundColor(background());
   if (client) client.setBackgroundColor(background());
   replayReview?.backgroundChanged(background());
+  if (practiceView) {
+    practiceView.background = background();
+    practiceView.view?.setBackgroundColor(background());
+  }
 });
 
 app.whenReady().then(async () => {

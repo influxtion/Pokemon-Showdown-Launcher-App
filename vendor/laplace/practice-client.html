@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta id="viewport" name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https://play.pokemonshowdown.com; connect-src ws://127.0.0.1:*; base-uri 'none'; form-action 'none'">
+  <meta name="referrer" content="no-referrer">
+  <title>Laplace practice</title>
+  <link rel="stylesheet" href="style/battle.css">
+  <link rel="stylesheet" href="style/oldclient.css">
+  <link rel="stylesheet" href="style/sim-types.css">
+  <link rel="stylesheet" href="style/utilichart.css">
+  <link rel="stylesheet" href="style/font-awesome.css">
+  <link rel="stylesheet" href="practice-client.css">
+  <script defer src="js/lib/jquery-2.2.4.min.js"></script>
+  <script defer src="js/lib/jquery-cookie.js"></script>
+  <script defer src="js/lib/autoresize.jquery.min.js"></script>
+  <script defer src="js/battle-sound.js"></script>
+  <script defer src="js/lib/html-css-sanitizer-minified.js"></script>
+  <script defer src="js/lib/lodash.core.js"></script>
+  <script defer src="js/lib/backbone.js"></script>
+  <script defer src="js/lib/d3.v3.min.js"></script>
+  <script defer src="client-bootstrap.js"></script>
+  <script defer src="js/battledata.js"></script>
+  <script defer src="js/oldclient/storage.js"></script>
+  <script defer src="data/typechart.js"></script>
+  <script defer src="js/battle.js"></script>
+  <script defer src="js/lib/color-thief.min.js"></script>
+  <script defer src="data/commands.js"></script>
+  <script defer src="js/oldclient/client.js"></script>
+  <script defer src="js/oldclient/client-topbar.js"></script>
+  <script defer src="js/oldclient/client-mainmenu.js"></script>
+  <script defer src="js/oldclient/client-teambuilder.js"></script>
+  <script defer src="js/oldclient/client-ladder.js"></script>
+  <script defer src="js/oldclient/client-chat.js"></script>
+  <script defer src="js/oldclient/client-chat-tournament.js"></script>
+  <script defer src="js/battle-tooltips.js"></script>
+  <script defer src="js/oldclient/client-battle.js"></script>
+  <script defer src="js/oldclient/client-rooms.js"></script>
+  <script defer src="data/graphics.js"></script>
+  <script defer src="data/pokedex.js"></script>
+  <script defer src="data/moves.js"></script>
+  <script defer src="data/items.js"></script>
+  <script defer src="data/abilities.js"></script>
+  <script defer src="data/search-index.js"></script>
+  <script defer src="data/teambuilder-tables.js"></script>
+  <script defer src="js/battle-dex-search.js"></script>
+  <script defer src="js/oldclient/search.js"></script>
+  <script defer src="data/aliases.js"></script>
+</head>
+<body>
+  <div id="header" class="header"><div class="maintabbarbottom"></div></div>
+  <div class="ps-room scrollable" id="mainmenu"><div class="mainmenuwrapper">
+    <div class="leftmenu"><div class="activitymenu"><div class="pmbox"></div></div>
+      <div class="mainmenu"><div id="loading-message" class="mainmessage">Connecting to practice…</div></div>
+    </div>
+    <div class="rightmenu"></div>
+    <div class="mainmenufooter"><div class="bgcredit"></div></div>
+  </div></div>
+</body>
+</html>

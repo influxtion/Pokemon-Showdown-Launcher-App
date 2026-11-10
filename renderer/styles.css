@@ -1048,3 +1048,8 @@ a.list-row:hover { background: var(--bg-hover); text-decoration: none; }
 }
 .hero .btn:not(.btn-primary):not(.btn-quiet):hover { background: var(--hero-team-bg); }
 #cancel-search { height: 34px; }
+/* Practice uses the same native-view layout as the online client. */
+.practice-content { display: flex; flex-direction: column; min-height: 0; }
+.practice-setup { margin: 24px; max-width: 760px; flex-shrink: 0; }
+.practice-setup .field { margin: 16px 0; max-width: 500px; }
+.practice-area { flex: 1; min-height: 0; }

@@ -1,0 +1,17 @@
+#header .tabbar a[href="/"],
+#header .tabbar a[href="/rooms"],
+#header .userbar,
+#mainmenu .mainmenuwrapper {
+  display: none;
+}
+
+.ps-room .battle-log { bottom: 0; }
+.ps-room .battle-log-add { display: none !important; }
+
+html[data-practice-state="connecting"] #mainmenu .mainmenuwrapper {
+  display: block;
+}
+
+html[data-practice-state="connecting"] #mainmenu .mainmenu > :not(#loading-message) {
+  display: none;
+}

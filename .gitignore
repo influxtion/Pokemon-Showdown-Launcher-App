@@ -7,6 +7,9 @@ dist/
 out/
 release/
 vendor/showdex/dist/
+vendor/laplace/dist/
+__pycache__/
+*.pyc
 
 # Generated runtimes, credentials, local settings
 .env
