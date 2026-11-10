@@ -1,0 +1,17 @@
+# Agent instructions are kept local
+AGENTS.md
+
+# Dependencies and build output
+node_modules/
+dist/
+out/
+release/
+
+# Generated runtimes, credentials, local settings
+.env
+.env.*
+*.log
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

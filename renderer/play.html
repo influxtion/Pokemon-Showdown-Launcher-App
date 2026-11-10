@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Showdown · Showdown Desktop</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="app">
+  <nav class="rail" aria-label="Main">
+    <div class="rail-brand">Showdown Desktop</div>
+    <div class="rail-nav">
+      <a class="nav-item" href="index.html">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M2.5 7.5 8 3l5.5 4.5V13H10V9.5H6V13H2.5z"/></svg>
+        Home
+      </a>
+      <a class="nav-item" href="play.html" data-nav="showdown" aria-current="page">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M5 3.5v9l7-4.5z"/></svg>
+        <span class="nav-label">Showdown</span>
+        <span class="nav-hint"></span>
+      </a>
+      <a class="nav-item" href="replays.html">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M4 2.5h8v11l-4-3-4 3z"/></svg>
+        Replay notes
+      </a>
+      <a class="nav-item" aria-disabled="true">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="5.5"/><circle cx="8" cy="8" r="2"/></svg>
+        Practice
+        <span class="nav-hint">Soon</span>
+      </a>
+      <a class="nav-item" href="settings.html">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2.5 4.5h3M8.5 4.5h5M2.5 11.5h7M12.5 11.5h1"/><circle cx="7" cy="4.5" r="1.5"/><circle cx="11" cy="11.5" r="1.5"/></svg>
+        Settings
+      </a>
+    </div>
+    <div class="rail-foot">
+      <span>v0.1.0-dev</span>
+    </div>
+  </nav>
+
+  <div class="main">
+    <header class="topbar">
+      <h1>Showdown</h1>
+      <span class="faint">play.pokemonshowdown.com</span>
+      <div class="topbar-actions">
+        <span class="status status--off">Showdex not installed</span>
+        <span class="topbar-sep"></span>
+        <a class="btn btn-quiet" href="replays.html">Save replay note</a>
+        <button class="btn" type="button" data-action="reload-client">Reload client</button>
+      </div>
+    </header>
+
+    <main class="content content--flush">
+      <div class="client-frame">
+        <!-- Shown only while disconnected; collapses to nothing otherwise. -->
+        <div class="banner banner--warn banner--bar" hidden>
+          Connection to Showdown lost. Reconnecting…
+          <button class="btn" type="button">Retry now</button>
+        </div>
+        <div class="client-view">
+          Loading Pokémon Showdown…
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+<script src="nav.js"></script>
+<script src="play.js"></script>
+</body>
+</html>

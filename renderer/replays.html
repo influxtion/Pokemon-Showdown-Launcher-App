@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Replay notes · Showdown Desktop</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="app">
+  <nav class="rail" aria-label="Main">
+    <div class="rail-brand">Showdown Desktop</div>
+    <div class="rail-nav">
+      <a class="nav-item" href="index.html">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M2.5 7.5 8 3l5.5 4.5V13H10V9.5H6V13H2.5z"/></svg>
+        Home
+      </a>
+      <a class="nav-item" href="play.html" data-nav="showdown" hidden>
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M5 3.5v9l7-4.5z"/></svg>
+        <span class="nav-label">Showdown</span>
+        <span class="nav-hint"></span>
+      </a>
+      <a class="nav-item" href="replays.html" aria-current="page">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M4 2.5h8v11l-4-3-4 3z"/></svg>
+        Replay notes
+      </a>
+      <a class="nav-item" aria-disabled="true">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="5.5"/><circle cx="8" cy="8" r="2"/></svg>
+        Practice
+        <span class="nav-hint">Soon</span>
+      </a>
+      <a class="nav-item" href="settings.html">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2.5 4.5h3M8.5 4.5h5M2.5 11.5h7M12.5 11.5h1"/><circle cx="7" cy="4.5" r="1.5"/><circle cx="11" cy="11.5" r="1.5"/></svg>
+        Settings
+      </a>
+    </div>
+    <div class="rail-foot">
+      <span>v0.1.0-dev</span>
+    </div>
+  </nav>
+
+  <div class="main">
+    <header class="topbar">
+      <h1>Replay notes</h1>
+      <div class="topbar-actions">
+        <button class="btn btn-primary" type="button">Add replay</button>
+      </div>
+    </header>
+
+    <main class="content content--flush">
+      <div class="split">
+        <aside class="split-list" aria-label="Saved replays">
+          <div class="split-list-tools">
+            <input class="input" type="search" placeholder="Search title, format, notes" aria-label="Search replay notes">
+            <select class="select" aria-label="Format">
+              <option>All formats</option>
+              <option>gen9ou</option>
+              <option>gen9vgc2026</option>
+              <option>gen9randombattle</option>
+            </select>
+          </div>
+          <div class="split-list-count">5 saved</div>
+          <ul class="split-list-items">
+            <li>
+              <a class="note-item" href="#" aria-current="true">
+                <div class="note-item-title">Lost the Kingambit endgame</div>
+                <div class="note-item-meta"><span class="tag">gen9ou</span><span class="num">8 Nov 2026</span></div>
+                <div class="note-item-snippet">Turn 18: switched out my win condition too early.</div>
+              </a>
+            </li>
+            <li>
+              <a class="note-item" href="#">
+                <div class="note-item-title">Rain mirror vs. top 50</div>
+                <div class="note-item-meta"><span class="tag">gen9ou</span><span class="num">6 Nov 2026</span></div>
+                <div class="note-item-snippet">Lead Pelipper next time; Barraskewda got chipped.</div>
+              </a>
+            </li>
+            <li>
+              <a class="note-item" href="#">
+                <div class="note-item-title">Trick Room timing</div>
+                <div class="note-item-meta"><span class="tag">gen9vgc2026</span><span class="num">2 Nov 2026</span></div>
+                <div class="note-item-snippet">Set TR turn 3, not turn 1.</div>
+              </a>
+            </li>
+            <li>
+              <a class="note-item" href="#">
+                <div class="note-item-title">Scarf Dragapult read</div>
+                <div class="note-item-meta"><span class="tag">gen9ou</span><span class="num">29 Oct 2026</span></div>
+                <div class="note-item-snippet">Don't assume Choice Specs on Dragapult.</div>
+              </a>
+            </li>
+            <li>
+              <a class="note-item" href="#">
+                <div class="note-item-title">Randbats, Chi-Yu sweep</div>
+                <div class="note-item-meta"><span class="tag">gen9randombattle</span><span class="num">21 Oct 2026</span></div>
+                <div class="note-item-snippet">Keep the Assault Vest mon healthy.</div>
+              </a>
+            </li>
+          </ul>
+        </aside>
+
+        <section class="split-detail" aria-label="Edit replay note">
+          <div class="split-detail-body">
+            <form class="form">
+              <div class="form-row">
+                <div class="field">
+                  <label class="field-label" for="note-title">Title</label>
+                  <input class="input" id="note-title" value="Lost the Kingambit endgame" maxlength="120">
+                  <div class="field-hint"><span></span><span class="num">26 / 120</span></div>
+                </div>
+                <div class="field">
+                  <label class="field-label" for="note-format">Format</label>
+                  <input class="input" id="note-format" value="gen9ou" readonly>
+                </div>
+              </div>
+
+              <div class="field">
+                <label class="field-label" for="note-url">Replay link</label>
+                <input class="input mono" id="note-url" value="https://replay.pokemonshowdown.com/gen9ou-2241871203" readonly>
+                <div class="field-hint"><span>The replay is hosted by Pokémon Showdown. It is not stored on this computer.</span></div>
+              </div>
+
+              <div class="field">
+                <label class="field-label" for="note-body">Notes</label>
+                <textarea class="textarea" id="note-body" maxlength="5000">Turn 18: switched out my win condition too early. Kingambit was at 60% and their Great Tusk was the only check left.
+
+Next time: Sucker Punch on turn 19 wins if they stay in.</textarea>
+                <div class="field-hint"><span>Private. Notes stay on this computer.</span><span class="num">151 / 5000</span></div>
+              </div>
+
+              <dl class="meta">
+                <dt>Saved</dt><dd class="num">8 Nov 2026, 21:14</dd>
+                <dt>Edited</dt><dd class="num">8 Nov 2026, 21:40</dd>
+              </dl>
+            </form>
+          </div>
+
+          <div class="split-detail-foot">
+            <button class="btn btn-danger" type="button">Delete</button>
+            <span class="spacer"></span>
+            <span class="faint">Unsaved changes</span>
+            <button class="btn" type="button">Open replay</button>
+            <button class="btn btn-primary" type="button">Save</button>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+</div>
+<script src="nav.js"></script>
+</body>
+</html>

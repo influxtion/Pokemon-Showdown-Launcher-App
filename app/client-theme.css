@@ -1,0 +1,240 @@
+/* Showdown Desktop theme for the official client.
+   Injected with cssOrigin "user", so these !important rules beat both the client's light
+   styles and its own .dark mode. Only the chrome is restyled: the battle field, sprites and
+   type-coloured move buttons stay as upstream draws them. Values mirror renderer/styles.css. */
+
+:root {
+  color-scheme: light !important;
+}
+
+:root {
+  --sd-app: #e6ecf5;
+  --sd-panel: #ffffff;
+  --sd-subtle: #f3f6fb;
+  --sd-hover: #edf2fa;
+  --sd-input: #ffffff;
+  --sd-border: #d2dae7;
+  --sd-border-strong: #b6c2d6;
+  --sd-text: #15223a;
+  --sd-text-2: #4b5b76;
+  --sd-accent: #2459b8;
+  --sd-bar: #1f4b9a;
+  --sd-bar-hover: #2a58ab;
+  --sd-bar-tab: #2d5cad;
+  --sd-primary: #f5c42c;
+  --sd-primary-hover: #f8d051;
+  --sd-on-primary: #1a2440;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark !important;
+    --sd-app: #24304a;
+    --sd-panel: #2c3a57;
+    --sd-subtle: #283550;
+    --sd-hover: #3a4b6b;
+    --sd-input: #1f2a40;
+    --sd-border: #3d4d6d;
+    --sd-border-strong: #4c5e81;
+    --sd-text: #f1f4fa;
+    --sd-text-2: #bfcae0;
+    --sd-accent: #7db2ff;
+    --sd-bar: #193f85;
+    --sd-bar-hover: #234c98;
+    --sd-bar-tab: #234c98;
+  }
+}
+
+/* Flat app colour instead of the background art. */
+body {
+  background: var(--sd-app) none !important;
+}
+
+/* Header and room tabs */
+.header {
+  background: var(--sd-bar) none !important;
+}
+.maintabbarbottom {
+  background: var(--sd-panel) !important;
+  border-color: var(--sd-border) !important;
+}
+.tabbar {
+  text-shadow: none !important;
+}
+.tabbar a.button {
+  background: var(--sd-bar-tab) !important;
+  border-color: var(--sd-bar) !important;
+  color: #ffffff !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+  border-radius: 0 !important;
+}
+.tabbar a.button:hover {
+  background: var(--sd-bar-hover) !important;
+}
+.tabbar a.button.cur,
+.tabbar a.button.cur:hover {
+  background: var(--sd-panel) !important;
+  border-color: var(--sd-border) !important;
+  border-bottom-color: var(--sd-panel) !important;
+  color: var(--sd-text) !important;
+}
+.tabbar .closebutton {
+  color: inherit !important;
+}
+.userbar .username {
+  color: #ffffff !important;
+  text-shadow: none !important;
+}
+
+/* User-origin styles do not switch off native control painting the way page styles do,
+   so appearance must be reset explicitly or the light system button shows through. */
+.button,
+textarea,
+input[type="text"],
+input[type="search"],
+input[type="password"] {
+  appearance: none !important;
+}
+/* Selects keep their native arrow; color-scheme above makes them match the theme. */
+select.button {
+  appearance: auto !important;
+}
+
+/* Buttons: flat, square-ish, no gradients. Battle choice buttons have no .button class. */
+.button {
+  background: var(--sd-panel) !important;
+  color: var(--sd-text) !important;
+  border: 1px solid var(--sd-border-strong) !important;
+  border-radius: 3px !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+.button:hover {
+  background: var(--sd-hover) !important;
+}
+.button:disabled,
+.button.disabled {
+  opacity: 0.5 !important;
+}
+
+/* Main menu */
+.menugroup {
+  background: var(--sd-panel) !important;
+  color: var(--sd-text) !important;
+  border: 1px solid var(--sd-border) !important;
+  border-radius: 4px !important;
+  text-shadow: none !important;
+}
+.menugroup .button {
+  background: var(--sd-bar) !important;
+  border-color: var(--sd-bar) !important;
+  color: #ffffff !important;
+}
+.menugroup .button:hover {
+  background: var(--sd-bar-hover) !important;
+  border-color: var(--sd-bar-hover) !important;
+}
+.menugroup .button.mainmenu1 {
+  background: var(--sd-primary) !important;
+  border-color: var(--sd-primary) !important;
+  color: var(--sd-on-primary) !important;
+  font-weight: bold !important;
+}
+.menugroup .button.mainmenu1:hover {
+  background: var(--sd-primary-hover) !important;
+}
+.menugroup .button.disabled,
+.menugroup .button.disabled:hover {
+  background: var(--sd-subtle) !important;
+  border-color: var(--sd-border) !important;
+  color: var(--sd-text-2) !important;
+}
+.menugroup .select,
+.menugroup select.button {
+  background: var(--sd-input) !important;
+  color: var(--sd-text) !important;
+  border-color: var(--sd-border-strong) !important;
+}
+.mainmenufooter,
+.mainmenufooter a,
+.mainmenufooter button {
+  color: var(--sd-text-2) !important;
+  text-shadow: none !important;
+}
+
+/* Rooms, chat, popups */
+.ps-room.ps-room-light,
+.ps-room.ps-room-opaque {
+  background: var(--sd-subtle) !important;
+  color: var(--sd-text) !important;
+  border-color: var(--sd-border) !important;
+}
+.ps-room {
+  border-color: var(--sd-border) !important;
+}
+.chat-log,
+.battle-log,
+.pm-log {
+  background: var(--sd-panel) !important;
+  color: var(--sd-text) !important;
+  backdrop-filter: none !important;
+  border-color: var(--sd-border) !important;
+}
+.chat-log-add,
+.battle-log-add,
+.pm-log-add,
+.battle-controls,
+.userlist-maximized,
+.userlist-minimized {
+  background: var(--sd-subtle) !important;
+  color: var(--sd-text) !important;
+  border-color: var(--sd-border) !important;
+}
+.pm-window h3 {
+  background: var(--sd-panel) !important;
+  color: var(--sd-text-2) !important;
+  border-color: var(--sd-border) !important;
+  text-shadow: none !important;
+}
+.ps-popup {
+  background: var(--sd-panel) !important;
+  color: var(--sd-text) !important;
+  border: 1px solid var(--sd-border-strong) !important;
+  border-radius: 4px !important;
+}
+.blocklink,
+.blocklink * {
+  text-shadow: none !important;
+}
+.blocklink {
+  background: var(--sd-panel) !important;
+  border-color: var(--sd-border) !important;
+  color: var(--sd-accent) !important;
+}
+.blocklink:hover {
+  background: var(--sd-hover) !important;
+}
+.ps-room a:not(.button):not(.blocklink),
+.pm-log a,
+.ps-popup a {
+  color: var(--sd-accent) !important;
+}
+
+textarea,
+input[type="text"],
+input[type="search"],
+input[type="password"],
+input.textbox {
+  background: var(--sd-input) !important;
+  color: var(--sd-text) !important;
+  border: 1px solid var(--sd-border-strong) !important;
+  border-radius: 3px !important;
+}
+
+/* Teambuilder folder list */
+.folderpane {
+  background: var(--sd-subtle) !important;
+  color: var(--sd-text) !important;
+  border-color: var(--sd-border) !important;
+}

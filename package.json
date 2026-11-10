@@ -1,0 +1,17 @@
+{
+  "name": "showdown-desktop",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A desktop workspace for Pokémon Showdown.",
+  "main": "app/main.js",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "start": "electron .",
+    "check": "node --check app/main.js && node --check app/preload.js && node --check app/settings.js && node --check app/showdown.js && node --check renderer/home.js && node --check renderer/nav.js && node --check renderer/play.js && node --check renderer/settings.js"
+  },
+  "devDependencies": {
+    "electron": "45.2.3"
+  }
+}

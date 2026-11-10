@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Settings · Showdown Desktop</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="app">
+  <nav class="rail" aria-label="Main">
+    <div class="rail-brand">Showdown Desktop</div>
+    <div class="rail-nav">
+      <a class="nav-item" href="index.html">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M2.5 7.5 8 3l5.5 4.5V13H10V9.5H6V13H2.5z"/></svg>
+        Home
+      </a>
+      <a class="nav-item" href="play.html" data-nav="showdown" hidden>
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M5 3.5v9l7-4.5z"/></svg>
+        <span class="nav-label">Showdown</span>
+        <span class="nav-hint"></span>
+      </a>
+      <a class="nav-item" href="replays.html">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M4 2.5h8v11l-4-3-4 3z"/></svg>
+        Replay notes
+      </a>
+      <a class="nav-item" aria-disabled="true">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="5.5"/><circle cx="8" cy="8" r="2"/></svg>
+        Practice
+        <span class="nav-hint">Soon</span>
+      </a>
+      <a class="nav-item" href="settings.html" aria-current="page">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2.5 4.5h3M8.5 4.5h5M2.5 11.5h7M12.5 11.5h1"/><circle cx="7" cy="4.5" r="1.5"/><circle cx="11" cy="11.5" r="1.5"/></svg>
+        Settings
+      </a>
+    </div>
+    <div class="rail-foot">
+      <span>v0.1.0-dev</span>
+    </div>
+  </nav>
+
+  <div class="main">
+    <header class="topbar">
+      <h1>Settings</h1>
+    </header>
+
+    <main class="content">
+      <div class="page page--narrow">
+
+        <div class="banner" hidden>
+          Showdex changes apply the next time the client reloads. An active battle is never reloaded automatically.
+          <button class="btn" type="button">Reload client now</button>
+        </div>
+
+        <section class="settings-section">
+          <h2>Integrations</h2>
+          <div class="panel">
+            <div class="setting-row">
+              <div class="setting-text">
+                <div>Showdex</div>
+                <div class="setting-desc">Damage calculator shown inside battles. Not bundled in this build yet.</div>
+              </div>
+              <div class="setting-control">
+                <span class="status status--off">Not installed</span>
+                <label class="switch" aria-label="Enable Showdex">
+                  <input type="checkbox" disabled>
+                  <span class="switch-track"></span>
+                </label>
+              </div>
+            </div>
+            <div class="setting-row">
+              <div class="setting-text">
+                <div>Practice</div>
+                <div class="setting-desc">Local games against Laplace. Requires a server and Python runtime that this build does not include.</div>
+              </div>
+              <div class="setting-control">
+                <span class="status status--off">Not installed</span>
+                <label class="switch" aria-label="Enable practice">
+                  <input type="checkbox" disabled>
+                  <span class="switch-track"></span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="settings-section">
+          <h2>Interface</h2>
+          <div class="panel">
+            <div class="setting-row">
+              <div class="setting-text">
+                <div>Appearance</div>
+                <div class="setting-desc">Applies to the launcher and the Showdown client.</div>
+              </div>
+              <div class="setting-control">
+                <select class="select" id="theme" aria-label="Appearance">
+                  <option value="system">Match Windows</option>
+                  <option value="light">Light</option>
+                  <option value="dark">Dark</option>
+                </select>
+              </div>
+            </div>
+            <div class="setting-row">
+              <div class="setting-text">
+                <div>Start page</div>
+                <div class="setting-desc">Screen shown when the app opens.</div>
+              </div>
+              <div class="setting-control">
+                <select class="select" aria-label="Start page">
+                  <option>Home</option>
+                  <option>Showdown</option>
+                  <option>Replay notes</option>
+                </select>
+              </div>
+            </div>
+            <div class="setting-row">
+              <div class="setting-text">
+                <div>Keep client loaded in the background</div>
+                <div class="setting-desc">Switching screens keeps your battle running. Turning this off reloads the client on return.</div>
+              </div>
+              <div class="setting-control">
+                <label class="switch" aria-label="Keep client loaded">
+                  <input type="checkbox" checked>
+                  <span class="switch-track"></span>
+                </label>
+              </div>
+            </div>
+            <div class="setting-row">
+              <div class="setting-text">
+                <div>Confirm before closing during a battle</div>
+              </div>
+              <div class="setting-control">
+                <label class="switch" aria-label="Confirm before closing">
+                  <input type="checkbox" checked>
+                  <span class="switch-track"></span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="settings-section">
+          <h2>Troubleshooting</h2>
+          <div class="panel">
+            <div class="setting-row">
+              <div class="setting-text">
+                <div>Reload client</div>
+                <div class="setting-desc">Reloads the Showdown view. Any battle in progress will reconnect.</div>
+              </div>
+              <div class="setting-control"><button class="btn" type="button">Reload</button></div>
+            </div>
+            <div class="setting-row">
+              <div class="setting-text">
+                <div>Logs</div>
+                <div class="setting-desc">Attach these when reporting a bug.</div>
+              </div>
+              <div class="setting-control"><button class="btn" type="button">Open logs folder</button></div>
+            </div>
+            <div class="setting-row">
+              <div class="setting-text">
+                <div>Sign out of Showdown</div>
+                <div class="setting-desc">Clears the saved Showdown session. Replay notes are kept.</div>
+              </div>
+              <div class="setting-control"><button class="btn" type="button">Sign out</button></div>
+            </div>
+            <div class="setting-row">
+              <div class="setting-text">
+                <div>Reset launcher data</div>
+                <div class="setting-desc">Deletes settings and all replay notes. This cannot be undone.</div>
+              </div>
+              <div class="setting-control"><button class="btn btn-danger" type="button">Reset…</button></div>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+</div>
+<script src="nav.js"></script>
+<script src="settings.js"></script>
+</body>
+</html>

@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Components · Showdown Desktop</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    /* Layout for this reference sheet only. */
+    .sheet { padding: 24px; display: flex; flex-direction: column; gap: 24px; max-width: 920px; }
+    .row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+    .swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+    .swatch { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; background: var(--bg-panel); }
+    .swatch-chip { height: 36px; border-bottom: 1px solid var(--border); }
+    .swatch-label { padding: 6px 8px; font-size: var(--fs-xs); display: flex; justify-content: space-between; gap: 8px; }
+  </style>
+</head>
+<body>
+<main class="sheet">
+  <h1>Components</h1>
+
+  <section class="settings-section">
+    <h2>Color tokens</h2>
+    <p class="muted" style="margin-bottom:8px">Values follow the current theme. Hex values for both themes are listed in AGENTS.md.</p>
+    <div class="swatches">
+      <div class="swatch"><div class="swatch-chip" style="background:var(--bg-app)"></div><div class="swatch-label"><span>--bg-app</span></div></div>
+      <div class="swatch"><div class="swatch-chip" style="background:var(--bg-panel)"></div><div class="swatch-label"><span>--bg-panel</span></div></div>
+      <div class="swatch"><div class="swatch-chip" style="background:var(--bg-subtle)"></div><div class="swatch-label"><span>--bg-subtle</span></div></div>
+      <div class="swatch"><div class="swatch-chip" style="background:var(--bg-hover)"></div><div class="swatch-label"><span>--bg-hover</span></div></div>
+      <div class="swatch"><div class="swatch-chip" style="background:var(--bg-selected)"></div><div class="swatch-label"><span>--bg-selected</span></div></div>
+      <div class="swatch"><div class="swatch-chip" style="background:var(--border-strong)"></div><div class="swatch-label"><span>--border-strong</span></div></div>
+      <div class="swatch"><div class="swatch-chip" style="background:var(--text)"></div><div class="swatch-label"><span>--text</span></div></div>
+      <div class="swatch"><div class="swatch-chip" style="background:var(--text-2)"></div><div class="swatch-label"><span>--text-2</span></div></div>
+      <div class="swatch"><div class="swatch-chip" style="background:var(--accent)"></div><div class="swatch-label"><span>--accent</span></div></div>
+      <div class="swatch"><div class="swatch-chip" style="background:var(--primary)"></div><div class="swatch-label"><span>--primary</span></div></div>
+      <div class="swatch"><div class="swatch-chip" style="background:var(--rail-bg)"></div><div class="swatch-label"><span>--rail-bg</span></div></div>
+      <div class="swatch"><div class="swatch-chip" style="background:var(--rail-selected)"></div><div class="swatch-label"><span>--rail-selected</span></div></div>
+      <div class="swatch"><div class="swatch-chip" style="background:var(--rail-indicator)"></div><div class="swatch-label"><span>--rail-indicator</span></div></div>
+      <div class="swatch"><div class="swatch-chip" style="background:var(--ok)"></div><div class="swatch-label"><span>--ok</span></div></div>
+      <div class="swatch"><div class="swatch-chip" style="background:var(--warn)"></div><div class="swatch-label"><span>--warn</span></div></div>
+      <div class="swatch"><div class="swatch-chip" style="background:var(--err)"></div><div class="swatch-label"><span>--err</span></div></div>
+    </div>
+  </section>
+
+  <section class="settings-section">
+    <h2>Buttons</h2>
+    <div class="row">
+      <button class="btn btn-primary" type="button">Primary</button>
+      <button class="btn" type="button">Default</button>
+      <button class="btn btn-quiet" type="button">Quiet</button>
+      <button class="btn btn-danger" type="button">Delete</button>
+      <button class="btn" type="button" disabled>Disabled</button>
+      <button class="btn btn-primary btn-lg" type="button">Play online</button>
+    </div>
+  </section>
+
+  <section class="settings-section">
+    <h2>Inputs</h2>
+    <div class="grid-2">
+      <div class="field">
+        <label class="field-label" for="c1">Default</label>
+        <input class="input" id="c1" placeholder="Paste a replay link">
+      </div>
+      <div class="field">
+        <label class="field-label" for="c2">Invalid</label>
+        <input class="input" id="c2" value="https://example.com/replay" aria-invalid="true">
+        <span class="field-error">Only replay.pokemonshowdown.com links can be saved.</span>
+      </div>
+      <div class="field">
+        <label class="field-label" for="c3">Select</label>
+        <select class="select" id="c3"><option>Home</option><option>Play online</option></select>
+      </div>
+      <div class="field">
+        <label class="field-label" for="c4">Disabled</label>
+        <input class="input" id="c4" value="Unavailable" disabled>
+      </div>
+    </div>
+    <div class="row" style="margin-top:12px">
+      <label class="switch" aria-label="On"><input type="checkbox" checked><span class="switch-track"></span></label>
+      <label class="switch" aria-label="Off"><input type="checkbox"><span class="switch-track"></span></label>
+      <label class="switch" aria-label="Disabled"><input type="checkbox" disabled><span class="switch-track"></span></label>
+    </div>
+  </section>
+
+  <section class="settings-section">
+    <h2>Status</h2>
+    <p class="muted" style="margin-bottom:8px">A status shows what was verified, not what was requested. "Loaded" means the integration reported ready.</p>
+    <div class="row" style="gap:20px">
+      <span class="status status--ok">Enabled and loaded</span>
+      <span class="status">Installed</span>
+      <span class="status status--off">Disabled</span>
+      <span class="status status--off">Not installed</span>
+      <span class="status status--warn">Loading…</span>
+      <span class="status status--err">Failed to load</span>
+      <span class="tag">gen9ou</span>
+    </div>
+  </section>
+
+  <section class="settings-section">
+    <h2>Banners</h2>
+    <div style="display:flex; flex-direction:column; gap:8px">
+      <div class="banner">Showdex changes apply the next time the client reloads.<button class="btn" type="button">Reload now</button></div>
+      <div class="banner banner--warn">Connection to Showdown lost. Reconnecting…<button class="btn" type="button">Retry now</button></div>
+      <div class="banner banner--err">Replay notes could not be read. Your file was left untouched.<button class="btn" type="button">Show file</button></div>
+    </div>
+  </section>
+
+  <section class="settings-section">
+    <h2>Panel with list and empty state</h2>
+    <div class="grid-2">
+      <div class="panel">
+        <div class="panel-head"><h2>Tools</h2><a class="panel-link" href="settings.html">Manage</a></div>
+        <ul class="list">
+          <li class="list-row"><div class="list-row-main"><div class="list-row-title">Showdex</div><div class="list-row-sub">Damage calculator in battle</div></div><span class="status status--err">Failed to load</span></li>
+          <li class="list-row"><div class="list-row-main"><div class="list-row-title">Teambuilder</div><div class="list-row-sub">Built into Showdown</div></div><span class="status status--ok">Available</span></li>
+        </ul>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h2>Recent replay notes</h2></div>
+        <div class="empty">No replay notes yet. Save a replay in Showdown, then add its link here.</div>
+      </div>
+    </div>
+  </section>
+</main>
+</body>
+</html>
