@@ -10,6 +10,8 @@ const { net } = require('electron');
 const SHOWDOWN = 'https://play.pokemonshowdown.com/';
 const ID = /^[a-z0-9]{1,80}$/;
 const ROOM_ID = /^[a-z0-9-]{1,80}$/;
+const BATTLE_FORMAT = /^battle-([a-z0-9]{1,60})-\d/;
+const ROOM_KINDS = ['battle', 'chat', 'teambuilder', 'ladder', 'battles'];
 const SPRITE = /^sprites\/[a-z0-9-]+\/[a-z0-9-]+$/;
 const RATINGS_TTL = 2 * 60 * 1000;
 const FRIENDS_TTL = 30 * 1000;
@@ -69,7 +71,14 @@ function readClient() {
 // Open rooms for the rail and the Home "return to battle" banner. Cheap enough to poll.
 function readSession() {
   if (!window.app || !app.rooms || !app.user) return null;
+  // The launcher's rail replaces the client's tabs, so show one room at a time. This is a
+  // runtime flag only; the user's saved layout preference is left alone.
+  if (app.curRoom && !app.singlePanelMode) {
+    app.singlePanelMode = true;
+    app.updateLayout();
+  }
   const me = app.user.get('name');
+  const kinds = ['battle', 'chat', 'teambuilder', 'ladder', 'battles'];
   const rooms = Object.keys(app.rooms)
     .filter((id) => id && id !== 'rooms')
     .map((id) => {
@@ -82,12 +91,17 @@ function readSession() {
         players: battle ? [battle.p1 && battle.p1.name, battle.p2 && battle.p2.name] : [],
         format: battle ? battle.tier : '',
         ended: Boolean(battle && battle.ended),
+        kind: kinds.includes(room.type) ? room.type : 'other',
+        turn: battle ? battle.turn : null,
+        unread: Boolean(room.notifications),
       };
     });
   const menu = app.rooms[''];
   const searching = menu && menu.searching;
   return {
     me,
+    named: Boolean(app.user.get('named')),
+    menuUnread: Boolean(menu && menu.notifications),
     rooms,
     current: app.curRoom ? app.curRoom.id : '',
     connected: !app.isDisconnected,
@@ -161,6 +175,29 @@ function challenge(name, format) {
 function join(roomid) {
   app.joinRoom(roomid);
   app.focusRoom(roomid);
+  return true;
+}
+
+function focusRoom(roomid) {
+  if (!app.rooms[roomid]) return false;
+  app.focusRoom(roomid);
+  return true;
+}
+
+// Goes through the client's own leave path, so a player's live battle still gets the
+// forfeit confirmation rather than being closed from outside.
+function leaveRoom(roomid) {
+  if (!app.rooms[roomid]) return true;
+  return app.leaveRoom(roomid) ? true : 'needs-client';
+}
+
+function openSounds() {
+  app.addPopup(SoundsPopup);
+  return true;
+}
+
+function openOptions() {
+  app.addPopup(OptionsPopup);
   return true;
 }
 
@@ -288,6 +325,8 @@ function sanitizeSession(raw) {
   return {
     ready: true,
     me: str(raw.me, 40),
+    named: Boolean(raw.named),
+    menuUnread: Boolean(raw.menuUnread),
     connected: Boolean(raw.connected),
     current: typeof raw.current === 'string' && ROOM_ID.test(raw.current) ? raw.current : '',
     search: {
@@ -304,7 +343,11 @@ function sanitizeSession(raw) {
         battle: Boolean(r.battle),
         players: (Array.isArray(r.players) ? r.players : []).slice(0, 2).map((p) => str(p, 40)),
         format: str(r.format, 80),
+        formatId: (BATTLE_FORMAT.exec(r.id) || [])[1] || '',
         ended: Boolean(r.ended),
+        kind: ROOM_KINDS.includes(r.kind) ? r.kind : 'other',
+        turn: r.battle && Number.isSafeInteger(r.turn) && r.turn >= 0 && r.turn < 10000 ? r.turn : null,
+        unread: Boolean(r.unread),
       })),
   };
 }
@@ -462,6 +505,20 @@ class ShowdownBridge {
         if (args.team !== null && (!Number.isSafeInteger(args.team) || args.team < 0 || args.team > 9999 ||
             typeof args.name !== 'string' || args.name.length > 80 || !(args.format === '' || isId(args.format)))) return false;
         code = args.team === null ? call(editTeam, null, '', '') : call(editTeam, args.team, args.name, args.format);
+        break;
+      case 'focus-room':
+        if (!(args.room === '' || (typeof args.room === 'string' && ROOM_ID.test(args.room)))) return false;
+        code = call(focusRoom, args.room);
+        break;
+      case 'leave-room':
+        if (!(typeof args.room === 'string' && ROOM_ID.test(args.room)) || args.room === 'rooms') return false;
+        code = call(leaveRoom, args.room);
+        break;
+      case 'sounds':
+        code = call(openSounds);
+        break;
+      case 'options':
+        code = call(openOptions);
         break;
       case 'cancel-search':
         code = call(cancelSearch);
