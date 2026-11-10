@@ -69,49 +69,68 @@ function readClient() {
 }
 
 // Open rooms for the rail and the Home "return to battle" banner. Cheap enough to poll.
+// It also decides whether the launcher may replace the client's own header and tabs: the
+// "sd-launcher-shell" class (see client-shell.css) is set only after a complete read by a
+// client that still has the room controls the rail drives. If Showdown changes, the class
+// is withdrawn and the client's own navigation comes back.
 function readSession() {
-  if (!window.app || !app.rooms || !app.user) return null;
-  // The launcher's rail replaces the client's tabs, so show one room at a time. This is a
-  // runtime flag only; the user's saved layout preference is left alone.
-  if (app.curRoom && !app.singlePanelMode) {
-    app.singlePanelMode = true;
-    app.updateLayout();
+  const root = window.document && document.documentElement;
+  const setShell = (on) => { if (root && root.classList) root.classList.toggle('sd-launcher-shell', on); };
+  try {
+    if (!window.app || !app.rooms || !app.user) {
+      setShell(false);
+      return null;
+    }
+    const capable = Boolean(root && root.classList && app.curRoom && document.getElementById('header') &&
+      ['updateLayout', 'focusRoom', 'leaveRoom', 'joinRoom', 'addPopup'].every((name) => typeof app[name] === 'function'));
+    const me = app.user.get('name');
+    const kinds = ['battle', 'chat', 'teambuilder', 'ladder', 'battles'];
+    const rooms = Object.keys(app.rooms)
+      .filter((id) => id && id !== 'rooms')
+      .map((id) => {
+        const room = app.rooms[id];
+        const battle = room.battle;
+        return {
+          id,
+          title: room.title || id,
+          battle: id.startsWith('battle-'),
+          players: battle ? [battle.p1 && battle.p1.name, battle.p2 && battle.p2.name] : [],
+          format: battle ? battle.tier : '',
+          ended: Boolean(battle && battle.ended),
+          kind: kinds.includes(room.type) ? room.type : 'other',
+          turn: battle ? battle.turn : null,
+          unread: Boolean(room.notifications),
+        };
+      });
+    const menu = app.rooms[''];
+    const searching = menu && menu.searching;
+    const state = {
+      me,
+      named: Boolean(app.user.get('named')),
+      menuUnread: Boolean(menu && menu.notifications),
+      rooms,
+      current: app.curRoom ? app.curRoom.id : '',
+      connected: !app.isDisconnected,
+      // "pending" covers the client's short delay between sending the team and /search.
+      search: {
+        pending: Boolean(menu && menu.$('.mainmenu p.cancel').length),
+        formats: (Array.isArray(searching) ? searching : searching ? [searching] : []).map((s) => s.format || s),
+      },
+      popups: app.popups ? app.popups.length : 0,
+      shell: capable,
+    };
+    // The rail replaces the client's tabs, so show one room at a time. This is a runtime
+    // flag only; the user's saved layout preference is left alone.
+    if (capable && !app.singlePanelMode) {
+      app.singlePanelMode = true;
+      app.updateLayout();
+    }
+    setShell(capable);
+    return state;
+  } catch (error) {
+    setShell(false);
+    return null;
   }
-  const me = app.user.get('name');
-  const kinds = ['battle', 'chat', 'teambuilder', 'ladder', 'battles'];
-  const rooms = Object.keys(app.rooms)
-    .filter((id) => id && id !== 'rooms')
-    .map((id) => {
-      const room = app.rooms[id];
-      const battle = room.battle;
-      return {
-        id,
-        title: room.title || id,
-        battle: id.startsWith('battle-'),
-        players: battle ? [battle.p1 && battle.p1.name, battle.p2 && battle.p2.name] : [],
-        format: battle ? battle.tier : '',
-        ended: Boolean(battle && battle.ended),
-        kind: kinds.includes(room.type) ? room.type : 'other',
-        turn: battle ? battle.turn : null,
-        unread: Boolean(room.notifications),
-      };
-    });
-  const menu = app.rooms[''];
-  const searching = menu && menu.searching;
-  return {
-    me,
-    named: Boolean(app.user.get('named')),
-    menuUnread: Boolean(menu && menu.notifications),
-    rooms,
-    current: app.curRoom ? app.curRoom.id : '',
-    connected: !app.isDisconnected,
-    // "pending" covers the client's short delay between sending the team and /search.
-    search: {
-      pending: Boolean(menu && menu.$('.mainmenu p.cancel').length),
-      formats: (Array.isArray(searching) ? searching : searching ? [searching] : []).map((s) => s.format || s),
-    },
-    popups: app.popups ? app.popups.length : 0,
-  };
 }
 
 // The server's /cmd friends response is structured data, unlike the /friends HTML page.
@@ -327,6 +346,7 @@ function sanitizeSession(raw) {
     me: str(raw.me, 40),
     named: Boolean(raw.named),
     menuUnread: Boolean(raw.menuUnread),
+    shell: Boolean(raw.shell),
     connected: Boolean(raw.connected),
     current: typeof raw.current === 'string' && ROOM_ID.test(raw.current) ? raw.current : '',
     search: {
