@@ -44,7 +44,7 @@
     <header class="topbar">
       <h1>Replay notes</h1>
       <div class="topbar-actions">
-        <button class="btn btn-primary" type="button">Add replay</button>
+        <button class="btn" id="add-replay" type="button">Add replay</button>
       </div>
     </header>
 
@@ -52,96 +52,62 @@
       <div class="split">
         <aside class="split-list" aria-label="Saved replays">
           <div class="split-list-tools">
-            <input class="input" type="search" placeholder="Search title, format, notes" aria-label="Search replay notes">
-            <select class="select" aria-label="Format">
-              <option>All formats</option>
-              <option>gen9ou</option>
-              <option>gen9vgc2026</option>
-              <option>gen9randombattle</option>
+            <input class="input" id="replay-search" type="search" placeholder="Search title, format, notes" aria-label="Search replay notes">
+            <select class="select" id="replay-format-filter" aria-label="Filter by format">
+              <option value="">All formats</option>
             </select>
           </div>
-          <div class="split-list-count">5 saved</div>
-          <ul class="split-list-items">
-            <li>
-              <a class="note-item" href="#" aria-current="true">
-                <div class="note-item-title">Lost the Kingambit endgame</div>
-                <div class="note-item-meta"><span class="tag">gen9ou</span><span class="num">8 Nov 2026</span></div>
-                <div class="note-item-snippet">Turn 18: switched out my win condition too early.</div>
-              </a>
-            </li>
-            <li>
-              <a class="note-item" href="#">
-                <div class="note-item-title">Rain mirror vs. top 50</div>
-                <div class="note-item-meta"><span class="tag">gen9ou</span><span class="num">6 Nov 2026</span></div>
-                <div class="note-item-snippet">Lead Pelipper next time; Barraskewda got chipped.</div>
-              </a>
-            </li>
-            <li>
-              <a class="note-item" href="#">
-                <div class="note-item-title">Trick Room timing</div>
-                <div class="note-item-meta"><span class="tag">gen9vgc2026</span><span class="num">2 Nov 2026</span></div>
-                <div class="note-item-snippet">Set TR turn 3, not turn 1.</div>
-              </a>
-            </li>
-            <li>
-              <a class="note-item" href="#">
-                <div class="note-item-title">Scarf Dragapult read</div>
-                <div class="note-item-meta"><span class="tag">gen9ou</span><span class="num">29 Oct 2026</span></div>
-                <div class="note-item-snippet">Don't assume Choice Specs on Dragapult.</div>
-              </a>
-            </li>
-            <li>
-              <a class="note-item" href="#">
-                <div class="note-item-title">Randbats, Chi-Yu sweep</div>
-                <div class="note-item-meta"><span class="tag">gen9randombattle</span><span class="num">21 Oct 2026</span></div>
-                <div class="note-item-snippet">Keep the Assault Vest mon healthy.</div>
-              </a>
-            </li>
-          </ul>
+          <div class="split-list-count num" id="replay-count" aria-live="polite">Loading…</div>
+          <ul class="split-list-items" id="replay-list"></ul>
+          <p class="empty" id="replay-list-empty" hidden></p>
         </aside>
 
         <section class="split-detail" aria-label="Edit replay note">
+          <div class="banner banner--err replay-error" id="replay-error" role="alert" hidden></div>
+          <div class="replay-detail-empty empty" id="replay-detail-empty">Loading replay notes…</div>
+          <div class="replay-editor" id="replay-editor" hidden>
           <div class="split-detail-body">
-            <form class="form">
+            <form class="form" id="replay-form" novalidate>
               <div class="form-row">
                 <div class="field">
                   <label class="field-label" for="note-title">Title</label>
-                  <input class="input" id="note-title" value="Lost the Kingambit endgame" maxlength="120">
-                  <div class="field-hint"><span></span><span class="num">26 / 120</span></div>
+                  <input class="input" id="note-title" maxlength="120" required autocomplete="off" aria-describedby="title-error">
+                  <div class="field-hint"><span class="field-error" id="title-error"></span><span class="num" id="title-count">0 / 120</span></div>
                 </div>
                 <div class="field">
                   <label class="field-label" for="note-format">Format</label>
-                  <input class="input" id="note-format" value="gen9ou" readonly>
+                  <input class="input" id="note-format" maxlength="80" autocomplete="off" aria-describedby="format-error">
+                  <div class="field-error" id="format-error"></div>
                 </div>
               </div>
 
               <div class="field">
                 <label class="field-label" for="note-url">Replay link</label>
-                <input class="input mono" id="note-url" value="https://replay.pokemonshowdown.com/gen9ou-2241871203" readonly>
-                <div class="field-hint"><span>The replay is hosted by Pokémon Showdown. It is not stored on this computer.</span></div>
+                <input class="input mono" id="note-url" type="url" maxlength="300" required autocomplete="off" spellcheck="false" aria-describedby="url-hint url-error">
+                <div class="field-hint"><span id="url-hint">Paste the link from Showdown’s Upload and share replay action. Showdown hosts the replay; only your note is kept here.</span></div>
+                <div class="field-error" id="url-error"></div>
               </div>
 
               <div class="field">
                 <label class="field-label" for="note-body">Notes</label>
-                <textarea class="textarea" id="note-body" maxlength="5000">Turn 18: switched out my win condition too early. Kingambit was at 60% and their Great Tusk was the only check left.
-
-Next time: Sucker Punch on turn 19 wins if they stay in.</textarea>
-                <div class="field-hint"><span>Private. Notes stay on this computer.</span><span class="num">151 / 5000</span></div>
+                <textarea class="textarea" id="note-body" maxlength="5000"></textarea>
+                <div class="field-hint"><span>Notes stay on this computer.</span><span class="num" id="body-count">0 / 5000</span></div>
               </div>
 
-              <dl class="meta">
-                <dt>Saved</dt><dd class="num">8 Nov 2026, 21:14</dd>
-                <dt>Edited</dt><dd class="num">8 Nov 2026, 21:40</dd>
+              <dl class="meta" id="replay-meta" hidden>
+                <dt>Saved</dt><dd class="num" id="note-created"></dd>
+                <dt>Edited</dt><dd class="num" id="note-updated"></dd>
               </dl>
             </form>
           </div>
 
           <div class="split-detail-foot">
-            <button class="btn btn-danger" type="button">Delete</button>
+            <button class="btn btn-danger" id="delete-note" type="button">Delete…</button>
             <span class="spacer"></span>
-            <span class="faint">Unsaved changes</span>
-            <button class="btn" type="button">Open replay</button>
-            <button class="btn btn-primary" type="button">Save</button>
+            <span class="faint" id="note-status" role="status" aria-live="polite"></span>
+            <button class="btn" id="open-replay" type="button">Open replay</button>
+            <button class="btn btn-primary" id="save-note" type="submit" form="replay-form">Save</button>
+          </div>
           </div>
         </section>
       </div>
@@ -149,5 +115,6 @@ Next time: Sucker Punch on turn 19 wins if they stay in.</textarea>
   </div>
 </div>
 <script src="nav.js"></script>
+<script src="replays.js"></script>
 </body>
 </html>

@@ -12,4 +12,11 @@ contextBridge.exposeInMainWorld('desktop', {
   getSession: () => ipcRenderer.invoke('showdown:session'),
   getShowdown: () => ipcRenderer.invoke('showdown:snapshot'),
   showdown: (action, args = {}) => ipcRenderer.invoke('showdown:action', action, args),
+  getReplayNotes: () => ipcRenderer.invoke('replays:list'),
+  saveReplayNote: (note) => ipcRenderer.invoke('replays:save', note),
+  deleteReplayNote: (id) => ipcRenderer.invoke('replays:delete', id),
+  openReplayNote: (id) => ipcRenderer.invoke('replays:open', id),
+  getReplayDraft: () => ipcRenderer.invoke('replays:draft'),
+  confirmDiscardReplayNote: () => ipcRenderer.invoke('replays:confirm-discard'),
+  setReplayNoteDirty: (dirty) => ipcRenderer.send('replays:dirty', dirty),
 });
