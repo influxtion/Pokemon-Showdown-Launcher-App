@@ -44,6 +44,7 @@
     <header class="topbar">
       <h1>Replay notes</h1>
       <div class="topbar-actions">
+        <a class="btn" id="review-back" href="replays.html" hidden>Back to notes</a>
         <button class="btn" id="undo-import" type="button" hidden title="Undo the last import before editing notes or restarting the app.">Undo import…</button>
         <button class="btn" id="import-replays" type="button" disabled>Import notes…</button>
         <button class="btn" id="export-replays" type="button" disabled title="Export all saved notes and replay links, including private links. Unsaved edits are not included.">Export notes…</button>
@@ -53,6 +54,17 @@
 
     <main class="content content--flush">
       <div class="split">
+        <section class="review-player" id="review-player" aria-label="Replay player" hidden>
+          <div class="review-toolbar">
+            <span class="status status--warn" id="review-status" role="status">Loading replay…</span>
+            <span class="spacer"></span>
+            <button class="btn" id="review-browser" type="button" disabled>Open in browser</button>
+            <button class="btn" id="review-toggle-notes" type="button" aria-expanded="true" aria-controls="review-notes-panel">Hide notes</button>
+            <button class="btn" id="review-reload" type="button" disabled>Reload replay</button>
+          </div>
+          <div class="review-view" id="review-view"><p class="empty" id="review-message">Loading the replay page…</p></div>
+          <p class="review-hint">Showdown hosts this replay. Leaving review stops playback; your note draft is kept.</p>
+        </section>
         <aside class="split-list" aria-label="Saved replays">
           <div class="split-list-tools">
             <input class="input" id="replay-search" type="search" placeholder="Search title, format, notes" aria-label="Search replay notes" title="Search titles, formats and notes (Ctrl+F)" aria-keyshortcuts="Control+f Meta+f">
@@ -65,7 +77,7 @@
           <p class="empty" id="replay-list-empty" hidden></p>
         </aside>
 
-        <section class="split-detail" aria-label="Edit replay note">
+        <section class="split-detail" id="review-notes-panel" aria-label="Edit replay note">
           <div class="banner replay-error" id="export-status" role="status" hidden></div>
           <div class="banner banner--err replay-error" id="replay-error" role="alert" hidden></div>
           <div class="replay-detail-empty empty" id="replay-detail-empty">Loading replay notes…</div>
@@ -109,6 +121,7 @@
             <button class="btn btn-danger" id="delete-note" type="button">Delete…</button>
             <span class="spacer"></span>
             <span class="faint" id="note-status" role="status" aria-live="polite"></span>
+            <button class="btn" id="review-replay" type="button" disabled>Review replay</button>
             <button class="btn" id="open-replay" type="button">Open replay</button>
             <button class="btn btn-primary" id="save-note" type="submit" form="replay-form" title="Save (Ctrl+S)" aria-keyshortcuts="Control+s Meta+s">Save</button>
           </div>
@@ -170,6 +183,7 @@
 </dialog>
 <script src="nav.js"></script>
 <script src="replay-import-ui.js"></script>
+<script src="replay-review-ui.js"></script>
 <script src="replays.js"></script>
 </body>
 </html>

@@ -10,6 +10,7 @@ See the [Windows delivery plan](docs/windows.md#feasibility-and-intended-experie
 for the stages from the current local installer to a public alpha.
 Current priority is finishing features; installer validation and release delivery come last.
 Replay notes now include export, import review, conflict resolution and undo of the last import.
+Saved replays can also be reviewed inside the app beside their notes.
 
 ## Run
 
@@ -47,6 +48,13 @@ link, including its access suffix, for a private replay.
 Search matches titles, formats and note text. Saved replay links cannot be changed. Adding a
 duplicate link offers the existing note without replacing it. **Open replay** explicitly opens
 the saved link in your default browser.
+
+Choose **Review replay** on a saved note to watch the official Showdown replay beside the
+note editor. **Hide notes** gives the player more space; **Reload replay** only reloads that
+replay. Save with the button or Ctrl+S while editing notes. Returning to the notes list or
+another page stops replay playback and keeps your unsaved draft. The live Showdown client
+stays connected, and a newly started player battle still takes priority. **Open in browser**
+remains available for the full replay site. See [Replay review](docs/replay-review.md).
 
 **Export notes…** saves all saved notes to a JSON file you choose, including notes hidden by
 the current search/filter. It preserves titles, note text, timestamps and full replay links,
@@ -114,6 +122,10 @@ in both themes and at two window sizes, including readable damage, preserved typ
 colors, and reachable footer controls. It requires the local Showdex build; it never signs
 in, searches, or challenges.
 The default desktop suite uses simulated sessions instead.
+
+`npm run test:replays:live` is a separate optional guest test of a real public replay. It
+checks upstream playback/pause, the review layout in both themes at both target sizes,
+and view cleanup. It does not sign in, upload, search for opponents or challenge anyone.
 
 ## Windows alpha
 

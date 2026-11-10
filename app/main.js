@@ -10,6 +10,7 @@ const { Settings } = require('./settings');
 const { ShowdownBridge } = require('./showdown');
 const { Replays } = require('./replays');
 const { ReplayImports } = require('./replay-imports');
+const { ReplayReview } = require('./replay-review');
 const { Logger } = require('./logging');
 const { WindowState } = require('./window-state');
 const { ShowdexIntegration, registerShowdexScheme } = require('./showdex-integration');
@@ -22,6 +23,8 @@ let showdexLoadFailed = false;
 
 const RENDERER_DIR = path.join(__dirname, '..', 'renderer');
 const CLIENT_CSS = ['client-theme.css', 'showdex-theme.css']
+  .map((file) => fs.readFileSync(path.join(__dirname, file), 'utf8')).join('\n');
+const REPLAY_CSS = ['client-theme.css', 'replay-theme.css']
   .map((file) => fs.readFileSync(path.join(__dirname, file), 'utf8')).join('\n');
 // Window and view fills shown before pages paint; match --bg-app in each theme.
 const BACKGROUND = { light: '#e6ecf5', dark: '#24304a' };
@@ -37,6 +40,7 @@ let client = null;
 let settings = null;
 let replays = null;
 let replayImports = null;
+let replayReview = null;
 let choosingReplayImport = false;
 let undoingReplayImport = false;
 let replayDirty = false;
@@ -74,6 +78,14 @@ function openExternal(url) {
 function isLauncherFrame(event) {
   return Boolean(win && event.sender === win.webContents &&
     event.senderFrame && event.senderFrame.url.startsWith(RENDERER_URL));
+}
+
+function reviewNoteId(event) {
+  if (!isLauncherFrame(event)) return null;
+  const url = parseUrl(event.senderFrame.url);
+  if (!url || !url.pathname.endsWith('/replays.html')) return null;
+  const id = url.searchParams.get('review');
+  return typeof id === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id) ? id : null;
 }
 
 function toBounds(value) {
@@ -172,6 +184,7 @@ function createWindow() {
   });
 
   const currentWindow = win;
+  replayReview = new ReplayReview({ window: win, css: REPLAY_CSS, background: background() });
   let windowSaveTimer;
   const persistWindow = () => {
     if (!currentWindow.isDestroyed()) windowState.save({
@@ -200,6 +213,7 @@ function createWindow() {
   contents.on('did-start-navigation', (details) => {
     if (details.isMainFrame && !details.isSameDocument) {
       hideClient();
+      replayReview?.close();
     }
   });
 
@@ -226,6 +240,8 @@ function createWindow() {
   win.on('closed', () => {
     clearTimeout(windowSaveTimer);
     if (client && !client.webContents.isDestroyed()) client.webContents.close();
+    replayReview?.close();
+    replayReview = null;
     win = null;
     client = null;
     allowClose = false;
@@ -243,6 +259,28 @@ ipcMain.on('client:show', (event, value) => {
   const view = ensureClient();
   view.setBounds(bounds);
   view.setVisible(true);
+});
+
+ipcMain.handle('review:show', (event, bounds) => {
+  const id = reviewNoteId(event);
+  if (!id) return { ok: false, error: 'This saved replay note is unavailable.' };
+  if (replayReview.status().noteId === id) return replayReview.show(bounds);
+  const note = replays.get(id);
+  if (!note) return { ok: false, error: 'This saved replay note is unavailable.' };
+  hideClient();
+  return replayReview.open(note, bounds);
+});
+
+ipcMain.handle('review:status', (event) => {
+  const id = reviewNoteId(event);
+  if (!id || replayReview.status().noteId !== id) return { ok: false, error: 'This saved replay note is unavailable.' };
+  return replayReview.status();
+});
+
+ipcMain.handle('review:reload', (event) => {
+  const id = reviewNoteId(event);
+  if (!id || replayReview.status().noteId !== id) return { ok: false, error: 'This saved replay note is unavailable.' };
+  return replayReview.reload();
 });
 
 ipcMain.on('client:hide', (event) => {
@@ -573,6 +611,7 @@ ipcMain.handle('settings:set-theme', (event, value) => {
 nativeTheme.on('updated', () => {
   if (win) win.setBackgroundColor(background());
   if (client) client.setBackgroundColor(background());
+  replayReview?.backgroundChanged(background());
 });
 
 app.whenReady().then(async () => {
