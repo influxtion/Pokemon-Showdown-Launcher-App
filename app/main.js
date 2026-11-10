@@ -189,12 +189,15 @@ function createWindow() {
 
   const currentWindow = win;
   replayReview = new ReplayReview({ window: win, css: REPLAY_CSS, background: background() });
-  const practiceRoot = path.join(__dirname, '..', 'vendor', 'laplace', 'dist');
-  practice = new PracticeRuntime({ root: practiceRoot, scripts: path.join(__dirname, '..', 'scripts', 'laplace') });
+  const practiceRoot = app.isPackaged ? path.join(process.resourcesPath, 'practice')
+    : path.join(__dirname, '..', 'vendor', 'laplace', 'dist');
+  const practiceScripts = app.isPackaged ? path.join(process.resourcesPath, 'practice-adapter')
+    : path.join(__dirname, '..', 'scripts', 'laplace');
+  practice = new PracticeRuntime({ root: practiceRoot, scripts: practiceScripts });
   practiceView = new PracticeView({ window: win, root: path.join(practiceRoot, 'client'), css: CLIENT_CSS,
     background: background(), onFailure: token => practice?.clientFailed(token) });
   practice.on('ready', connection => { logger.write('practice-ready'); practiceView?.open(connection); });
-  practice.on('failure', code => logger.write('practice-failed', { start: 1, exited: 2, timeout: 3, client: 4 }[code] || 0));
+  practice.on('failure', code => logger.write('practice-failed', { start: 1, exited: 2, timeout: 3, client: 4, integrity: 5 }[code] || 0));
   practice.on('change', state => { if (state.state === 'failed' || state.state === 'idle') practiceView?.close(); });
   let windowSaveTimer;
   const persistWindow = () => {

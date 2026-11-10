@@ -3,6 +3,18 @@ productName: Showdown Desktop
 directories:
   output: out/windows
 asar: true
+beforePack: scripts/verify-practice-package.js
+afterPack: scripts/verify-practice-package-after.js
+extraResources:
+  - from: vendor/laplace/dist
+    to: practice
+    filter:
+      - '**/*'
+  - from: scripts/laplace
+    to: practice-adapter
+    filter:
+      - server.cjs
+      - runner.py
 files:
   - app/**/*
   - renderer/**/*
@@ -13,6 +25,7 @@ files:
   - '!app/**/*.test.js'
   - '!app/**/tests/**'
 win:
+  signExecutable: false
   target:
     - target: nsis
       arch:

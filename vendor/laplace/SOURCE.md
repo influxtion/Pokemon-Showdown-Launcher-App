@@ -1,32 +1,57 @@
 # Laplace practice development runtime
 
-The runtime under `dist/` is generated and ignored. It is currently a local feasibility build, not a published release asset. No credentials, personal logs, saved games or developer server configuration belong in it.
+The Windows x64 development runtime under `dist/` is generated and ignored. Keep credentials, personal logs, saved games and developer server configuration out of it.
 
 ## Sources
 
 - [Laplace](https://github.com/influxtion/Laplace-Pokemon-Showdown-AI), MIT, revision `8b4173dfdabff12e9228310ba25e3fd2ed5117df`.
 - [Pokémon Showdown server](https://github.com/smogon/pokemon-showdown), MIT, revision `a9caa4cabe89459b00e717a47148d0f67b4451ae` for simulation.
 - [Pokémon Showdown classic client](https://github.com/smogon/pokemon-showdown-client), AGPL-3.0, revision `49b54209ebee54ceb8fff62a5eb5bedf7efcf6dc`. Its build tooling uses server data revision `202b6b385c2536977c60a97bf12d931c2d449586`; this does not replace the simulator.
-- [Python 3.12.10 Windows x64 embeddable runtime](https://www.python.org/downloads/release/python-31210/), PSF license. Archive SHA-256 `4acbed6dd1c744b0376e3b1cf57ce906f9dc9e95e68824584c8099a63025a3c3`.
-- poke-engine 0.0.47 with Gen 9 Terastallization, poke-env 0.15.0, CPU PyTorch and transitive dependencies retain their licenses. The staging script copies distribution metadata and licenses and records each file's hash. Exact measured versions and native binary identity are in `docs/laplace-performance.md`.
+- [Python 3.12.16 Windows x64 standalone build](https://github.com/astral-sh/python-build-standalone/releases/tag/20261026). The archive, exact Windows wheels and their SHA-256 hashes are pinned in [runtime-lock.json](runtime-lock.json). Python and wheel packages retain their supplied metadata and notices.
+- Microsoft Visual C++ v14.51.36247 app-local runtime. The locked [official x64 CRT package](https://download.visualstudio.microsoft.com/download/pr/3984a6ef-2ffc-4c07-962e-bf9e9b862819/24a1c8dba0376d9b008ac2ba430d13c06664fc6f163511fd7866485030e289af/Microsoft.VC.14.51.CRT.Redist.X64.base.vsix) supplies four release CRT DLLs for Python and Torch. The build preserves the package manifest and checks that the DLLs load from the staged Python directory. Distribution is subject to [Microsoft's Visual Studio redistribution terms](https://learn.microsoft.com/en-us/visualstudio/releases/2026/redistribution).
+- Stock poke-engine 0.0.47 is compiled from the locked source distribution with Gen 9 Terastallization enabled and default features disabled. The build records the source, Cargo.lock and produced wheel hashes, along with the compiler, Rust target and maturin version. See [benchmark runtime identity](../../docs/laplace-performance.md#runtime-identity) for the build used in the measurements.
 
 Laplace's model SHA-256 is `502a47a59a6f87786c56b835e972828bc8cbab8e75028b5ddf90b49b8b5d2861`. The bot refuses an unexpected model. No experimental local engine fork is included.
 
-## Build the feasibility runtime
+## Build the development runtime
 
-Use a clean checkout at the pinned Laplace revision with its documented CPU engine environment already built, and a built server at the pinned simulator revision. From this desktop repository:
+Build on Windows x64 with Node.js 24 and npm, Git, `tar`, and `rustup` available on PATH. Select Rust and Cargo **1.96.0** through rustup with one of the supported x64 Windows hosts.
+
+- For `x86_64-pc-windows-gnu`, provide `gcc` on PATH targeting `x86_64-w64-mingw32`. The verified build used MSYS2 GCC 13.2.0.
+- For `x86_64-pc-windows-msvc`, use a configured x64 MSVC build shell with `cl` on PATH. The builder accepts this configuration. The recorded build used GNU.
+
+The first build needs network access to fetch the pinned archives, source revisions and dependencies. The builder bootstraps its own Python and fetches clean pinned source checkouts under `out/`. A local Laplace checkout, developer Python installation and prebuilt server are unnecessary.
+
+From the desktop repository, after installing its npm dependencies, run:
 
 ```powershell
-& '<Laplace checkout>/.venv/Scripts/python.exe' scripts/laplace/stage-runtime.py --source '<Laplace checkout>'
-node scripts/laplace/stage-server.cjs '<Laplace checkout>/server'
-node scripts/laplace/build-client.cjs
-& './vendor/laplace/dist/python/python.exe' -I -B scripts/laplace/runner.py --check
+npm run build:practice
+npm run test:practice
 ```
 
-The staging steps refuse to overwrite an existing Python/server runtime. Preserve prior results before producing another build. The Python staging script copies only tracked Laplace inputs and installed distribution-owned files; it excludes editable-install hooks and interpreter bytecode. It does not copy `.env` or use the ladder CLI.
+The build installs exact CPU dependency wheels by hash, fetches Cargo dependencies against the source lockfile, and compiles the native wheel offline after those dependencies are available. It builds the pinned Showdown simulator and classic client, runs the isolated Python engine and model check, then creates and verifies a v2 manifest with each payload file's size and SHA-256. A verified candidate replaces `dist/`. An earlier runtime is retained under `out/laplace/previous-runtime-*`. Stop a running Practice session before rebuilding.
 
-The client builder records its patches in code: a fixed token-bearing loopback WebSocket and local-only client storage initialization. The adjacent HTML/bootstrap/CSS provide the practice shell. Battle simulation, move controls, rendering, HP bars and type colors remain upstream. Remote requests are limited by the desktop view to official Pokémon artwork. Audio and arbitrary browser navigation are disabled.
+For inspection while an existing runtime is in use, `npm run build:practice -- --stage-only`
+retains a verified `vendor/laplace/pending-*` candidate without replacing `dist/`.
+Failed candidates and temporary bootstrap directories are removed; prior active runtimes are preserved.
+
+The runtime's `sources/` folder retains archives of the pinned Laplace, Showdown simulator,
+classic client and its separate data-generator repositories, plus the top-level builder,
+local adapter scripts, client shell, lock and notices. The engine source distribution and
+other locked download inputs are cached under `out/laplace/`. The installed runtime includes
+only the staged inputs and dependencies, without editable-install hooks or generated interpreter bytecode.
+
+At **Start practice**, the desktop verifies the manifest and exact file inventory in a worker before launching either child process. An incomplete or damaged runtime fails startup with a rebuild message.
+This detects inconsistency and corruption; the local manifest is not a publisher signature.
+
+`scripts/laplace/stage-runtime.py` and `scripts/laplace/stage-server.cjs` are legacy feasibility tools. They copy development inputs and are outside the supported build path.
+
+The client builder records its loopback connection, local storage and practice navigation patches in code. The adjacent HTML, bootstrap and CSS provide the practice shell. Battle simulation, move controls, rendering, HP bars and type colors remain upstream. The desktop view permits official Pokémon artwork. It disables audio and arbitrary browser navigation.
 
 ## Before distribution
 
-The current installer excludes this runtime. Complete a clean reproducible native-engine wheel build and a supported Python security-version refresh, retain all corresponding sources/notices (including the patched AGPL client), and resolve the owner's project/distribution licensing decision before publishing. Copying a working local native extension proves feasibility but does not establish reproducible provenance of its original compiler invocation. Test a relocated runtime, packaged lifecycle, and a clean consumer Windows machine. See `docs/laplace-plan.md` for the remaining acceptance gates.
+Windows test packages include the Practice runtime outside the app archive. The package
+hooks check the staged inputs and then every copied runtime file and adapter. Distribution
+still needs clean consumer Windows testing, review of corresponding source and notices for
+the patched AGPL client and dependencies, and the owner's licensing and signing decisions.
+See the [remaining acceptance gates](../../docs/laplace-plan.md).

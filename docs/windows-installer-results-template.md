@@ -12,6 +12,7 @@ sanitized reports deliberately. Every case starts Not run; no pass is implied by
 | Run type | Fresh install of B / A-to-B upgrade (choose one) |
 | Windows edition, version and OS build / x64 | Not recorded |
 | Hardware or VM / clean snapshot identifier | Not recorded |
+| CPU model / RAM / storage / existing Microsoft C++ runtime | Not recorded |
 | Standard user; no dev tools or prior app/profile | Not verified |
 | Display resolution / scaling / tested window sizes | Not recorded |
 | Network / relevant managed-device restrictions | Not recorded |
@@ -51,6 +52,10 @@ In upgrade runs, B1–B3 need observations from both A and B, as directed by the
 | W4 Theme/scaling/layout | Not run | |
 | W5 Integration status | Not run | |
 | W6 Reboot/persistence | Not run | |
+| P1 Local Practice startup/dependencies | Not run | |
+| P2 Complete local game/rematch/performance | Not run | |
+| P3 Local navigation/Stop/restart/scaling | Not run | |
+| P4 Local process cleanup/reboot | Not run | |
 | B1 Search/battle transition | Not run | |
 | B2 Battle survival/close/reload | Not run | |
 | B3 Challenge/friends | Not run | |

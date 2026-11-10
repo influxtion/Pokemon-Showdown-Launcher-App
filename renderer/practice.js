@@ -31,7 +31,7 @@
       start.disabled = busy || !value.installed || starting || running;
       preset.disabled = busy;
       stop.hidden = !running && !starting;
-      stop.disabled = busy;
+      stop.disabled = busy && !starting;
       next.hidden = !running || !value.battle?.finished;
       next.disabled = busy;
       let text = !value.installed ? 'Runtime not installed' : starting ? 'Starting local engine…' : running ? 'Local engine ready' : value.state === 'failed' ? 'Practice failed' : 'Ready to start';
@@ -40,8 +40,9 @@
       else if (running && value.battle?.finished) text = ({ win: 'You won', loss: 'Laplace won', tie: 'Battle tied' })[value.battle.result] || 'Battle finished';
       else if (running && value.battle?.turn) text = `Turn ${value.battle.turn} · last search ${((value.battle.elapsedMs || 0) / 1000).toFixed(1)}s`;
       if (value.clientError) text = 'Practice client failed';
+      if (value.error && !value.installed) text = 'Runtime needs repair';
       status.textContent = text;
-      status.className = `status status--${value.state === 'failed' ? 'err' : starting ? 'warn' : running ? 'ok' : 'off'}`;
+      status.className = `status status--${value.error || value.clientError ? 'err' : starting ? 'warn' : running ? 'ok' : 'off'}`;
       message.textContent = actionError || value.error || value.clientError || (!value.installed ? 'The local practice runtime is not included in this build.' : starting ? 'Starting the local server and checking the engine. This can take a moment.' : '');
       message.hidden = !message.textContent;
       sync();

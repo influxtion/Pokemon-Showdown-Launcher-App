@@ -1,11 +1,12 @@
 'use strict';
 
-const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const os = require('node:os');
 const { spawn } = require('node:child_process');
 const { EventEmitter } = require('node:events');
+const { inspectRuntime } = require('./practice-manifest');
+const { verifyInWorker } = require('./practice-verification');
 
 const PRESETS = Object.freeze({ quiet: 1, balanced: 2, full: 8 });
 const ERRORS = Object.freeze({
@@ -14,6 +15,7 @@ const ERRORS = Object.freeze({
   exited: 'Practice stopped unexpectedly. Start a new session to try again.',
   timeout: 'Practice took too long to start. Stop and try again.',
   client: 'The local battle client failed. Start a new session to try again.',
+  integrity: 'Practice runtime failed its integrity check. Rebuild or reinstall the practice runtime.',
 });
 
 function childEnvironment(node = false) {
@@ -29,13 +31,15 @@ function childEnvironment(node = false) {
 }
 
 class PracticeRuntime extends EventEmitter {
-  constructor({ root, scripts, node = process.execPath, spawnChild = spawn, timeoutMs = 45000 }) {
+  constructor({ root, scripts, node = process.execPath, spawnChild = spawn, verify = verifyInWorker, timeoutMs = 120000 }) {
     super();
     this.root = root;
     this.scripts = scripts;
     this.node = node;
     this.spawnChild = spawnChild;
     this.timeoutMs = timeoutMs;
+    this.verify = verify;
+    this.verification = null;
     this.children = new Set();
     this.generation = 0;
     this.state = 'idle';
@@ -47,18 +51,19 @@ class PracticeRuntime extends EventEmitter {
   }
 
   installed() {
-    return ['python/python.exe', 'server/dist/server/index.js', 'client/practice-client.html', 'laplace/models/value_net.pt']
-      .every(file => fs.existsSync(path.join(this.root, file)));
+    return inspectRuntime(this.root).ok;
   }
 
   status() {
-    return { installed: this.installed(), state: this.state, error: this.error,
+    const inspection = inspectRuntime(this.root);
+    return { installed: this.installed(), state: this.state,
+      error: this.error || (inspection.code === 'invalid' ? 'Practice runtime needs repair. Rebuild or reinstall it.' : ''),
       preset: this.preset, battle: this.battle };
   }
 
   changed() { this.emit('change', this.status()); }
 
-  start(preset) {
+  async start(preset) {
     if (!Object.hasOwn(PRESETS, preset)) return { ok: false, error: 'Choose a supported computation setting.' };
     if (this.children.size || this.state === 'starting' || this.state === 'ready') {
       return { ok: false, error: 'Stop the current practice session before starting another.' };
@@ -73,6 +78,17 @@ class PracticeRuntime extends EventEmitter {
     this.changed();
     this.timer = setTimeout(() => this.fail('timeout', generation), this.timeoutMs);
     this.timer.unref?.();
+    let result;
+    try {
+      this.verification = this.verify(this.root);
+      result = await this.verification.promise;
+    } catch { result = { ok: false }; }
+    if (generation !== this.generation) return { ok: false, cancelled: true };
+    this.verification = null;
+    if (!result.ok) {
+      this.fail('integrity', generation);
+      return { ok: false, error: ERRORS.integrity };
+    }
     const server = this.launch(this.node, [path.join(this.scripts, 'server.cjs'), '--server-root',
       path.join(this.root, 'server'), '--port', '0', '--token', this.connection.token], true, generation);
     if (server) this.readLines(server, generation, (event) => {
@@ -162,6 +178,8 @@ class PracticeRuntime extends EventEmitter {
 
   stop() {
     ++this.generation;
+    this.verification?.cancel();
+    this.verification = null;
     clearTimeout(this.timer);
     for (const child of this.children) {
       // Both subprocesses are configured without subprocess pools.

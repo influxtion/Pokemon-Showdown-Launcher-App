@@ -177,6 +177,14 @@ def summarize(samples):
             "max": round(max(samples), 3)}
 
 
+def staged_manifest():
+    python = Path(sys.executable).resolve()
+    manifest = python.parents[1] / "manifest.json"
+    if python.parent.name == "python" and manifest.is_file():
+        return manifest
+    return None
+
+
 def run_worker(root, threads, affinity_count, repeats, launch_ns):
     sys.addaudithook(deny_external_sockets)
     process = WindowsProcess()
@@ -191,8 +199,19 @@ def run_worker(root, threads, affinity_count, repeats, launch_ns):
     from poke_env.battle import Move, Pokemon
     from poke_env.player.battle_order import SingleBattleOrder
     agent_import_ms = elapsed_ms(start)
-    if Path(paths.ROOT).resolve() != root or metadata.version("poke-engine") != "0.0.47":
-        raise RuntimeError("Use the requested Laplace checkout and stock poke-engine 0.0.47")
+    imported_root = Path(paths.ROOT).resolve()
+    if imported_root != root:
+        manifest_path = staged_manifest()
+        if not manifest_path or imported_root != manifest_path.parent / "laplace":
+            raise RuntimeError("Use the requested Laplace checkout or staged practice Python")
+        manifest = json.loads(manifest_path.read_bytes())
+        if manifest.get("version") != 2 or manifest.get("laplace", {}).get("revision") != LAPLACE_REVISION:
+            raise RuntimeError("The staged practice runtime does not match the pinned Laplace revision")
+        expected_sets = root / "server" / "data" / "random-battles" / "gen9" / "sets.json"
+        if sha256(Path(paths.RANDBATS_SETS)) != sha256(expected_sets):
+            raise RuntimeError("The staged set sheet differs from the requested checkout")
+    if metadata.version("poke-engine") != "0.0.47":
+        raise RuntimeError("Use stock poke-engine 0.0.47")
     native = next(Path(poke_engine.__file__).parent.glob("*.pyd"))
     engine_binary = native.read_bytes()
     if b"LAPLACE_VALUE_NET" in engine_binary:
@@ -393,15 +412,18 @@ def run_benchmark(args):
         "worlds_per_decision": WORLDS, "milliseconds_per_world": WORLD_MS,
         "warm_repeats_per_scenario": args.repeats, "conditions": [],
     }
+    manifest = staged_manifest()
+    if manifest:
+        report["runtime_manifest_sha256"] = sha256(manifest)
     expected_worlds = {}
     env = os.environ.copy()
-    env.update({"PYTHONHASHSEED": "0", "CUDA_VISIBLE_DEVICES": "-1", "PYTHONNOUSERSITE": "1"})
+    env["CUDA_VISIBLE_DEVICES"] = "-1"
     conditions = [(threads, affinity) for affinity in AFFINITY_COUNTS for threads in THREAD_COUNTS]
     random.Random(37).shuffle(conditions)
     for threads, affinity in conditions:
         print(f"Measuring {threads} thread(s), affinity {affinity or 'unrestricted'}", flush=True)
         command = [
-            sys.executable, "-B", str(Path(__file__).resolve()), "--laplace-root", str(root),
+            sys.executable, "-I", "-B", str(Path(__file__).resolve()), "--laplace-root", str(root),
             "--repeats", str(args.repeats), "--worker", str(threads), str(affinity),
             str(time.perf_counter_ns()),
         ]

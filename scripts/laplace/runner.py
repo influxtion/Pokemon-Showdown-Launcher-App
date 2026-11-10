@@ -80,7 +80,7 @@ def load_runtime(check):
     from laplace.value.net import ValueNet
     from laplace.value.value_features import N_VALUE_FEATURES, featurize
 
-    if version("poke-env") != "0.15.0" or hasattr(poke_engine, "featurize_state"):
+    if version("poke-env") != "0.15.0" or version("poke-engine") != "0.0.47" or hasattr(poke_engine, "featurize_state"):
         raise ValueError("Unsupported engine or client")
     for path in (paths.JOINT_SETS, paths.RANDBATS_STATS, paths.RANDBATS_SETS):
         with open(path, encoding="utf-8") as stream:

@@ -5,6 +5,12 @@ authorized larger feature work before resuming this release plan. A spare
 Windows PC is available for later testing; its Windows version and clean-test setup remain
 to be confirmed. The checklist is retained for that stage, not the next development task.
 
+Local Practice, replay backup/restore and in-app replay review are now implemented.
+The final runtime/package validation is in progress. The new private test package is being
+prepared with local Laplace, including Python, CPU dependencies, Microsoft app-local CRT,
+the simulator and battle client. Showdex distribution remains undecided. No public release
+or clean-machine pass is implied by this source change.
+
 The alpha target is a Windows x64 NSIS installer. The same configuration can also produce an unpacked app for inspection and smoke testing. Neither command installs or publishes the app. The installer is unsigned and uses Electron's default icon until project licensing and release branding are settled.
 
 ## Feasibility and intended experience
@@ -28,11 +34,11 @@ does not prove reliability on other machines or that players will keep using the
 
 - Windows x64 first, with Windows 11 as the initial clean-machine test target. Advertise
   only operating-system versions actually validated with the pinned Electron version.
-- Ship the existing online workspace, replay notes and settings. Aim to include the
+- Ship the existing online workspace, replay notes with backup/review, local Practice and settings. Aim to include the
   optional Showdex integration once its distribution review and packaged tests are complete.
 - Keep the app free, with no launcher account, subscription or new backend service.
 - Use a direct installer download and manual upgrades first. A custom website, store
-  listing, automatic updater, macOS/Linux packages, offline battles and Laplace are later work.
+  listing, automatic updater, macOS/Linux packages and fully offline artwork are later work.
 
 ## Staged plan
 
@@ -163,16 +169,43 @@ npm ci
 npm run check
 npm test
 npm run test:desktop
+npm run build:practice
+npm run test:practice
 npm run pack:win:dir
 npm run smoke:packaged
+npm run smoke:practice-packaged
 npm run pack:win
 ```
 
-The unpacked executable is `out/windows/win-unpacked/Showdown Desktop.exe`. The installer is `out/windows/Showdown Desktop Setup 0.1.0-x64.exe` for version 0.1.0. Both are ignored by Git. The NSIS installer is per-user, creates a Start menu shortcut, and does not create a desktop shortcut. No custom icon or signing certificate is configured.
+The unpacked executable is `out/windows/win-unpacked/Showdown Desktop.exe`. The installer is
+`out/windows/Showdown Desktop Setup 0.2.0-x64.exe` for version 0.2.0. Both are ignored by Git.
+The NSIS installer is per-user, creates a Start menu shortcut, and does not create a desktop
+shortcut. Signing is explicitly disabled for test builds; resource/version editing remains
+enabled. No custom icon is configured.
+
+The Practice builder also requires the pinned Windows toolchain described in
+[runtime sources](../vendor/laplace/SOURCE.md). Players do not need those tools. Generated
+Python, model, server and client files go under `resources/practice`; the two process entry
+points go under `resources/practice-adapter`. Packaging fails if source inputs changed or
+copied runtime bytes differ from the verified candidate.
+
+When signing is introduced, preserve third-party runtime bytes: Electron Builder normally
+signs extra-resource executables during copying. Configure exclusions for locked Python,
+Torch and setuptools executables and do not re-sign locked DLLs. Sign the launcher and
+installer through the chosen release process. The after-pack integrity gate must still pass.
 
 Inspect the built `resources/app.asar` file list before distributing anything. It should contain `app/`, `renderer/`, `package.json`, and Showdex source metadata (`vendor/showdex/LICENSE`, `SOURCE.md`, and a manifest if present). It must not contain `tests/`, `scripts/`, local settings, credentials, `out/`, or `vendor/showdex/dist/`. The generated Showdex runtime stays out of the installer until the owner decides the licensing approach. The packaged UI should report Showdex as not installed, and ordinary Showdown use should still work.
 
-`smoke:packaged` launches only the unpacked executable with a new temporary profile. It also points the child process's Windows app-data environment to that temporary directory. A local proxy target prevents client network access; the script never clicks Battle! or sends a challenge. It checks the Home page, reads settings through the launcher bridge, saves and reads a temporary replay note through IPC, closes only its child process tree, then verifies deletion from that temporary store. It writes `out/packaging-smoke/home.png` and `report.json` with measured startup time, unpacked size, installer size if it already exists, and main-process working set where available. These numbers describe one run on the current machine, not a performance claim. The script does not install the NSIS artifact or test it on a clean Windows machine.
+`smoke:packaged` launches only the unpacked executable with a new temporary profile and a
+system-only PATH. A local proxy blocks the public client. It checks Home, settings and a
+temporary replay-note IPC round trip, then closes the app and cleans its test data.
+`smoke:practice-packaged` also starts a real loopback game, confirms a move, visits Home and
+returns, forfeits, rematches, and verifies both local processes exit normally. It never
+searches or challenges on the public server. Use
+`node scripts/smoke-packaged.js --practice --app-dir=<relocated-directory>` to test a moved
+unpacked build. Reports under `out/packaging-smoke/` measure this host only; any existing
+installer size is labeled separately and is not proof that it matches the tested app.
+Neither smoke installs NSIS or replaces clean-machine verification.
 
 Before handing the installer to testers, verify it on a clean Windows x64 machine, including sign-in persistence, team selection, a real search and battle transition performed by the tester, replay notes, appearance, close confirmation, and uninstall. The unsigned installer may prompt Windows security warnings. Keep release publication and auto-update configuration separate from this alpha build.
 
