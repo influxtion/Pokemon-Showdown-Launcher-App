@@ -9,6 +9,7 @@ require('./profile').configureProfile(app);
 const { Settings } = require('./settings');
 const { ShowdownBridge } = require('./showdown');
 const { Replays } = require('./replays');
+const { ReplayImports } = require('./replay-imports');
 const { Logger } = require('./logging');
 const { WindowState } = require('./window-state');
 const { ShowdexIntegration, registerShowdexScheme } = require('./showdex-integration');
@@ -35,6 +36,9 @@ let win = null;
 let client = null;
 let settings = null;
 let replays = null;
+let replayImports = null;
+let choosingReplayImport = false;
+let undoingReplayImport = false;
 let replayDirty = false;
 let exportingReplays = false;
 let confirmingClose = false;
@@ -342,6 +346,63 @@ ipcMain.handle('replays:delete', async (event, id) => {
   return response === 1 ? replays.delete(id) : { ok: true, cancelled: true };
 });
 
+ipcMain.handle('replays:choose-import', async (event) => {
+  if (!isLauncherFrame(event)) return { ok: false, error: 'Access denied.' };
+  if (choosingReplayImport) return { ok: false, error: 'An import file picker is already open.' };
+  choosingReplayImport = true;
+  try {
+    const result = await dialog.showOpenDialog(win, {
+      title: 'Import replay notes',
+      filters: [{ name: 'Replay notes (JSON)', extensions: ['json'] }],
+      properties: ['openFile'],
+    });
+    if (result.canceled || !result.filePaths?.length || !isLauncherFrame(event)) {
+      return { ok: true, cancelled: true };
+    }
+    return replayImports.previewFile(result.filePaths[0]);
+  } catch {
+    return { ok: false, error: 'Could not open the replay notes file. Try again.' };
+  } finally { choosingReplayImport = false; }
+});
+
+ipcMain.handle('replays:commit-import', (event, token, choices) => {
+  if (!isLauncherFrame(event)) return { ok: false, error: 'Access denied.' };
+  if (maintenance || undoingReplayImport) return { ok: false, error: 'Another operation is in progress.' };
+  if (replayDirty) return { ok: false, error: 'Save your unsaved note before importing. Your changes have been kept.' };
+  return replayImports.commit(token, choices);
+});
+
+ipcMain.handle('replays:cancel-import', (event, token) => {
+  if (!isLauncherFrame(event)) return false;
+  replayImports.cancel(token);
+  return true;
+});
+
+ipcMain.handle('replays:import-status', (event) => {
+  if (!isLauncherFrame(event)) return { ok: false, error: 'Access denied.' };
+  return replayImports.status();
+});
+
+ipcMain.handle('replays:undo-import', async (event) => {
+  if (!isLauncherFrame(event)) return { ok: false, error: 'Access denied.' };
+  if (maintenance || undoingReplayImport) return { ok: false, error: 'Another operation is in progress.' };
+  if (replayDirty) return { ok: false, error: 'Save your unsaved note before undoing an import. Your changes have been kept.' };
+  if (!replayImports.status().canUndo) return { ok: false, error: 'This import can no longer be undone. Notes may have changed or the app was restarted.' };
+  undoingReplayImport = true;
+  try {
+    const { response } = await dialog.showMessageBox(win, {
+      type: 'question', title: 'Undo replay note import', message: 'Undo the last import?',
+      detail: 'Restore your saved notes to exactly how they were before that import. The imported file is kept.',
+      buttons: ['Keep imported notes', 'Undo import'], defaultId: 0, cancelId: 0, noLink: true,
+    });
+    if (response !== 1) return { ok: true, cancelled: true };
+    if (maintenance || replayDirty) return { ok: false, error: 'Notes are being edited. Finish editing before undoing the import.' };
+    return replayImports.undo();
+  } catch {
+    return { ok: false, error: 'Could not undo the import. Your notes were kept.' };
+  } finally { undoingReplayImport = false; }
+});
+
 ipcMain.handle('replays:open', async (event, id) => {
   if (!isLauncherFrame(event)) return { ok: false, error: 'Access denied.' };
   const note = replays.get(id);
@@ -481,6 +542,7 @@ ipcMain.handle('settings:reset', async (event) => {
     // Remove only the launcher's two data files, never the Showdown partition.
     settings.reset();
     fs.rmSync(path.join(app.getPath('userData'), 'replays.json'), { force: true });
+    replayImports.reset();
     fs.rmSync(path.join(app.getPath('userData'), 'window-state.json'), { force: true });
     win.unmaximize();
     const defaultBounds = windowState.load(windowDisplays());
@@ -519,6 +581,7 @@ app.whenReady().then(async () => {
   settings = new Settings(app.getPath('userData'));
   windowState = new WindowState(app.getPath('userData'));
   replays = new Replays(app.getPath('userData'));
+  replayImports = new ReplayImports(replays);
   try {
     showdexBundle = await showdex.registerAssets(electronSession.fromPartition(CLIENT_PARTITION));
   } catch {

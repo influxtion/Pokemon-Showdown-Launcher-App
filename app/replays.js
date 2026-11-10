@@ -3,6 +3,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { randomUUID } = require('node:crypto');
+const { isDeepStrictEqual } = require('node:util');
 
 const MAX_NOTES = 1000;
 const MAX_FILE_BYTES = 8 * 1024 * 1024;
@@ -39,7 +40,7 @@ function validNote(note) {
   if (!note || typeof note !== 'object' || Array.isArray(note)) return false;
   const keys = Object.keys(note).sort();
   if (keys.join(',') !== 'createdAt,format,id,notes,title,updatedAt,url') return false;
-  return UUID.test(note.id) && normalizeReplayUrl(note.url) === note.url &&
+  return typeof note.id === 'string' && UUID.test(note.id) && normalizeReplayUrl(note.url) === note.url &&
     validText(note.title, 120, true) && validText(note.notes, 5000) &&
     typeof note.format === 'string' && FORMAT.test(note.format) &&
     validTimestamp(note.createdAt) && validTimestamp(note.updatedAt) &&
@@ -58,6 +59,19 @@ function validateStore(data) {
     urls.add(note.url);
   }
   return true;
+}
+
+function serializeStore(data) {
+  return JSON.stringify(data, null, 2) + '\n';
+}
+
+function matchesOriginalBytes(data, bytes) {
+  if (!Buffer.isBuffer(bytes) || !validateStore(data)) return false;
+  try {
+    return isDeepStrictEqual(JSON.parse(bytes.toString('utf8')), data);
+  } catch {
+    return false;
+  }
 }
 
 class Replays {
@@ -160,7 +174,7 @@ class Replays {
       if (!relative || (!path.isAbsolute(relative) && relative !== '..' && !relative.startsWith(`..${path.sep}`))) {
         return { ok: false, error: 'Choose a location outside the app data folder.' };
       }
-      const serialized = JSON.stringify(current.data, null, 2) + '\n';
+      const serialized = serializeStore(current.data);
       if (Buffer.byteLength(serialized) > MAX_FILE_BYTES) {
         return { ok: false, error: 'Replay notes export would be too large.' };
       }
@@ -185,8 +199,11 @@ class Replays {
     }
   }
 
-  write(data, previousBytes) {
-    const serialized = JSON.stringify(data, null, 2) + '\n';
+  write(data, previousBytes, originalBytes) {
+    if (originalBytes != null && !matchesOriginalBytes(data, originalBytes)) {
+      return { ok: false, error: 'The previous replay notes are invalid.' };
+    }
+    const serialized = originalBytes ?? serializeStore(data);
     if (Buffer.byteLength(serialized) > MAX_FILE_BYTES) return { ok: false, error: 'Replay notes file would be too large.' };
     let temporary;
     let fd;
@@ -199,9 +216,9 @@ class Replays {
       this.fs.closeSync(fd);
       fd = undefined;
       const check = this.read();
-      if (!check.ok || (previousBytes === null ? check.bytes !== null :
-        !check.bytes || !check.bytes.equals(previousBytes))) {
-        return { ok: false, error: 'Replay notes changed on disk. Reload and try again.' };
+      if (!check.ok) return { ok: false, error: check.error };
+      if (previousBytes === null ? check.bytes !== null : !check.bytes || !check.bytes.equals(previousBytes)) {
+        return { ok: false, stale: true, error: 'Replay notes changed on disk. Reload and try again.' };
       }
       this.fs.renameSync(temporary, this.file);
       temporary = undefined;
@@ -219,4 +236,4 @@ class Replays {
   }
 }
 
-module.exports = { Replays, normalizeReplayUrl };
+module.exports = { Replays, normalizeReplayUrl, validateStore, serializeStore, MAX_NOTES, MAX_FILE_BYTES };

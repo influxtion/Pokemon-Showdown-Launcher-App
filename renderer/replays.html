@@ -44,6 +44,8 @@
     <header class="topbar">
       <h1>Replay notes</h1>
       <div class="topbar-actions">
+        <button class="btn" id="undo-import" type="button" hidden title="Undo the last import before editing notes or restarting the app.">Undo import…</button>
+        <button class="btn" id="import-replays" type="button" disabled>Import notes…</button>
         <button class="btn" id="export-replays" type="button" disabled title="Export all saved notes and replay links, including private links. Unsaved edits are not included.">Export notes…</button>
         <button class="btn" id="add-replay" type="button">Add replay</button>
       </div>
@@ -116,7 +118,58 @@
     </main>
   </div>
 </div>
+<dialog class="replay-import-dialog" id="import-dialog" aria-labelledby="import-heading" aria-describedby="import-description">
+  <header class="import-heading">
+    <h2 id="import-heading">Import replay notes</h2>
+    <p id="import-description">Review the file before importing. Existing notes stay unless you choose to replace a conflicting version.</p>
+    <p class="mono import-filename" id="import-filename"></p>
+    <p class="num" id="import-summary" role="status"></p>
+  </header>
+  <div class="banner banner--err" id="import-error" role="alert" hidden></div>
+  <div class="import-toolbar">
+    <label for="import-filter">Show</label>
+    <select class="select" id="import-filter">
+      <option value="all">All notes</option>
+      <option value="conflict">Conflicts</option>
+      <option value="new">New notes</option>
+      <option value="same">Unchanged</option>
+    </select>
+    <div class="import-bulk" id="import-bulk">
+      <button class="btn" id="import-keep-all" type="button">Keep all existing</button>
+      <button class="btn" id="import-replace-all" type="button">Use all imported</button>
+    </div>
+  </div>
+  <div class="import-workspace">
+    <ul class="split-list-items" id="import-list" aria-label="Notes in the import file"></ul>
+    <section class="import-review" aria-label="Compare note versions">
+      <p class="empty" id="import-empty" hidden>No notes in this view.</p>
+      <div id="import-comparison">
+        <p class="mono import-url" id="import-url"></p>
+        <div class="field" id="import-choice-field">
+          <label class="field-label" for="import-choice">Which version should be kept?</label>
+          <select class="select" id="import-choice">
+            <option value="keep">Keep existing note</option>
+            <option value="replace">Use imported note</option>
+          </select>
+        </div>
+        <p class="faint" id="import-entry-status"></p>
+        <div class="import-versions">
+          <section aria-label="Existing version"><h3>Existing note</h3><div id="import-existing"></div></section>
+          <section aria-label="Imported version"><h3>Imported note</h3><div id="import-incoming"></div></section>
+        </div>
+      </div>
+    </section>
+  </div>
+  <footer class="import-footer">
+    <p id="import-effect" role="status"></p>
+    <div class="import-footer-actions">
+      <button class="btn" id="import-cancel" type="button">Cancel</button>
+      <button class="btn btn-primary" id="import-apply" type="button">Import notes</button>
+    </div>
+  </footer>
+</dialog>
 <script src="nav.js"></script>
+<script src="replay-import-ui.js"></script>
 <script src="replays.js"></script>
 </body>
 </html>

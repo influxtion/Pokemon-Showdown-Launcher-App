@@ -8,8 +8,8 @@ practice is not available yet.
 The goal is an app players can download and install without development tools.
 See the [Windows delivery plan](docs/windows.md#feasibility-and-intended-experience)
 for the stages from the current local installer to a public alpha.
-Current priority is finishing features in small increments; installer validation and
-release delivery come last. The next replay-notes increment is import/restore of exported notes.
+Current priority is finishing features; installer validation and release delivery come last.
+Replay notes now include export, import review, conflict resolution and undo of the last import.
 
 ## Run
 
@@ -52,7 +52,14 @@ the saved link in your default browser.
 the current search/filter. It preserves titles, note text, timestamps and full replay links,
 including private access links. Keep the file private if those links should stay private.
 Unsaved edits are not included; save them first. Export does not download hosted replays or
-change your notes. Import/restore through the app is planned as the next small feature.
+change your notes.
+
+**Import notes…** opens an exported file for review before making changes. New notes are
+added, identical notes are skipped, and conflicts default to keeping the existing version.
+Compare both versions and choose which to keep per note, or apply one choice to all conflicts.
+Notes absent from the file are kept. Save any unsaved edit before applying the import.
+**Undo import…** restores the previous saved notes until they change or the app restarts.
+See [Replay-note backups and restore](docs/replay-backups.md) for the full workflow and limits.
 
 In Replay notes, **Ctrl+F** focuses search, **Escape** clears the focused search, and **Ctrl+S**
 saves the current note. The app also remembers window size, position, and maximized state,
