@@ -5,6 +5,10 @@ A desktop workspace for [Pokémon Showdown](https://play.pokemonshowdown.com/). 
 Early prototype. Replay notes are stored locally. Showdex is an optional pinned integration;
 practice is not available yet.
 
+The goal is an app players can download and install without development tools.
+See the [Windows delivery plan](docs/windows.md#feasibility-and-intended-experience)
+for the stages from the current local installer to a public alpha.
+
 ## Run
 
 Requires Node.js 24.
