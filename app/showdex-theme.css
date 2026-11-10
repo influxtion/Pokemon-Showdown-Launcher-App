@@ -1,0 +1,299 @@
+/* Showdex 1.4.2 chrome. Module/local prefixes are retained by the pinned build;
+   hashes are intentionally omitted. Recheck these selectors on upstream updates.
+   Game colors (types, HP, stats, damage and status) retain their upstream rules. */
+[data-showdex-module] {
+  color: var(--sd-text) !important;
+  font-family: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif !important;
+}
+
+[data-showdex-module]::before {
+  background: var(--sd-app) !important;
+  backdrop-filter: none !important;
+}
+
+[data-showdex-module] [class*="PageContainer-module-content--"],
+[data-showdex-module] button,
+[data-showdex-module] input,
+[data-showdex-module] textarea,
+[data-showdex-module] [class*="-module-"]:not(.fa):not([class*="fa-"]) {
+  font-family: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif !important;
+}
+
+/* User-origin colors alone do not suppress Windows' native button painting. */
+[data-showdex-module] button { appearance: none !important; }
+
+[data-showdex-module] [data-showdex-layout="card"]::before {
+  background: none !important;
+  backdrop-filter: none !important;
+  border-radius: 4px !important;
+}
+
+/* Panels, including settings opened over an in-battle calculator. */
+[data-showdex-module] :is(
+  [class*="Hellodex-module-instancesContent--"],
+  [class*="SettingsPane-module-settingsGroup--"],
+  [class*="PokeMoves-module-container--"],
+  [class*="BattleRecord-module-container--"],
+  [class*="GenField-module-container--"],
+  [class*="Card-module-container--"]
+) {
+  background: var(--sd-panel) !important;
+  color: var(--sd-text) !important;
+  border: 1px solid var(--sd-border) !important;
+  border-radius: 4px !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+
+[data-showdex-module] :is(
+  [class*="SettingsPane-module-container--"],
+  [class*="PatronagePane-module-container--"],
+  [class*="Hellodex-module-footer--"]
+) {
+  background: var(--sd-subtle) !important;
+  color: var(--sd-text) !important;
+  border-color: var(--sd-border) !important;
+  backdrop-filter: none !important;
+  box-shadow: none !important;
+}
+
+/* Compact heading; credits remain accessible without the splash artwork. */
+[data-showdex-module="hellodex"] [class*="Hellodex-module-topContent--"] {
+  flex: 1 1 0 !important;
+  min-height: 0 !important;
+  overflow: auto !important;
+  padding-bottom: 24px !important;
+}
+
+[data-showdex-module="hellodex"] [class*="Hellodex-module-banner--"] {
+  align-items: flex-start !important;
+  padding-top: 16px !important;
+}
+
+[data-showdex-module="hellodex"] [class*="Hellodex-module-extensionName--"] {
+  background: none !important;
+  color: var(--sd-text) !important;
+  font-size: 18px !important;
+  font-weight: 600 !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+  text-shadow: none !important;
+  margin: 0 !important;
+  transition: none !important;
+}
+
+[data-showdex-module="hellodex"] :is(
+  [class*="Hellodex-module-showdexIcon--"],
+  [class*="Hellodex-module-minarexIcon--"],
+  [class*="Hellodex-module-presents--"]
+) { display: none !important; }
+
+[data-showdex-module="hellodex"] [class*="Hellodex-module-authors--"] {
+  order: 1;
+  margin-top: 4px;
+}
+
+[data-showdex-module] :is(
+  [class*="Hellodex-module-authorButton--"],
+  [class*="Hellodex-module-extensionVersion--"],
+  [class*="Hellodex-module-emptyLabel--"],
+  [class*="Hellodex-module-donateFootnote--"]
+) {
+  color: var(--sd-text-2) !important;
+  opacity: 1 !important;
+  backdrop-filter: none !important;
+}
+
+[data-showdex-module] :is(
+  [class*="Hellodex-module-authorButton--"],
+  [class*="Hellodex-module-authorButton--"] *,
+  [class*="SettingsPane-module-title--"],
+  [class*="SettingsPane-module-settingsGroupTitle--"]
+) {
+  text-transform: none !important;
+  letter-spacing: normal !important;
+}
+
+/* Only chrome buttons: do not blanket-style type/status or Pokémon controls. */
+[data-showdex-module] :is(
+  [class*="GradientButton-module-container--"],
+  [class*="InstanceButton-module-container--"],
+  [class*="ToggleButton-module-container--"]
+) {
+  background: var(--sd-panel) !important;
+  color: var(--sd-accent) !important;
+  border: 1px solid var(--sd-border-strong) !important;
+  border-radius: 3px !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+  text-transform: none !important;
+}
+
+[data-showdex-module] :is(
+  [class*="GradientButton-module-container--"],
+  [class*="InstanceButton-module-container--"],
+  [class*="ToggleButton-module-container--"]
+):hover { background: var(--sd-hover) !important; }
+
+[data-showdex-module] [class*="GradientButton-module-container--"]::before,
+[data-showdex-module] [class*="GradientButton-module-container--"]::after {
+  background: none !important;
+  box-shadow: none !important;
+}
+
+[data-showdex-module] [class*="GradientButton-module-container--"],
+[data-showdex-module] [class*="GradientButton-module-container--"] * {
+  color: inherit !important;
+  -webkit-text-fill-color: currentColor !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+  text-shadow: none !important;
+}
+
+[data-showdex-module] [class*="GradientButton-module-container--"] {
+  color: var(--sd-accent) !important;
+  min-height: 28px !important;
+  padding: 4px 12px !important;
+  font-size: 13px !important;
+}
+
+[data-showdex-module] [class*="ToggleButton-module-active--"] {
+  background: var(--sd-hover) !important;
+  color: var(--sd-accent) !important;
+  border-color: var(--sd-accent) !important;
+}
+
+[data-showdex-module] :is(
+  [class*="FooterButton-module-container--"],
+  [class*="Hellodex-module-settingsButton--"],
+  [class*="Hellodex-module-linkButton--"],
+  [class*="SettingsPane-module-actionButton--"],
+  [class*="SettingsPane-module-settingsGroupTitle--"],
+  [class*="SettingsPane-module-customFieldLabel--"],
+  [class*="Segmented-module-label--"],
+  [class*="Switch-module-field--"]
+) { color: var(--sd-text) !important; }
+
+/* Neutral calculator labels; colored nature modifiers and warnings are excluded. */
+[data-showdex-module] [class*="PokeMoves-module-damageButtonLabel--"] {
+  color: var(--sd-text) !important;
+}
+
+[data-showdex-module] :is(
+  [class*="FieldCalc-module-label--"],
+  [class*="PokeInfo-module-label--"],
+  [class*="PokeInfo-module-level--"],
+  [class*="PokeInfo-module-hpPercentage--"],
+  [class*="PokeMoves-module-label--"],
+  [class*="PokeStats-module-boostModButtonLabel--"],
+  [class*="TableGrid-module-header--"],
+  [class*="PokeStats-module-valueField--"][class*="PokeStats-module-disabled--"],
+  [class*="InlineField-module-container--"],
+  [class*="GenField-module-label--"],
+  [class*="GenField-module-subLabel--"],
+  [class*="BattleRecord-module-recordValue--"],
+  [class*="BattleRecord-module-recordLabel--"],
+  [class*="InstanceButton-module-icon--"],
+  [class*="InstanceButton-module-honkName--"],
+  [class*="InstanceButton-module-format--"]
+):not([class*="PokeStats-module-up--"]):not([class*="PokeStats-module-down--"]):not([class*="PokeStats-module-warning--"]) {
+  color: var(--sd-text-2) !important;
+}
+
+[data-showdex-module] [class*="FooterButton-module-label--"] {
+  text-transform: none !important;
+  letter-spacing: normal !important;
+}
+
+[data-showdex-module] [class*="SideControls-module-container--"] {
+  border: 1px solid var(--sd-border-strong) !important;
+  border-radius: 3px !important;
+}
+[data-showdex-module] [class*="SideControls-module-sideLabel--"] {
+  background: var(--sd-subtle) !important;
+  color: var(--sd-text-2) !important;
+  border-radius: 3px 0 0 3px !important;
+}
+[data-showdex-module] [class*="InlineField-module-container--"]::before {
+  border-radius: 3px !important;
+  box-shadow: none !important;
+}
+
+[data-showdex-module] :is(
+  [class*="Hellodex-module-settingsButton--"],
+  [class*="SettingsPane-module-settingsIcon--"]
+) { transform: none !important; transition: none !important; }
+
+/* Select menus keep type icons/colored annotations intact. */
+[data-showdex-module] :is(
+  [class*="Dropdown-module-selectContainer--"],
+  [class*="Dropdown-module-menu--"],
+  [class*="TextField-module-container--"]
+) {
+  background: var(--sd-input) !important;
+  color: var(--sd-text) !important;
+  border: 1px solid var(--sd-border-strong) !important;
+  border-radius: 3px !important;
+  box-shadow: none !important;
+}
+
+[data-showdex-module] :is(
+  [class*="Dropdown-module-singleValue--"]:not([style*="color"]),
+  [class*="Dropdown-module-input--"],
+  [class*="Dropdown-module-optionRow--"],
+  [class*="Dropdown-module-option--"]
+) {
+  color: var(--sd-text) !important;
+}
+
+[data-showdex-module] [class*="Dropdown-module-option--"] { background: var(--sd-input) !important; }
+[data-showdex-module] [class*="Dropdown-module-option--"]:is(
+  :hover, [class*="Dropdown-module-focused--"], [class*="Dropdown-module-selected--"]
+) {
+  background: var(--sd-hover) !important;
+}
+
+[data-showdex-module] :is(
+  [class*="Dropdown-module-placeholder--"],
+  [class*="Dropdown-module-indicator--"],
+  [class*="Dropdown-module-groupHeading--"]
+) {
+  color: var(--sd-text-2) !important;
+}
+
+[data-showdex-module] [class*="Switch-module-backdrop--"] {
+  box-shadow: none !important;
+  border: 1px solid var(--sd-border-strong) !important;
+}
+[data-showdex-module] [class*="Switch-module-innerBackdrop--"] { background: var(--sd-input) !important; }
+[data-showdex-module] [class*="Switch-module-selected--"] [class*="Switch-module-innerBackdrop--"] {
+  background: var(--sd-accent) !important;
+}
+[data-showdex-module] [class*="Switch-module-handle--"] {
+  background: var(--sd-text) !important;
+  box-shadow: none !important;
+}
+
+[data-showdex-module] :is(button, input, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--sd-accent) !important;
+  outline-offset: 1px !important;
+}
+
+/* Tippy portals live outside the module root; this prefix belongs only to Showdex. */
+[class*="Tooltip-module-container--"] {
+  background: var(--sd-panel) !important;
+  color: var(--sd-text) !important;
+  border: 1px solid var(--sd-border-strong) !important;
+  border-radius: 4px !important;
+  box-shadow: none !important;
+  font-family: "Segoe UI", system-ui, sans-serif !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-showdex-module] *,
+  [data-showdex-module] *::before,
+  [data-showdex-module] *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}

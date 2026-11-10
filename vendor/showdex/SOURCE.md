@@ -20,6 +20,13 @@ The desktop patch reports `loaded` only when Showdex has created and rendered
 the classic client's Hellodex room. It reports `failed` when that check or
 startup fails. The app currently embeds Showdown's classic client.
 
+`app/showdex-theme.css` is a separate desktop stylesheet injected alongside the
+client theme at user origin. It follows the desktop color preference and overrides
+Showdex chrome only. Selectors use upstream data attributes and the module/local
+prefixes retained by this pinned build, without depending on generated hashes.
+Recheck these selectors and both calculator themes when updating Showdex. This
+stylesheet does not change the generated bundle or the asset manifest.
+
 The pinned build inputs are `BUILD_DATE=1A000000000`,
 `UUID_STANDALONE_NAMESPACE=4f7f1e80-1008-4f00-a7c1-113311331133`,
 `STANDALONE_RESOURCE_PROTOCOL=showdex`, and

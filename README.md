@@ -85,8 +85,15 @@ rendered its room; a failed integration leaves ordinary Showdown play available.
 runs inside the sandboxed client without Node or the launcher preload. It downloads public
 competitive data from upstream services.
 
+Showdex panels follow the desktop Appearance setting (cobalt light or steel-blue dark).
+The desktop stylesheet flattens its chrome while preserving Pokémon type, HP, stat,
+and damage colors. Calculator behavior stays upstream.
+
 `npm run test:showdex:live` is an optional network-dependent smoke test with a temporary guest
-profile. It requires the local Showdex build; it never signs in, searches, or challenges.
+profile. It checks Hellodex, settings, and a populated standalone Honkdex calculator
+in both themes and at two window sizes, including readable damage, preserved type
+colors, and reachable footer controls. It requires the local Showdex build; it never signs
+in, searches, or challenges.
 The default desktop suite uses simulated sessions instead.
 
 ## Windows alpha
