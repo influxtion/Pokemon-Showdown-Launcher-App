@@ -80,5 +80,15 @@ competitive data from upstream services.
 profile. It requires the local Showdex build; it never signs in, searches, or challenges.
 The default desktop suite uses simulated sessions instead.
 
-Packaging and the project's own licensing remain pending. The Showdex license is preserved;
-it does not choose a license for the rest of this project.
+## Windows alpha
+
+```sh
+npm run pack:win:dir
+npm run smoke:packaged
+npm run pack:win
+```
+
+The unsigned x64 installer is written to `out/windows/`. The packaged app excludes the optional
+Showdex runtime while distribution licensing remains undecided. See [Windows packaging](docs/windows.md)
+for installation behavior, isolated smoke checks, measurements, and outstanding clean-machine testing.
+Nothing is automatically published. The project's own license remains undecided.

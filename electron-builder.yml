@@ -1,0 +1,25 @@
+appId: com.influxtion.showdowndesktop
+productName: Showdown Desktop
+directories:
+  output: out/windows
+asar: true
+files:
+  - app/**/*
+  - renderer/**/*
+  - vendor/showdex/LICENSE
+  - vendor/showdex/SOURCE.md
+  - vendor/showdex/manifest.json
+  - '!vendor/showdex/dist/**'
+  - '!app/**/*.test.js'
+  - '!app/**/tests/**'
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+nsis:
+  oneClick: true
+  perMachine: false
+  createDesktopShortcut: false
+  createStartMenuShortcut: true
+  artifactName: Showdown Desktop Setup ${version}-${arch}.${ext}
