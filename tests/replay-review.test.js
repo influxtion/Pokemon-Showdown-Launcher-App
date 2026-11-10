@@ -79,7 +79,8 @@ test('creates one isolated view on valid saved-note open and shows it only after
   assert.deepEqual(review.open(NOTE, BOUNDS), { ok: true, state: 'loading', error: '', noteId: NOTE.id });
   const [view] = views;
   assert.deepEqual(view.options.webPreferences, {
-    partition: 'replay-review', sandbox: true, contextIsolation: true, nodeIntegration: false,
+    partition: 'replay-review', sandbox: true, contextIsolation: true,
+    nodeIntegration: false, backgroundThrottling: false,
   });
   assert.equal(view.visible, false);
   assert.equal(view.webContents.url, NOTE.url);
