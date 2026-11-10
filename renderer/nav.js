@@ -36,18 +36,48 @@
     }
   }
 
-  // Battles already known when this page loaded. Only a battle that appears later, with
-  // the user as a player, means a search or challenge just turned into a game.
+  // Keep the baseline across launcher pages; a battle can start during navigation.
   let known = null;
+  let knownMe = '';
+  const knownKey = 'showdown.knownRooms';
+
+  function savedRooms(me) {
+    try {
+      const saved = JSON.parse(sessionStorage.getItem(knownKey));
+      if (saved && saved.me === me && Array.isArray(saved.ids)) {
+        return new Set(saved.ids.filter((id) => typeof id === 'string'));
+      }
+    } catch {}
+    return null;
+  }
+
+  function saveRooms(me) {
+    try {
+      sessionStorage.setItem(knownKey, JSON.stringify({ me, ids: [...known].slice(-100) }));
+    } catch {}
+  }
 
   function battleStarted(session) {
     const mine = session.rooms.filter((r) => r.battle && !r.ended && session.me && r.players.includes(session.me));
-    if (known === null) {
-      known = new Set(session.rooms.map((r) => r.id));
-      return false;
+    if (known === null || knownMe !== session.me) {
+      knownMe = session.me;
+      known = savedRooms(knownMe);
+      if (known === null) {
+        // An unresolved battle can have been created just before this first poll.
+        known = new Set(session.rooms
+          .filter((r) => !r.battle || r.ended || (r.players.length === 2 && r.players.every(Boolean)))
+          .map((r) => r.id));
+        saveRooms(knownMe);
+        return false;
+      }
     }
     const started = mine.some((r) => !known.has(r.id));
-    session.rooms.forEach((r) => known.add(r.id));
+    // A battle room is created before its player names arrive. Wait to classify it
+    // so an early poll cannot suppress the later player match.
+    session.rooms.forEach((r) => {
+      if (!r.battle || r.ended || (r.players.length === 2 && r.players.every(Boolean))) known.add(r.id);
+    });
+    saveRooms(knownMe);
     return started;
   }
 

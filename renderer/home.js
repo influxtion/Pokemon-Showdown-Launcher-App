@@ -25,6 +25,10 @@ const els = {
 };
 
 let state = { ready: false };
+// Session polling is the freshest source for connection state. Until the first
+// usable session arrives, show loading rather than claiming the socket is lost.
+let sessionReady = false;
+let sessionConnected = false;
 let formatsKey = '';
 let teamsKey = '';
 let searching = false;
@@ -195,7 +199,7 @@ function renderHero() {
   els.teamName.textContent = format && format.presetTeam ? 'Random team' : team ? team.name || 'Untitled team' : 'No team selected';
 
   const needsTeam = format && !format.presetTeam && !team;
-  els.battle.disabled = searching || !format || !state.connected;
+  els.battle.disabled = searching || !format || !sessionReady || !sessionConnected;
   if (searching && !searchSince) searchSince = Date.now();
   if (!searching) searchSince = 0;
   els.battle.classList.toggle('is-searching', searching);
@@ -209,7 +213,10 @@ function renderHero() {
   els.format.disabled = searching || !state.formats.length;
   if (searching) els.challengeForm.hidden = true;
   els.challengeToggle.hidden = searching || !els.challengeForm.hidden;
-  els.challengeToggle.disabled = !format || !state.connected;
+  els.challengeToggle.disabled = !format || !sessionReady || !sessionConnected;
+  els.challengeUser.disabled = !sessionReady || !sessionConnected;
+  const challengeSubmit = els.challengeForm.querySelector('[type="submit"]');
+  if (challengeSubmit) challengeSubmit.disabled = !sessionReady || !sessionConnected;
 }
 
 function renderNews() {
@@ -248,9 +255,12 @@ function renderRooms() {
 }
 
 function renderAccount() {
-  if (!state.connected) {
+  if (!sessionReady) {
     els.account.className = 'status status--warn';
-    els.account.textContent = 'Reconnecting to Showdown…';
+    els.account.textContent = 'Connecting to Showdown…';
+  } else if (!sessionConnected) {
+    els.account.className = 'status status--warn';
+    els.account.textContent = 'Connection lost. Reconnecting…';
   } else if (state.user.registered) {
     els.account.className = 'status status--ok';
     els.account.textContent = `Signed in as ${state.user.name}`;
@@ -321,6 +331,7 @@ els.team.addEventListener('change', () => {
 });
 
 els.battle.addEventListener('click', () => {
+  if (!sessionReady || !sessionConnected) return;
   const format = currentFormat();
   if (!format) return;
   const team = selectedTeam();
@@ -339,6 +350,7 @@ els.battle.addEventListener('click', () => {
 });
 
 els.challengeToggle.addEventListener('click', () => {
+  if (!sessionReady || !sessionConnected) return;
   els.challengeToggle.hidden = true;
   els.challengeForm.hidden = false;
   els.challengeUser.focus();
@@ -351,6 +363,7 @@ $('challenge-cancel').addEventListener('click', () => {
 
 els.challengeForm.addEventListener('submit', (event) => {
   event.preventDefault();
+  if (!sessionReady || !sessionConnected) return;
   const user = els.challengeUser.value.trim();
   const format = currentFormat();
   if (user && format) act('challenge', { user, format: format.id });
@@ -367,6 +380,12 @@ document.addEventListener('click', (event) => {
 let liveBattle = null;
 document.addEventListener('showdown-session', (event) => {
   const session = event.detail;
+  sessionReady = Boolean(session.ready);
+  sessionConnected = Boolean(session.ready && session.connected);
+  if (state.ready) {
+    renderAccount();
+    renderHero();
+  }
   // Search state comes from the client, so it stays right across pages and restarts.
   const active = Boolean(session.search && (session.search.pending || session.search.formats.length > 0));
   if (session.ready) {

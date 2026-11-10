@@ -9,6 +9,8 @@
   },
   "scripts": {
     "start": "electron .",
+    "test": "node --test tests/*.test.js",
+    "test:desktop": "node scripts/test-desktop.js",
     "check": "node --check app/main.js && node --check app/preload.js && node --check app/settings.js && node --check app/showdown.js && node --check renderer/home.js && node --check renderer/nav.js && node --check renderer/play.js && node --check renderer/settings.js"
   },
   "devDependencies": {

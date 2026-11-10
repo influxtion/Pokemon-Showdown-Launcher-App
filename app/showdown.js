@@ -87,6 +87,7 @@ function readSession() {
     me,
     rooms,
     current: app.curRoom ? app.curRoom.id : '',
+    connected: !app.isDisconnected,
     // "pending" covers the client's short delay between sending the team and /search.
     search: {
       pending: Boolean(menu && menu.$('.mainmenu p.cancel').length),
@@ -105,6 +106,11 @@ function search(format, teamIndex) {
   if (!$form.length) return false;
   $form.find('button[name=format]').replaceWith(menu.renderFormats(format));
   $form.find('button[name=team]').replaceWith(menu.renderTeams(format, teamIndex));
+  // renderTeams coerces an empty index to 0. Preserve "no team selected" so
+  // the client's own search handler can show its missing-team prompt.
+  if (teamIndex === null && !BattleFormats[format].team) {
+    $form.find('button[name=team]').val('');
+  }
   const popups = app.popups.length;
   menu.search(null, $form.find('button.big')[0]);
   // A popup means the client needs the user (login, missing team) before it can search.
@@ -149,6 +155,7 @@ function str(value, max) {
 }
 
 function count(value) {
+  if ((typeof value !== 'number' && typeof value !== 'string') || value === '') return null;
   const n = Number(value);
   return Number.isFinite(n) && n >= 0 ? Math.floor(n) : null;
 }
@@ -206,6 +213,7 @@ function sanitizeSession(raw) {
   return {
     ready: true,
     me: str(raw.me, 40),
+    connected: Boolean(raw.connected),
     current: typeof raw.current === 'string' && ROOM_ID.test(raw.current) ? raw.current : '',
     search: {
       pending: Boolean(raw.search && raw.search.pending),
@@ -282,9 +290,9 @@ class ShowdownBridge {
     let code;
     switch (action) {
       case 'search': {
-        const team = args.team === null ? '' : count(args.team);
-        if (!isId(args.format) || team === null) return false;
-        code = call(search, args.format, String(team));
+        const team = args.team === null ? null : args.team;
+        if (!isId(args.format) || (team !== null && (!Number.isSafeInteger(team) || team < 0 || team > 9999))) return false;
+        code = call(search, args.format, team);
         break;
       }
       case 'challenge': {

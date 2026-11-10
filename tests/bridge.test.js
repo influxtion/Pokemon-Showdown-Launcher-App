@@ -1,0 +1,140 @@
+'use strict';
+
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const vm = require('node:vm');
+const Module = require('node:module');
+const path = require('node:path');
+
+const bridgeFile = path.join(__dirname, '..', 'app', 'showdown.js');
+const originalLoad = Module._load;
+let ShowdownBridge;
+try {
+  Module._load = function (request, parent, isMain) {
+    if (request === 'electron') return { net: { fetch: () => { throw new Error('unexpected network request'); } } };
+    return originalLoad.call(this, request, parent, isMain);
+  };
+  ({ ShowdownBridge } = require(bridgeFile));
+} finally {
+  Module._load = originalLoad;
+}
+
+function fakeContents(result = true) {
+  const codes = [];
+  return {
+    codes,
+    isLoading: () => false,
+    executeJavaScript: async (code) => {
+      codes.push(code);
+      return typeof result === 'function' ? result(code) : result;
+    },
+  };
+}
+
+test('snapshot bounds untrusted client data and rejects malformed fields', async () => {
+  const raw = {
+    ready: true,
+    connected: 1,
+    user: { name: 'x'.repeat(100), userid: 'bad/id', registered: false },
+    counts: { users: -2, battles: '7.9' },
+    currentFormat: 'bad format',
+    formats: [null, { id: 'gen9ou', name: 'n'.repeat(100), section: 'Singles', presetTeam: 1 }, { id: 'bad/id' }],
+    teams: [null, { index: 2, name: 'Team', format: 'gen9ou', sprites: ['sprites/home-centered/pikachu', 'https://evil.example/a', '../pikachu'] }],
+    news: [null, { id: '123', date: 123, title: 'News', text: 't'.repeat(500) }],
+    rooms: [null, { title: 'Lobby', users: '18', desc: 'd'.repeat(300) }],
+  };
+  const contents = fakeContents(raw);
+  const state = await new ShowdownBridge(() => contents).snapshot();
+  assert.equal(state.ready, true);
+  assert.equal(state.connected, true);
+  assert.equal(state.user.name.length, 40);
+  assert.equal(state.user.userid, '');
+  assert.deepEqual(state.counts, { users: null, battles: 7 });
+  assert.equal(state.currentFormat, '');
+  assert.equal(state.formats.length, 1);
+  assert.equal(state.formats[0].name.length, 80);
+  assert.equal(state.teams.length, 1);
+  assert.deepEqual(state.teams[0].sprites, ['https://play.pokemonshowdown.com/sprites/home-centered/pikachu.png', null, null]);
+  assert.equal(state.news[1].text.length, 400);
+  assert.equal(state.rooms[1].desc.length, 200);
+});
+
+test('snapshot and session survive malformed client results', async () => {
+  const contents = fakeContents(null);
+  const bridge = new ShowdownBridge(() => contents);
+  assert.deepEqual(await bridge.snapshot(), { ready: false });
+  assert.deepEqual(await bridge.session(), { ready: false, rooms: [] });
+  contents.executeJavaScript = async () => { throw new Error('remote script failed'); };
+  assert.deepEqual(await bridge.snapshot(), { ready: false });
+  assert.deepEqual(await bridge.session(), { ready: false, rooms: [] });
+});
+
+test('session reads connection state and sanitizes room data', async () => {
+  const app = {
+    isDisconnected: true,
+    user: { get: (key) => key === 'name' ? 'Player' : '' },
+    rooms: {
+      '': { searching: [{ format: 'gen9ou' }], $: () => ({ length: 1 }) },
+      'battle-gen9ou-1': { title: 'Battle', battle: { p1: { name: 'Player' }, p2: { name: 'Rival' }, tier: 'Gen 9 OU', ended: false } },
+    },
+    curRoom: { id: 'battle-gen9ou-1' },
+    popups: [{}],
+  };
+  const contents = fakeContents((code) => vm.runInNewContext(code, { window: { app }, app }));
+  const state = await new ShowdownBridge(() => contents).session();
+  assert.equal(state.ready, true);
+  assert.equal(state.connected, false);
+  assert.equal(state.search.pending, true);
+  assert.deepEqual(Array.from(state.search.formats), ['gen9ou']);
+  assert.equal(state.rooms[0].id, 'battle-gen9ou-1');
+  assert.deepEqual(Array.from(state.rooms[0].players), ['Player', 'Rival']);
+
+  contents.executeJavaScript = async () => ({ rooms: [null, { id: 'bad/room' }, { id: 'battle-1', players: ['p'.repeat(100), 44], title: 'x'.repeat(100) }], current: 'bad/room', search: { formats: ['ok', 'bad/id'] }, popups: -1 });
+  const cleaned = await new ShowdownBridge(() => contents).session();
+  assert.equal(cleaned.connected, false);
+  assert.equal(cleaned.current, '');
+  assert.equal(cleaned.rooms.length, 1);
+  assert.deepEqual(cleaned.rooms[0].players, ['p'.repeat(40), '']);
+  assert.deepEqual(cleaned.search.formats, ['ok']);
+  assert.equal(cleaned.popups, 0);
+});
+
+test('only allowlisted actions with valid arguments reach the client', async () => {
+  const contents = fakeContents(true);
+  const bridge = new ShowdownBridge(() => contents);
+  assert.equal(await bridge.act('send', { text: '/forfeit' }), false);
+  assert.equal(await bridge.act('search', { format: 'gen9ou', team: -1 }), false);
+  assert.equal(await bridge.act('search', { format: 'gen9ou', team: 1.5 }), false);
+  assert.equal(await bridge.act('search', { format: 'gen9ou', team: '0' }), false);
+  assert.equal(await bridge.act('search', { format: 'bad/id', team: null }), false);
+  assert.equal(await bridge.act('challenge', { user: 'A\nB', format: 'gen9ou' }), false);
+  assert.equal(await bridge.act('challenge', { user: 'Rival', format: 'bad/id' }), false);
+  assert.equal(await bridge.act('join', { room: 'battle-1);app.send("/forfeit")' }), false);
+  assert.equal(contents.codes.length, 0);
+  assert.equal(await bridge.act('challenge', { user: 'Rival', format: 'gen9ou' }), true);
+  assert.match(contents.codes[0], /\("Rival", "gen9ou"\)$/);
+  assert.equal(await bridge.act('search', { format: 'gen9ou', team: null }), true);
+  assert.match(contents.codes[1], /\("gen9ou", null\)$/);
+});
+
+test('missing team stays empty when the old client renders its team control', async () => {
+  const teamButton = { value: '0' };
+  const form = {
+    length: 1,
+    find(selector) {
+      if (selector === 'button[name=team]') return { replaceWith: () => {}, val: (value) => { if (value !== undefined) teamButton.value = value; return teamButton.value; } };
+      if (selector === 'button[name=format]') return { replaceWith: () => {} };
+      if (selector === 'button.big') return [{ id: 'battle' }];
+      return null;
+    },
+  };
+  const menu = {
+    $: () => ({ closest: () => form }),
+    renderFormats: () => '<button name="format">Gen 9 OU</button>',
+    renderTeams: () => '<button name="team" value="0">Team</button>',
+    search: () => { assert.equal(teamButton.value, ''); },
+  };
+  const app = { rooms: { '': menu }, focusRoom: () => {}, popups: [] };
+  const contents = fakeContents((code) => vm.runInNewContext(code, { app, BattleFormats: { gen9ou: { team: false } } }));
+  assert.equal(await new ShowdownBridge(() => contents).act('search', { format: 'gen9ou', team: null }), true);
+});
