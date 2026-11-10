@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Practice · Showdown Desktop</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="app">
+  <nav class="rail" aria-label="Main">
+    <div class="rail-brand">Showdown Desktop</div>
+    <div class="rail-nav">
+      <a class="nav-item" href="index.html">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M2.5 7.5 8 3l5.5 4.5V13H10V9.5H6V13H2.5z"/></svg>
+        Home
+      </a>
+      <a class="nav-item" href="play.html" data-nav="showdown">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M5 3.5v9l7-4.5z"/></svg>
+        <span class="nav-label">Showdown</span>
+        <span class="nav-hint"></span>
+      </a>
+      <a class="nav-item" href="replays.html">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M4 2.5h8v11l-4-3-4 3z"/></svg>
+        Replay notes
+      </a>
+      <a class="nav-item" href="practice.html" aria-current="page">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="5.5"/><circle cx="8" cy="8" r="2"/></svg>
+        Practice
+        
+      </a>
+      <a class="nav-item" href="settings.html">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2.5 4.5h3M8.5 4.5h5M2.5 11.5h7M12.5 11.5h1"/><circle cx="7" cy="4.5" r="1.5"/><circle cx="11" cy="11.5" r="1.5"/></svg>
+        Settings
+      </a>
+    </div>
+    <div class="rail-foot">
+      <span>v0.1.0-dev</span>
+    </div>
+  </nav>
+
+  <div class="main">
+    <header class="topbar">
+      <h1>Practice</h1>
+      <span class="faint">Local Gen 9 Random Battle</span>
+      <div class="topbar-actions">
+        <span class="status status--off" id="practice-status" role="status">Checking runtime…</span>
+        <button class="btn" id="practice-next" hidden>New battle</button>
+        <button class="btn" id="practice-stop" hidden>Stop practice…</button>
+      </div>
+    </header>
+    <main class="content content--flush practice-content">
+      <section class="practice-setup panel" id="practice-setup">
+        <div class="panel-head">Play against Laplace</div>
+        <div class="panel-body">
+          <p>Practice with generated teams on a server running on this computer. Your online Showdown account is separate.</p>
+          <div class="field">
+            <label class="field-label" for="practice-preset">Computation</label>
+            <select class="select" id="practice-preset">
+              <option value="quiet">Quiet · 1 search thread</option>
+              <option value="balanced">Balanced · 2 search threads</option>
+              <option value="full" selected>Full · 8 search threads</option>
+            </select>
+            <div class="field-hint">All settings use the same trained model and search time. More threads use more CPU; these are not Elo ratings.</div>
+          </div>
+          <p class="faint">The engine and battle server run locally. Pokémon artwork needs an internet connection.</p>
+          <button class="btn btn-primary" id="practice-start" disabled>Start practice</button>
+        </div>
+      </section>
+      <div class="banner banner--bar banner--warn" id="practice-message" role="status" hidden></div>
+      <div class="client-view practice-area" id="practice-area" hidden>Starting local battle client…</div>
+    </main>
+  </div>
+</div>
+<script src="nav.js"></script>
+<script src="practice.js"></script>
+</body>
+</html>

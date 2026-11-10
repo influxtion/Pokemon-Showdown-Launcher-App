@@ -102,3 +102,12 @@
   refresh();
   setInterval(refresh, 2000);
 })();
+
+(() => {
+  const status = document.getElementById('practice-integration-status');
+  if (!status) return;
+  window.desktop.getPractice().then(value => {
+    status.textContent = !value.installed ? 'Not installed' : value.state === 'ready' ? 'Running locally' : value.state === 'starting' ? 'Starting…' : value.state === 'failed' ? 'Failed' : 'Installed';
+    status.className = `status status--${value.state === 'failed' ? 'err' : value.state === 'ready' ? 'ok' : value.state === 'starting' ? 'warn' : 'off'}`;
+  }).catch(() => { status.textContent = 'Status unavailable'; });
+})();

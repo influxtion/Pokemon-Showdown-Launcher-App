@@ -3,7 +3,7 @@
 A desktop workspace for [Pokémon Showdown](https://play.pokemonshowdown.com/). It wraps the official client in a compact window that keeps your session, and adds space for tools and replay notes.
 
 Early prototype. Replay notes are stored locally. Showdex is an optional pinned integration;
-practice is not available yet.
+local Laplace practice has an optional development runtime.
 
 The goal is an app players can download and install without development tools.
 See the [Windows delivery plan](docs/windows.md#feasibility-and-intended-experience)
@@ -126,6 +126,25 @@ The default desktop suite uses simulated sessions instead.
 `npm run test:replays:live` is a separate optional guest test of a real public replay. It
 checks upstream playback/pause, the review layout in both themes at both target sizes,
 and view cleanup. It does not sign in, upload, search for opponents or challenge anyone.
+
+## Local practice
+
+Practice runs Gen 9 Random Battle against Laplace on a separate loopback server. It never
+uses your online account. Choose a computation setting and **Start practice**. The full
+upstream search setting is the default; quieter options use fewer search threads. These
+are computation settings, not Elo ratings. Navigation keeps both local and online games
+loaded, and **Stop practice…** ends the local session and its processes.
+
+The optional Windows development runtime is staged separately; see
+[runtime sources and build instructions](vendor/laplace/SOURCE.md). It includes Python,
+the CPU engine/model, a server and the classic battle client. No developer Python is
+needed to run a staged build. Artwork still loads from the official Showdown image host.
+This runtime is not yet included in the installer or ready for public distribution.
+
+`npm run test:practice` exercises a real local battle through the desktop with an isolated
+profile and the public battle client blocked. See the [performance measurements](docs/laplace-performance.md),
+[local comparison pilot](docs/laplace-pilot.md), and [remaining implementation gates](docs/laplace-plan.md).
+The current measurements do not establish budget-PC performance or public-ladder Elo.
 
 ## Windows alpha
 
