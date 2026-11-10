@@ -54,10 +54,10 @@
 
     <main class="content content--flush">
       <div class="client-frame">
-        <!-- Shown only while disconnected; collapses to nothing otherwise. -->
-        <div class="banner banner--warn banner--bar" hidden>
-          Connection to Showdown lost. Reconnecting…
-          <button class="btn" type="button">Retry now</button>
+        <!-- Loading and disconnected states come from nav.js session updates. -->
+        <div class="banner banner--warn banner--bar" id="connection-banner" role="status" aria-live="polite">
+          <span id="connection-message">Connecting to Showdown…</span>
+          <button class="btn" type="button" id="connection-retry" hidden>Reload client</button>
         </div>
         <div class="client-view">
           Loading Pokémon Showdown…
@@ -66,7 +66,7 @@
     </main>
   </div>
 </div>
-<script src="nav.js"></script>
 <script src="play.js"></script>
+<script src="nav.js"></script>
 </body>
 </html>
