@@ -1,7 +1,7 @@
 # Windows app delivery plan and packaging
 
-**Priority update — November 10, 2026:** the owner wants installer work last. Continue
-feature work in small, verified increments before resuming this release plan. A spare
+**Priority update — November 10, 2026:** the owner wants installer work last and has
+authorized larger feature work before resuming this release plan. A spare
 Windows PC is available for later testing; its Windows version and clean-test setup remain
 to be confirmed. The checklist is retained for that stage, not the next development task.
 

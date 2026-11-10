@@ -22,6 +22,8 @@
   let pending = false;
   let baseline = null;
   let dirty = false;
+  let loaded = false;
+  let imports = null;
 
   const resultError = (result, fallback) =>
     result && typeof result.error === 'string' && result.error ? result.error : fallback;
@@ -70,8 +72,9 @@
     ui.open.disabled = value || !selectedId;
     ui.add.disabled = value;
     ui.export.disabled = value || !notes.length;
+    imports?.setBusy(value);
     if (value) setStatus(action);
-    else updateDirty();
+    else if (editing) updateDirty();
   };
   const storeDraft = () => {
     try {
@@ -87,6 +90,7 @@
     }
     storeDraft();
     if (desktop && typeof desktop.setReplayNoteDirty === 'function') desktop.setReplayNoteDirty(dirty);
+    imports?.setBusy(pending);
     if (!pending) setStatus(dirty ? 'Unsaved changes' : (selectedId ? 'Saved' : ''));
     ui.titleCount.textContent = `${ui.title.value.length} / 120`;
     ui.bodyCount.textContent = `${ui.body.value.length} / 5000`;
@@ -128,8 +132,8 @@
     ui.urlError.textContent = '';
     setError('');
     baseline = original
-      ? { id: original.id, title: original.title, format: original.format,
-          url: original.url, notes: original.notes }
+      ? { id: original.id, title: original.title.replace(/[\r\n]/g, ''), format: original.format,
+          url: original.url, notes: original.notes.replace(/\r\n?/g, '\n') }
       : { id: null, title: '', format: '', url: '', notes: '' };
     updateDirty();
     renderList();
@@ -258,6 +262,7 @@
       renderFormats();
       showEditor(result.note, result.note);
       setStatus('Saved');
+      await imports.refreshUndo();
     } catch (error) {
       setError(error.message || 'Could not save the note.');
     } finally { setPending(false); }
@@ -275,6 +280,7 @@
       renderFormats();
       if (notes.length) showEditor(notes[0], notes[0]);
       else showEmpty('No replay notes yet. Choose Add replay to start.');
+      await imports.refreshUndo();
     } catch (error) { setError(error.message || 'Could not delete the note.'); }
     finally { setPending(false); }
   };
@@ -338,6 +344,8 @@
       else showEmpty('No replay notes yet. Choose Add replay to start.');
       renderList();
       if (draftError) setError(draftError);
+      loaded = true;
+      await imports.refreshUndo();
     } catch (error) {
       ui.count.textContent = 'Could not load';
       ui.listEmpty.hidden = false;
@@ -352,6 +360,21 @@
     }
   };
 
+  imports = new window.ReplayImportUI({
+    call, isReady: () => loaded, isDirty: () => dirty, isBusy: () => pending, setBusy: setPending, showError: setError,
+    onApplied(result, message) {
+      notes = result.notes.sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)));
+      const selected = notes.find((note) => note.id === selectedId) || notes[0];
+      ui.search.value = '';
+      ui.filter.value = '';
+      renderFormats();
+      if (selected) showEditor(selected, selected);
+      else showEmpty('No replay notes yet. Choose Add replay or Import notes to start.');
+      ui.exportStatus.textContent = message;
+      ui.exportStatus.hidden = false;
+    },
+  });
+
   ui.add.addEventListener('click', () => addReplay());
   ui.export.addEventListener('click', exportNotes);
   ui.search.addEventListener('input', renderList);
@@ -360,6 +383,7 @@
   ui.delete.addEventListener('click', remove);
   ui.open.addEventListener('click', openReplay);
   document.addEventListener('keydown', (event) => {
+    if (document.getElementById('import-dialog').open) return;
     if (event.isComposing || event.altKey) return;
     const command = event.ctrlKey || event.metaKey;
     if (command && event.key.toLowerCase() === 'f') {
