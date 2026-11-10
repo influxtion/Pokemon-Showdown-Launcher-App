@@ -44,6 +44,7 @@
     <header class="topbar">
       <h1>Replay notes</h1>
       <div class="topbar-actions">
+        <button class="btn" id="export-replays" type="button" disabled title="Export all saved notes and replay links, including private links. Unsaved edits are not included.">Export notes…</button>
         <button class="btn" id="add-replay" type="button">Add replay</button>
       </div>
     </header>
@@ -63,6 +64,7 @@
         </aside>
 
         <section class="split-detail" aria-label="Edit replay note">
+          <div class="banner replay-error" id="export-status" role="status" hidden></div>
           <div class="banner banner--err replay-error" id="replay-error" role="alert" hidden></div>
           <div class="replay-detail-empty empty" id="replay-detail-empty">Loading replay notes…</div>
           <div class="replay-editor" id="replay-editor" hidden>
@@ -91,7 +93,7 @@
               <div class="field">
                 <label class="field-label" for="note-body">Notes</label>
                 <textarea class="textarea" id="note-body" maxlength="5000"></textarea>
-                <div class="field-hint"><span>Notes stay on this computer.</span><span class="num" id="body-count">0 / 5000</span></div>
+                <div class="field-hint"><span>Notes stay on this computer. Exports include private replay links.</span><span class="num" id="body-count">0 / 5000</span></div>
               </div>
 
               <dl class="meta" id="replay-meta" hidden>

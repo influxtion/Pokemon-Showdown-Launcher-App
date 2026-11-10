@@ -8,6 +8,8 @@ const path = require('node:path');
 const { app, BrowserWindow, dialog, session, shell } = require('electron');
 
 const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'showdown-replays-test-'));
+const exportDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'showdown-replay-export-test-'));
+const exportFile = path.join(exportDirectory, 'notes.json');
 const storeFile = path.join(profile, 'replays.json');
 const rendererDir = path.join(__dirname, '..', 'renderer');
 const captures = path.join(__dirname, '..', 'out', 'desktop-smoke');
@@ -33,6 +35,14 @@ app.whenReady().then(async () => {
   const opened = [];
   const dialogs = [];
   let dialogResponse = 0;
+  const saveDialogs = [];
+  let exportResult = { canceled: true };
+  let exportDialogFails = false;
+  dialog.showSaveDialog = async (_window, options) => {
+    saveDialogs.push(options);
+    if (exportDialogFails) throw new Error('injected dialog failure');
+    return exportResult;
+  };
   shell.openExternal = async (url) => { opened.push(url); };
   dialog.showMessageBox = async (_window, options) => {
     dialogs.push(options);
@@ -82,6 +92,7 @@ app.whenReady().then(async () => {
   await load('replays.html');
   await until(() => run("document.getElementById('replay-list-empty').hidden === false"), 'empty replay notes');
   assert.equal((await notes()).length, 0);
+  assert.equal(await run("document.getElementById('export-replays').disabled"), true);
   assert.equal(opened.length, 0);
 
   await add('First private replay', privateUrl, 'gen9ou', 'Pivot on turn 12.');
@@ -113,6 +124,44 @@ app.whenReady().then(async () => {
   assert.equal(await run("document.getElementById('replay-list').children.length"), 0);
   await run("document.activeElement.dispatchEvent(new KeyboardEvent('keydown', {key:'Escape',bubbles:true,cancelable:true}))");
   assert.equal(await run("document.getElementById('replay-list').children.length"), 2);
+
+  // Export all saved notes, even while filtering and editing an unsaved draft.
+  await fill('replay-search', 'Random battle');
+  await fill('note-body', 'Unsaved export draft');
+  const beforeExport = fs.readFileSync(storeFile);
+  const beforeDraft = await run("sessionStorage.getItem('replayNote.editorDraft')");
+  await click('export-replays');
+  await until(() => run("!document.getElementById('export-replays').disabled"), 'cancelled export');
+  assert.equal(saveDialogs.length, 1);
+  assert.equal(fs.existsSync(exportFile), false);
+  assert.equal(await run("document.getElementById('export-status').hidden"), true);
+  exportResult = { canceled: false, filePath: exportFile };
+  await click('export-replays');
+  await until(() => run("!document.getElementById('export-status').hidden"), 'export success');
+  assert.deepEqual(JSON.parse(fs.readFileSync(exportFile)), JSON.parse(beforeExport));
+  assert.equal(JSON.parse(fs.readFileSync(exportFile)).notes.length, 2);
+  assert.match(await run("document.getElementById('export-status').textContent"), /Unsaved changes were not included/);
+  assert.equal(await run("sessionStorage.getItem('replayNote.editorDraft')"), beforeDraft);
+  assert.equal(await run("document.getElementById('note-status').textContent"), 'Unsaved changes');
+  assert.equal(saveDialogs[1].filters[0].extensions[0], 'json');
+  assert.equal(saveDialogs[1].properties.includes('showOverwriteConfirmation'), true);
+
+  exportResult = { canceled: false, filePath: storeFile };
+  await click('export-replays');
+  await until(() => run("document.getElementById('replay-error').textContent.includes('outside the app data')"), 'profile export refused');
+  exportResult = { canceled: false, filePath: path.join(exportDirectory, 'missing', 'notes.json') };
+  await click('export-replays');
+  await until(() => run("document.getElementById('replay-error').textContent.includes('writable location')"), 'export write failure');
+  assert.deepEqual(fs.readFileSync(storeFile), beforeExport);
+  assert.deepEqual(JSON.parse(fs.readFileSync(exportFile)), JSON.parse(beforeExport));
+  assert.equal(await run("sessionStorage.getItem('replayNote.editorDraft')"), beforeDraft);
+  exportDialogFails = true;
+  assert.equal((await run('window.desktop.exportReplayNotes()')).ok, false);
+  exportDialogFails = false;
+  exportResult = { canceled: true };
+  assert.deepEqual(await run('window.desktop.exportReplayNotes()'), { ok: true, cancelled: true });
+  await fill('note-body', 'Early switch was risky.');
+  await fill('replay-search', '');
 
   // The Play action opens a fresh editor when no battle is current, even with notes saved.
   await load('play.html');
@@ -255,8 +304,12 @@ app.whenReady().then(async () => {
   const failedSave = await run(`window.desktop.saveReplayNote({title:'Repair?',url:${JSON.stringify(privateUrl)},notes:'',format:'gen9ou'})`);
   assert.equal(failedSave.ok, false);
   assert.equal(fs.readFileSync(storeFile, 'utf8'), corrupted);
+  const saveDialogsBeforeCorruptExport = saveDialogs.length;
+  assert.equal((await run('window.desktop.exportReplayNotes()')).ok, false);
+  assert.equal(saveDialogs.length, saveDialogsBeforeCorruptExport, 'invalid store blocks export before dialog');
 
-  console.log('PASS replay desktop smoke: CRUD, drafts, Home link, search/filter, private URL, dedup, dialogs, save failure, corrupt store, themes/layout');
+  fs.rmSync(exportDirectory, { recursive: true, force: true });
+  console.log('PASS replay desktop smoke: CRUD, drafts, export/cancel/failures, Home link, search/filter, private URL, dedup, dialogs, save failure, corrupt store, themes/layout');
   app.exit(0);
 }).catch((error) => {
   console.error(error);

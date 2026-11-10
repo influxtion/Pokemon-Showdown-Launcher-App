@@ -8,6 +8,8 @@ practice is not available yet.
 The goal is an app players can download and install without development tools.
 See the [Windows delivery plan](docs/windows.md#feasibility-and-intended-experience)
 for the stages from the current local installer to a public alpha.
+Current priority is finishing features in small increments; installer validation and
+release delivery come last. The next replay-notes increment is import/restore of exported notes.
 
 ## Run
 
@@ -45,6 +47,12 @@ link, including its access suffix, for a private replay.
 Search matches titles, formats and note text. Saved replay links cannot be changed. Adding a
 duplicate link offers the existing note without replacing it. **Open replay** explicitly opens
 the saved link in your default browser.
+
+**Export notes…** saves all saved notes to a JSON file you choose, including notes hidden by
+the current search/filter. It preserves titles, note text, timestamps and full replay links,
+including private access links. Keep the file private if those links should stay private.
+Unsaved edits are not included; save them first. Export does not download hosted replays or
+change your notes. Import/restore through the app is planned as the next small feature.
 
 In Replay notes, **Ctrl+F** focuses search, **Escape** clears the focused search, and **Ctrl+S**
 saves the current note. The app also remembers window size, position, and maximized state,
