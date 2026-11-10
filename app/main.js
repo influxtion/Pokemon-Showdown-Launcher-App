@@ -3,9 +3,10 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
-const { app, BrowserWindow, WebContentsView, Menu, ipcMain, nativeTheme, shell } = require('electron');
+const { app, BrowserWindow, WebContentsView, Menu, ipcMain, nativeTheme, shell, dialog } = require('electron');
 const { Settings } = require('./settings');
 const { ShowdownBridge } = require('./showdown');
+const { Replays } = require('./replays');
 
 const RENDERER_DIR = path.join(__dirname, '..', 'renderer');
 const CLIENT_CSS = fs.readFileSync(path.join(__dirname, 'client-theme.css'), 'utf8');
@@ -21,6 +22,9 @@ const POPUP_HOSTS = new Set(['accounts.google.com']);
 let win = null;
 let client = null;
 let settings = null;
+let replays = null;
+let replayDirty = false;
+let confirmingClose = false;
 const bridge = new ShowdownBridge(() => (client ? client.webContents : null));
 
 function background() {
@@ -145,7 +149,22 @@ function createWindow() {
   });
   // Every launcher page change hides the client; play.html shows it again with fresh bounds.
   contents.on('did-start-navigation', (details) => {
-    if (details.isMainFrame && !details.isSameDocument) hideClient();
+    if (details.isMainFrame && !details.isSameDocument) {
+      hideClient();
+    }
+  });
+
+  win.on('close', (event) => {
+    if (!replayDirty) return;
+    event.preventDefault();
+    if (confirmingClose) return;
+    confirmingClose = true;
+    confirmDiscardReplay().then((discard) => {
+      if (discard && win) {
+        replayDirty = false;
+        win.close();
+      }
+    }).catch(() => {}).finally(() => { confirmingClose = false; });
   });
 
   win.once('ready-to-show', () => win.show());
@@ -189,6 +208,73 @@ ipcMain.handle('showdown:action', (event, action, args) => {
   return bridge.act(action, args);
 });
 
+async function confirmDiscardReplay() {
+  const { response } = await dialog.showMessageBox(win, {
+    type: 'question', title: 'Unsaved replay note',
+    message: 'Discard unsaved changes?',
+    detail: 'Changes to this replay note have not been saved.',
+    buttons: ['Keep editing', 'Discard changes'], defaultId: 0, cancelId: 0,
+    noLink: true,
+  });
+  return response === 1;
+}
+
+ipcMain.handle('replays:list', (event) => {
+  if (!isLauncherFrame(event)) return { ok: false, error: 'Access denied.' };
+  return replays.list();
+});
+
+ipcMain.handle('replays:save', (event, value) => {
+  if (!isLauncherFrame(event)) return { ok: false, error: 'Access denied.' };
+  return replays.save(value);
+});
+
+ipcMain.handle('replays:delete', async (event, id) => {
+  if (!isLauncherFrame(event)) return { ok: false, error: 'Access denied.' };
+  if (!replays.get(id)) return { ok: false, error: 'Replay note not found.' };
+  const { response } = await dialog.showMessageBox(win, {
+    type: 'question', title: 'Delete replay note', message: 'Delete this replay note?',
+    detail: 'The local note will be deleted. The replay hosted by Showdown is kept. This cannot be undone.',
+    buttons: ['Cancel', 'Delete note'], defaultId: 0, cancelId: 0, noLink: true,
+  });
+  return response === 1 ? replays.delete(id) : { ok: true, cancelled: true };
+});
+
+ipcMain.handle('replays:open', async (event, id) => {
+  if (!isLauncherFrame(event)) return { ok: false, error: 'Access denied.' };
+  const note = replays.get(id);
+  if (!note) return { ok: false, error: 'Replay note not found.' };
+  try {
+    await shell.openExternal(note.url);
+    return { ok: true };
+  } catch {
+    return { ok: false, error: 'Failed to open the replay in your browser.' };
+  }
+});
+
+ipcMain.handle('replays:confirm-discard', (event) => {
+  return isLauncherFrame(event) ? confirmDiscardReplay() : false;
+});
+
+ipcMain.on('replays:dirty', (event, dirty) => {
+  if (isLauncherFrame(event) && new URL(event.senderFrame.url).pathname.endsWith('/replays.html') && typeof dirty === 'boolean') {
+    replayDirty = dirty;
+  }
+});
+
+ipcMain.handle('replays:draft', async (event) => {
+  if (!isLauncherFrame(event)) return { ok: false, error: 'Access denied.' };
+  const session = await bridge.session();
+  const battle = session.ready && session.rooms.find((room) => room.id === session.current && room.battle);
+  if (!battle) return { ok: true, draft: null };
+  // A room ID is not proof that a replay has been uploaded, and lacks private tokens.
+  return { ok: true, draft: {
+    title: (battle.players.filter(Boolean).join(' vs. ') || battle.title).slice(0, 120),
+    format: /^battle-([a-z0-9]+)-\d+/.exec(battle.id)?.[1] || '',
+    url: '',
+  } };
+});
+
 ipcMain.handle('settings:get-theme', (event) => {
   if (!isLauncherFrame(event)) return null;
   return settings.get('theme');
@@ -212,6 +298,7 @@ nativeTheme.on('updated', () => {
 
 app.whenReady().then(() => {
   settings = new Settings(app.getPath('userData'));
+  replays = new Replays(app.getPath('userData'));
   nativeTheme.themeSource = settings.get('theme');
   Menu.setApplicationMenu(null);
   createWindow();

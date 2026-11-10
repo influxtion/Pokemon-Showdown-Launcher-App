@@ -420,3 +420,23 @@ $('live-battle-return').addEventListener('click', () => {
 });
 
 refresh();
+
+async function loadRecentReplays() {
+  try {
+    const result = await window.desktop.getReplayNotes();
+    if (!result.ok || !result.notes.length) return;
+    const recent = [...result.notes].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).slice(0, 3);
+    $('recent-replays').replaceChildren(...recent.map((note) => {
+      const link = el('a', 'note-item');
+      link.href = `replays.html?id=${encodeURIComponent(note.id)}`;
+      link.append(el('div', 'note-item-title', note.title));
+      const meta = el('div', 'note-item-meta');
+      meta.append(el('span', 'tag', note.format), el('span', 'num', new Date(note.updatedAt).toLocaleDateString()));
+      link.append(meta);
+      return link;
+    }));
+    $('recent-replays-section').hidden = false;
+  } catch {}
+}
+
+loadRecentReplays();
