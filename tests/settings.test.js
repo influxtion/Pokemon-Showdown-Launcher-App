@@ -24,6 +24,8 @@ test('defaults, validation and all settings persist across restarts', (t) => {
   assert.equal(settings.set('theme', 'purple'), false);
   assert.equal(settings.set('startPage', 'settings'), false);
   assert.equal(settings.set('confirmOnClose', 'false'), false);
+  assert.equal(settings.set('showdexEnabled', 'true'), false);
+  assert.equal(settings.set('showdexEnabled', undefined), false);
   assert.equal(settings.set('unknown', undefined), false);
   assert.equal(settings.set('theme', undefined), false);
   assert.equal(settings.set('__proto__', {}), false);
@@ -33,8 +35,9 @@ test('defaults, validation and all settings persist across restarts', (t) => {
   assert.equal(settings.set('theme', 'dark'), true);
   assert.equal(settings.set('startPage', 'replays'), true);
   assert.equal(settings.set('confirmOnClose', false), true);
-  assert.deepEqual(new Settings(dir).snapshot(), { theme: 'dark', startPage: 'replays', confirmOnClose: false });
-  assert.deepEqual(disk(dir), { theme: 'dark', startPage: 'replays', confirmOnClose: false });
+  assert.equal(settings.set('showdexEnabled', true), true);
+  assert.deepEqual(new Settings(dir).snapshot(), { theme: 'dark', startPage: 'replays', confirmOnClose: false, showdexEnabled: true });
+  assert.deepEqual(disk(dir), { theme: 'dark', startPage: 'replays', confirmOnClose: false, showdexEnabled: true });
   const snapshot = settings.snapshot();
   snapshot.theme = 'light';
   assert.equal(settings.get('theme'), 'dark');
@@ -44,7 +47,7 @@ test('legacy theme-only settings gain new defaults and reset persists defaults',
   const dir = fixture(t);
   fs.writeFileSync(path.join(dir, 'settings.json'), '{"theme":"light"}');
   const settings = new Settings(dir);
-  assert.deepEqual(settings.snapshot(), { theme: 'light', startPage: 'home', confirmOnClose: true });
+  assert.deepEqual(settings.snapshot(), { theme: 'light', startPage: 'home', confirmOnClose: true, showdexEnabled: false });
   assert.deepEqual(settings.reset(), DEFAULTS);
   assert.deepEqual(disk(dir), DEFAULTS);
 });
@@ -78,7 +81,7 @@ test('failed write or rename preserves previous settings on disk and in memory',
     const settings = new Settings(dir, fileSystem);
     assert.throws(() => settings.set('theme', 'light'), /failed/);
     assert.equal(settings.get('theme'), 'dark');
-    assert.deepEqual(disk(dir), { theme: 'dark', startPage: 'home', confirmOnClose: true });
+    assert.deepEqual(disk(dir), { theme: 'dark', startPage: 'home', confirmOnClose: true, showdexEnabled: false });
     assert.equal(fs.readdirSync(dir).some((file) => file.includes('.tmp-')), false);
   }
 });

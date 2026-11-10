@@ -8,6 +8,7 @@ contextBridge.exposeInMainWorld('desktop', {
   hideClient: () => ipcRenderer.send('client:hide'),
   reloadClient: () => ipcRenderer.invoke('client:reload'),
   getSettings: () => ipcRenderer.invoke('settings:get'),
+  getShowdex: () => ipcRenderer.invoke('showdex:status'),
   setSetting: (key, value) => ipcRenderer.invoke('settings:set', key, value),
   openLogs: () => ipcRenderer.invoke('settings:open-logs'),
   signOutShowdown: () => ipcRenderer.invoke('settings:sign-out'),

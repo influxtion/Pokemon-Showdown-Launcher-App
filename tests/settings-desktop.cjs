@@ -5,7 +5,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const { app, BrowserWindow, dialog, session, shell } = require('electron');
+const { app, BrowserWindow, dialog, ipcMain, session, shell } = require('electron');
 
 const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'showdown-settings-desktop-'));
 const rendererDir = path.join(__dirname, '..', 'renderer');
@@ -14,7 +14,7 @@ const settingsFile = path.join(profile, 'settings.json');
 const replayFile = path.join(profile, 'replays.json');
 const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-fs.writeFileSync(settingsFile, JSON.stringify({ theme: 'system', startPage: 'replays', confirmOnClose: true }));
+fs.writeFileSync(settingsFile, JSON.stringify({ theme: 'system', startPage: 'replays', confirmOnClose: true, showdexEnabled: false }));
 fs.writeFileSync(fixtureFile, `<!doctype html><html><body><script>
 window.app = {
   rooms: { '': { searching: false, $: () => ({ length: 0 }) } },
@@ -79,7 +79,7 @@ app.whenReady().then(async () => {
   await load('settings.html');
   await until(() => run("document.getElementById('start-page').value === 'replays'"), 'Settings loaded');
   assert.equal(await run("document.getElementById('confirm-on-close').checked"), true);
-  for (const id of ['theme', 'start-page', 'confirm-on-close', 'reload-client', 'open-logs', 'sign-out', 'reset-launcher']) {
+  for (const id of ['theme', 'start-page', 'confirm-on-close', 'reload-client', 'open-logs', 'sign-out', 'reset-launcher', 'showdex-enabled', 'showdex-status', 'showdex-reload-banner', 'showdex-reload']) {
     assert.equal(await run(`Boolean(document.getElementById(${JSON.stringify(id)}))`), true, `${id} control`);
   }
   await run("document.getElementById('start-page').value = 'home'; document.getElementById('start-page').dispatchEvent(new Event('change', {bubbles:true}))");
@@ -95,6 +95,11 @@ app.whenReady().then(async () => {
   assert.equal(await run("document.getElementById('start-page').value"), 'home');
   assert.deepEqual((await result('getSettings()')).settings, readSettings());
   assert.equal((await result("setSetting('unknown', true)")).ok, false);
+  assert.equal((await result("setSetting('showdexEnabled', 'true')")).ok, false);
+  const actualShowdex = await result('getShowdex()');
+  assert.equal(typeof actualShowdex.installed, 'boolean');
+  assert.equal(actualShowdex.enabled, false);
+  assert.equal(actualShowdex.loaded, false);
 
   await run("document.getElementById('open-logs').click()");
   await until(() => openedPaths.length === 1, 'logs path opened');
@@ -153,7 +158,7 @@ app.whenReady().then(async () => {
   assert.equal((await result('resetLauncher()')).ok, true);
   assert.equal(await noteCount(), 0);
   assert.equal(fs.existsSync(replayFile), false);
-  assert.deepEqual(readSettings(), { theme: 'system', startPage: 'home', confirmOnClose: true });
+  assert.deepEqual(readSettings(), { theme: 'system', startPage: 'home', confirmOnClose: true, showdexEnabled: false });
   assert.equal(await run("localStorage.getItem('launcher-marker')"), null);
   assert.equal(await client().executeJavaScript("localStorage.getItem('session-marker')"), 'keep-after-reset');
 
@@ -177,6 +182,34 @@ app.whenReady().then(async () => {
     fs.writeFileSync(path.join(captures, `settings-1024-${theme}-bottom.png`), (await renderer.capturePage()).toPNG());
   }
 
+  // Deterministic status snapshots exercise truthful UI labels without loading Showdex in the fixture.
+  let showdexState = {
+    installed: true, enabled: false, loaded: false, status: 'disabled',
+    pendingReload: false, error: '', version: 'test',
+  };
+  ipcMain.removeHandler('showdex:status');
+  ipcMain.handle('showdex:status', () => ({ ...showdexState }));
+  await until(() => run("document.getElementById('showdex-status').textContent === 'Disabled'"), 'Showdex disabled label');
+  assert.equal(await run("document.getElementById('showdex-enabled').disabled"), false);
+  await run("document.getElementById('showdex-enabled').click()");
+  await until(() => readSettings().showdexEnabled === true, 'Showdex preference enabled');
+  showdexState = { ...showdexState, enabled: true, pendingReload: true };
+  await until(() => run("document.getElementById('showdex-status').textContent === 'Will load after reload' && !document.getElementById('showdex-reload-banner').hidden"), 'Showdex enable pending');
+  showdexState = { ...showdexState, loaded: true, status: 'loaded', pendingReload: false };
+  await until(() => run("document.getElementById('showdex-status').textContent === 'Loaded' && document.getElementById('showdex-reload-banner').hidden"), 'Showdex loaded label');
+  await run("document.getElementById('showdex-enabled').click()");
+  await until(() => readSettings().showdexEnabled === false, 'Showdex preference disabled');
+  showdexState = { ...showdexState, enabled: false, pendingReload: true };
+  await until(() => run("document.getElementById('showdex-status').textContent === 'Loaded · reload to disable' && !document.getElementById('showdex-reload-banner').hidden"), 'Showdex disable pending');
+  await load('play.html');
+  await until(() => run("document.getElementById('showdex-status').textContent === 'Showdex: Loaded · reload to disable'"), 'Play loaded pending label');
+  showdexState = { ...showdexState, loaded: false, status: 'failed', pendingReload: false, error: 'Test load error' };
+  await until(() => run("document.getElementById('showdex-status').textContent === 'Showdex: Failed to load'"), 'Play failed label');
+  showdexState = { ...showdexState, installed: false, status: 'not-installed', error: '' };
+  await load('settings.html');
+  await until(() => run("document.getElementById('showdex-status').textContent === 'Not installed'"), 'not installed label');
+  assert.equal(await run("document.getElementById('showdex-enabled').disabled"), true);
+
   // Spectating is not the user's battle, so closing should not ask again.
   await client().executeJavaScript(`app.rooms['battle-gen9ou-2'] = {
     title:'Spectating', battle:{p1:{name:'Alpha'},p2:{name:'Beta'},tier:'[Gen 9] OU',ended:false}
@@ -187,7 +220,7 @@ app.whenReady().then(async () => {
   await until(() => win.isDestroyed(), 'spectated battle close');
   assert.equal(dialogs.length, spectateDialogs, 'spectating does not prompt');
 
-  console.log('PASS settings desktop smoke: startup, persistence, close/reload dialogs, logs, sign-out and reset partition isolation');
+  console.log('PASS settings desktop smoke: startup, persistence, close/reload dialogs, logs, sign-out/reset isolation, Showdex status UI');
   app.exit(0);
 }).catch((error) => {
   console.error(error);

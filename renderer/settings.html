@@ -49,9 +49,9 @@
       <div class="page page--narrow">
         <p id="settings-status" role="status" aria-live="polite" hidden></p>
 
-        <div class="banner" hidden>
+        <div class="banner" id="showdex-reload-banner" hidden>
           Showdex changes apply the next time the client reloads. An active battle is never reloaded automatically.
-          <button class="btn" type="button">Reload client now</button>
+          <button class="btn" id="showdex-reload" type="button">Reload client now</button>
         </div>
 
         <section class="settings-section">
@@ -60,12 +60,12 @@
             <div class="setting-row">
               <div class="setting-text">
                 <div>Showdex</div>
-                <div class="setting-desc">Damage calculator shown inside battles. Not bundled in this build yet.</div>
+                <div class="setting-desc">Damage calculator shown inside battles. Changes apply after reloading the client.</div>
               </div>
               <div class="setting-control">
-                <span class="status status--off">Not installed</span>
+                <span class="status status--off" id="showdex-status">Checking…</span>
                 <label class="switch" aria-label="Enable Showdex">
-                  <input type="checkbox" disabled>
+                  <input type="checkbox" id="showdex-enabled" disabled>
                   <span class="switch-track"></span>
                 </label>
               </div>
@@ -175,5 +175,6 @@
 </div>
 <script src="nav.js"></script>
 <script src="settings.js"></script>
+<script src="integrations.js"></script>
 </body>
 </html>

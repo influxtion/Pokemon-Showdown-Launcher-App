@@ -3,11 +3,19 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
-const { app, BrowserWindow, WebContentsView, Menu, ipcMain, nativeTheme, shell, dialog } = require('electron');
+const { app, BrowserWindow, WebContentsView, Menu, ipcMain, nativeTheme, shell, dialog,
+  protocol, session: electronSession } = require('electron');
 const { Settings } = require('./settings');
 const { ShowdownBridge } = require('./showdown');
 const { Replays } = require('./replays');
 const { Logger } = require('./logging');
+const { ShowdexIntegration, registerShowdexScheme } = require('./showdex-integration');
+
+if (!app.isReady()) registerShowdexScheme(protocol);
+const showdex = new ShowdexIntegration();
+let showdexBundle = { installed: false, version: '1.4.2' };
+let showdexApplied = false;
+let showdexLoadFailed = false;
 
 const RENDERER_DIR = path.join(__dirname, '..', 'renderer');
 const CLIENT_CSS = fs.readFileSync(path.join(__dirname, 'client-theme.css'), 'utf8');
@@ -96,6 +104,11 @@ function ensureClient() {
   // Re-applied on every load; the stylesheet follows prefers-color-scheme, which tracks nativeTheme.
   contents.on('dom-ready', () => {
     contents.insertCSS(CLIENT_CSS, { cssOrigin: 'user' }).catch(() => {});
+    showdexApplied = Boolean(showdexBundle.installed && settings.get('showdexEnabled'));
+    showdexLoadFailed = false;
+    if (showdexApplied) bridge.loadShowdex().then((loaded) => {
+      if (!loaded) showdexLoadFailed = true;
+    });
   });
   contents.setWindowOpenHandler(({ url }) => {
     const u = parseUrl(url);
@@ -325,6 +338,19 @@ ipcMain.handle('settings:get', (event) => {
   return { ok: true, settings: settings.snapshot() };
 });
 
+ipcMain.handle('showdex:status', async (event) => {
+  if (!isLauncherFrame(event)) return null;
+  const enabled = settings.get('showdexEnabled');
+  const status = showdexBundle.invalid ? 'failed' : !showdexBundle.installed ? 'not-installed' : !showdexApplied ? 'disabled' :
+    showdexLoadFailed ? 'failed' : await bridge.showdexStatus();
+  return {
+    installed: showdexBundle.installed, enabled, loaded: status === 'loaded', status,
+    pendingReload: showdexBundle.installed && enabled !== showdexApplied,
+    error: status === 'failed' ? 'Showdex failed to load. Ordinary Showdown play is still available.' : '',
+    version: showdexBundle.version,
+  };
+});
+
 ipcMain.handle('settings:set', (event, key, value) => {
   if (!isLauncherFrame(event)) return { ok: false, error: 'Access denied.' };
   if (maintenance) return { ok: false, error: 'Another operation is in progress.' };
@@ -431,11 +457,16 @@ nativeTheme.on('updated', () => {
   if (client) client.setBackgroundColor(background());
 });
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   logger = new Logger(app.getPath('userData'));
   logger.write('app-started');
   settings = new Settings(app.getPath('userData'));
   replays = new Replays(app.getPath('userData'));
+  try {
+    showdexBundle = await showdex.registerAssets(electronSession.fromPartition(CLIENT_PARTITION));
+  } catch {
+    logger.write('showdex-assets-failed');
+  }
   nativeTheme.themeSource = settings.get('theme');
   Menu.setApplicationMenu(null);
   createWindow();

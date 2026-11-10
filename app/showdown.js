@@ -144,6 +144,39 @@ function friends() {
   app.send('/friends');
   return true;
 }
+
+function loadShowdex(entry) {
+  if (window.__SHOWDOWN_DESKTOP_SHOWDEX || window.__SD_SHOWDEX_REQUESTED) return true;
+  window.__SD_SHOWDEX_REQUESTED = true;
+  window.__SHOWDOWN_DESKTOP_SHOWDEX = { state: 'loading', version: '1.4.2' };
+  let attempts = 0;
+  const fail = () => { window.__SHOWDOWN_DESKTOP_SHOWDEX = { state: 'failed', version: '1.4.2' }; };
+  const start = () => {
+    if (!window.Dex || typeof Dex.gen !== 'number' || typeof Dex.forGen !== 'function' ||
+        !window.app || typeof app.receive !== 'function') {
+      if (++attempts >= 60) { fail(); return; }
+      setTimeout(start, 1000);
+      return;
+    }
+    const script = document.createElement('script');
+    script.crossOrigin = 'anonymous';
+    script.src = entry;
+    script.onerror = fail;
+    document.head.append(script);
+    setTimeout(() => {
+      if (window.__SHOWDOWN_DESKTOP_SHOWDEX.state === 'loading') fail();
+    }, 60000);
+  };
+  start();
+  return true;
+}
+
+function readShowdex() {
+  const state = window.__SHOWDOWN_DESKTOP_SHOWDEX;
+  // The pinned bootstrap sets this only after render; closing its room does not unload it.
+  if (state && state.version === '1.4.2' && state.state === 'loaded') return 'loaded';
+  return state && state.state === 'failed' ? 'failed' : 'loading';
+}
 /* eslint-enable no-undef */
 
 function call(fn, ...args) {
@@ -238,6 +271,24 @@ class ShowdownBridge {
   constructor(getContents) {
     this.getContents = getContents;
     this.ratings = new Map();
+  }
+
+  // Internal integration entry points; never accept arbitrary script URLs via IPC.
+  async loadShowdex() {
+    const contents = this.getContents();
+    if (!contents) return false;
+    try {
+      return await contents.executeJavaScript(call(loadShowdex, 'showdex://assets/main.js')) === true;
+    } catch { return false; }
+  }
+
+  async showdexStatus() {
+    const contents = this.getContents();
+    if (!contents || contents.isLoading()) return 'loading';
+    try {
+      const status = await contents.executeJavaScript(call(readShowdex));
+      return ['loaded', 'loading', 'failed'].includes(status) ? status : 'failed';
+    } catch { return 'failed'; }
   }
 
   async snapshot() {
