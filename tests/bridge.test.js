@@ -110,11 +110,41 @@ test('only allowlisted actions with valid arguments reach the client', async () 
   assert.equal(await bridge.act('challenge', { user: 'A\nB', format: 'gen9ou' }), false);
   assert.equal(await bridge.act('challenge', { user: 'Rival', format: 'bad/id' }), false);
   assert.equal(await bridge.act('join', { room: 'battle-1);app.send("/forfeit")' }), false);
+  for (const team of [-1, 0.5, '0', undefined, 10000]) {
+    assert.equal(await bridge.act('edit-team', { team, name: 'Team', format: 'gen9ou' }), false);
+  }
+  assert.equal(await bridge.act('edit-team', { team: 0, name: 'x'.repeat(81), format: 'gen9ou' }), false);
+  assert.equal(await bridge.act('edit-team', { team: 0, name: 'Team', format: 'bad/id' }), false);
   assert.equal(contents.codes.length, 0);
   assert.equal(await bridge.act('challenge', { user: 'Rival', format: 'gen9ou' }), true);
   assert.match(contents.codes[0], /\("Rival", "gen9ou"\)$/);
   assert.equal(await bridge.act('search', { format: 'gen9ou', team: null }), true);
   assert.match(contents.codes[1], /\("gen9ou", null\)$/);
+});
+
+test('team shortcut opens the selected team and preserves existing edits or stale selections', async () => {
+  const opened = [];
+  const joined = [];
+  const room = { edit: (index) => opened.push(index) };
+  const Storage = { teams: [{ name: 'First', format: 'gen9ou' }, { name: 'Second', format: 'gen9uu' }] };
+  const app = { rooms: { teambuilder: room }, joinRoom: (id) => joined.push(id), focusRoom: () => {} };
+  const contents = fakeContents((code) => vm.runInNewContext(code, { app, Storage }));
+  const bridge = new ShowdownBridge(() => contents);
+  const target = { team: 1, name: 'Second', format: 'gen9uu' };
+  assert.equal(await bridge.act('edit-team', target), true);
+  assert.deepEqual(opened, [1]);
+  room.curTeam = Storage.teams[0];
+  await bridge.act('edit-team', target);
+  room.curTeam = null;
+  room.exportMode = true;
+  await bridge.act('edit-team', target);
+  room.exportMode = false;
+  Storage.teams.reverse();
+  await bridge.act('edit-team', target);
+  await bridge.act('edit-team', { team: 9, name: 'Missing', format: '' });
+  await bridge.act('edit-team', { team: null });
+  assert.deepEqual(opened, [1], 'existing edits, imports, reordered/missing teams and no selection remain untouched');
+  assert.deepEqual(joined, Array(6).fill('teambuilder'));
 });
 
 test('missing team stays empty when the old client renders its team control', async () => {

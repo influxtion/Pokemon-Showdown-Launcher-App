@@ -414,6 +414,12 @@ els.challengeForm.addEventListener('submit', (event) => {
   if (user && format) act('challenge', { user, format: format.id });
 });
 
+$('edit-team').addEventListener('click', (event) => {
+  event.preventDefault();
+  const team = selectedTeam();
+  act('edit-team', team ? { team: team.index, name: team.name, format: team.format } : { team: null });
+});
+
 document.addEventListener('click', (event) => {
   const link = event.target.closest('[data-room]');
   if (!link) return;

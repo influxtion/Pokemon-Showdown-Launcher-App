@@ -34,8 +34,11 @@ app.whenReady().then(async () => {
   const snapshot = {
     ready: true, connected: true, user: { name: 'Tester', userid: 'tester', registered: true },
     counts: { users: 100, battles: 20 }, currentFormat: 'gen9randombattle',
-    formats: [{ id: 'gen9randombattle', name: '[Gen 9] Random Battle', section: 'Singles', presetTeam: true }],
-    teams: [], news: [], rooms: [], ratings: {},
+    formats: [
+      { id: 'gen9randombattle', name: '[Gen 9] Random Battle', section: 'Singles', presetTeam: true },
+      { id: 'gen9ou', name: '[Gen 9] OU', section: 'Singles', presetTeam: false },
+    ],
+    teams: [{ index: 1, name: 'Selected team', format: 'gen9ou', sprites: [] }], news: [], rooms: [], ratings: {},
     friends: { available: true, items: [
       { userid: 'onlinefriend', name: 'Online Friend', online: true, status: 'online' },
       { userid: 'busyfriend', name: 'Busy Friend', online: true, status: 'busy' },
@@ -55,6 +58,18 @@ app.whenReady().then(async () => {
   await until(() => run("!document.getElementById('battle').disabled"), 'Home ready');
   await until(() => run("document.getElementById('friends').textContent.includes('Busy Friend')"), 'friends rendered');
   assert.doesNotMatch(await run("document.getElementById('friends').textContent"), /Battling/);
+  const actions = [];
+  ipcMain.removeHandler('showdown:action');
+  ipcMain.handle('showdown:action', (_event, action, args) => { actions.push({ action, args }); return true; });
+  await run("document.getElementById('edit-team').click(); 0");
+  await until(() => renderer.getURL().endsWith('/play.html'), 'random-format team list shortcut');
+  assert.deepEqual(actions.pop(), { action: 'edit-team', args: { team: null } });
+  await load('index.html');
+  await until(() => run("!document.getElementById('format').disabled"), 'formats ready for team shortcut');
+  await run("document.getElementById('format').value = 'gen9ou'; document.getElementById('format').dispatchEvent(new Event('change')); document.getElementById('edit-team').click(); 0");
+  await until(() => renderer.getURL().endsWith('/play.html'), 'selected team shortcut');
+  assert.deepEqual(actions.pop(), { action: 'edit-team', args: { team: 1, name: 'Selected team', format: 'gen9ou' } });
+  await load('index.html');
   current = { ...current, connected: false };
   await until(() => run("document.getElementById('battle').disabled"), 'disconnect disables search');
   current = { ...current, connected: true };
