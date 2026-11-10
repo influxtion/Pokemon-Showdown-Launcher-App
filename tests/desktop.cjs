@@ -36,6 +36,11 @@ app.whenReady().then(async () => {
     counts: { users: 100, battles: 20 }, currentFormat: 'gen9randombattle',
     formats: [{ id: 'gen9randombattle', name: '[Gen 9] Random Battle', section: 'Singles', presetTeam: true }],
     teams: [], news: [], rooms: [], ratings: {},
+    friends: { available: true, items: [
+      { userid: 'onlinefriend', name: 'Online Friend', online: true, status: 'online' },
+      { userid: 'busyfriend', name: 'Busy Friend', online: true, status: 'busy' },
+      { userid: 'offlinefriend', name: 'Offline Friend', online: false, status: 'offline' },
+    ] },
   };
   ipcMain.removeHandler('showdown:session');
   ipcMain.handle('showdown:session', () => current);
@@ -48,6 +53,8 @@ app.whenReady().then(async () => {
   };
   await load('index.html');
   await until(() => run("!document.getElementById('battle').disabled"), 'Home ready');
+  await until(() => run("document.getElementById('friends').textContent.includes('Busy Friend')"), 'friends rendered');
+  assert.doesNotMatch(await run("document.getElementById('friends').textContent"), /Battling/);
   current = { ...current, connected: false };
   await until(() => run("document.getElementById('battle').disabled"), 'disconnect disables search');
   current = { ...current, connected: true };
@@ -80,6 +87,13 @@ app.whenReady().then(async () => {
   current = { ...current, rooms: current.rooms.map((room) => room.id.endsWith('-2') ? { ...room, players: ['Tester', 'Opponent'] } : room) };
   await until(() => /play\.html$/.test(renderer.getURL()), 'player battle auto-switch');
   win.setSize(1024, 640);
+  await until(() => {
+    try {
+      const savedWindow = JSON.parse(fs.readFileSync(path.join(profile, 'window-state.json'), 'utf8'));
+      const actual = win.getNormalBounds();
+      return savedWindow.bounds.width === actual.width && savedWindow.bounds.height === actual.height;
+    } catch { return false; }
+  }, 'window bounds saved');
   await load('index.html');
   assert.equal(await run('document.documentElement.scrollWidth <= innerWidth'), true);
   const captures = path.join(__dirname, '..', 'out', 'desktop-smoke');

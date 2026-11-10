@@ -67,7 +67,11 @@ app.whenReady().then(async () => {
     assert.equal((await desktop(`setSetting('theme', '${theme}')`)).ok, true);
     await until(() => client.executeJavaScript(`matchMedia('(prefers-color-scheme: dark)').matches === ${theme === 'dark'}`), `${theme} client theme`, 10000);
     await pause(300);
-    const png = (await client.capturePage()).toPNG();
+    const png = await until(async () => {
+      win.show();
+      win.focus();
+      return (await client.capturePage()).toPNG();
+    }, `${theme} visible client capture`, 10000);
     assert.ok(png.length > 10000, `${theme} client capture`);
     fs.writeFileSync(path.join(captures, `showdex-live-${theme}.png`), png);
   }

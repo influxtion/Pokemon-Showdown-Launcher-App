@@ -12,6 +12,9 @@ const ID = /^[a-z0-9]{1,80}$/;
 const ROOM_ID = /^[a-z0-9-]{1,80}$/;
 const SPRITE = /^sprites\/[a-z0-9-]+\/[a-z0-9-]+$/;
 const RATINGS_TTL = 2 * 60 * 1000;
+const FRIENDS_TTL = 30 * 1000;
+const FRIENDS_FAILURE_TTL = 5 * 1000;
+const FRIENDS_TIMEOUT = 4500;
 
 const isId = (value) => typeof value === 'string' && ID.test(value);
 
@@ -95,6 +98,28 @@ function readSession() {
     },
     popups: app.popups ? app.popups.length : 0,
   };
+}
+
+// The server's /cmd friends response is structured data, unlike the /friends HTML page.
+function readFriends(expectedUserid, timeout) {
+  if (!window.app || !app.user || !app.user.get('registered') ||
+      app.user.get('userid') !== expectedUserid || app.isDisconnected ||
+      typeof app.once !== 'function' || typeof app.off !== 'function' || typeof app.send !== 'function') return null;
+  return new Promise((resolve) => {
+    let finished = false;
+    let timer;
+    const finish = (value) => {
+      if (finished) return;
+      finished = true;
+      clearTimeout(timer);
+      app.off('response:friends', onResponse);
+      resolve(app.user.get('userid') === expectedUserid ? value : null);
+    };
+    const onResponse = (value) => finish(value);
+    app.once('response:friends', onResponse);
+    timer = setTimeout(() => finish(null), timeout);
+    try { app.send('/cmd friends'); } catch { finish(null); }
+  });
 }
 
 // Drives the main menu's own search form so login prompts, team checks and cancel all
@@ -267,10 +292,34 @@ function sanitizeSession(raw) {
   };
 }
 
+function sanitizeFriends(raw) {
+  if (!Array.isArray(raw) || raw.length > 1000) return { available: false, items: [] };
+  const seen = new Set();
+  const items = [];
+  for (const friend of raw) {
+    if (!friend || typeof friend !== 'object' ||
+        typeof friend.userid !== 'string' || !/^[a-z0-9]{1,18}$/.test(friend.userid) ||
+        typeof friend.online !== 'boolean' ||
+        !(friend.online ? ['online', 'idle', 'busy'].includes(friend.status) : friend.status === 'offline') ||
+        seen.has(friend.userid)) continue;
+    const name = str(friend.name, 40).replace(/[\u0000-\u001f\u007f]/g, '').trim() || friend.userid;
+    seen.add(friend.userid);
+    items.push({ userid: friend.userid, name, online: friend.online, status: friend.status });
+  }
+  return { available: raw.length === 0 || items.length > 0, items };
+}
+
+function copyFriends(value) {
+  return { available: value.available, items: value.items.map((item) => ({ ...item })) };
+}
+
 class ShowdownBridge {
   constructor(getContents) {
     this.getContents = getContents;
     this.ratings = new Map();
+    this.friendsCache = new Map();
+    this.friendsInFlight = new Map();
+    this.friendsRequest = null;
   }
 
   // Internal integration entry points; never accept arbitrary script URLs via IPC.
@@ -300,10 +349,46 @@ class ShowdownBridge {
     } catch {
       return { ready: false };
     }
-    if (state.ready && state.user.registered && state.user.userid) {
-      state.ratings = await this.fetchRatings(state.user.userid);
+    if (!state.ready) return state;
+    state.friends = { available: false, items: [] };
+    if (state.user.registered && state.user.userid) {
+      const userid = state.user.userid;
+      const [ratings, friends] = await Promise.all([
+        this.fetchRatings(userid),
+        state.connected ? this.fetchFriends(userid) : Promise.resolve({ available: false, items: [] }),
+      ]);
+      state.ratings = ratings;
+      state.friends = friends;
     }
     return state;
+  }
+
+  async fetchFriends(userid) {
+    if (!isId(userid)) return { available: false, items: [] };
+    // The response event has no request ID, so never overlap queries for different users.
+    while (this.friendsRequest && this.friendsRequest.userid !== userid) await this.friendsRequest.promise;
+    const cached = this.friendsCache.get(userid);
+    const ttl = cached && cached.value.available ? FRIENDS_TTL : FRIENDS_FAILURE_TTL;
+    if (cached && Date.now() - cached.at < ttl) return copyFriends(cached.value);
+    let pending = this.friendsInFlight.get(userid);
+    if (!pending) {
+      pending = (async () => {
+        const contents = this.getContents();
+        if (!contents || contents.isLoading()) return { available: false, items: [] };
+        let raw;
+        try { raw = await contents.executeJavaScript(call(readFriends, userid, FRIENDS_TIMEOUT)); } catch { raw = null; }
+        const value = sanitizeFriends(raw);
+        this.friendsCache.set(userid, { at: Date.now(), value });
+        return value;
+      })();
+      this.friendsInFlight.set(userid, pending);
+      this.friendsRequest = { userid, promise: pending };
+      pending.finally(() => {
+        if (this.friendsInFlight.get(userid) === pending) this.friendsInFlight.delete(userid);
+        if (this.friendsRequest?.promise === pending) this.friendsRequest = null;
+      });
+    }
+    return copyFriends(await pending);
   }
 
   async session() {

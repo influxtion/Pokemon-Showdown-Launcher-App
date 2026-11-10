@@ -52,7 +52,7 @@
       <div class="split">
         <aside class="split-list" aria-label="Saved replays">
           <div class="split-list-tools">
-            <input class="input" id="replay-search" type="search" placeholder="Search title, format, notes" aria-label="Search replay notes">
+            <input class="input" id="replay-search" type="search" placeholder="Search title, format, notes" aria-label="Search replay notes" title="Search titles, formats and notes (Ctrl+F)" aria-keyshortcuts="Control+f Meta+f">
             <select class="select" id="replay-format-filter" aria-label="Filter by format">
               <option value="">All formats</option>
             </select>
@@ -106,7 +106,7 @@
             <span class="spacer"></span>
             <span class="faint" id="note-status" role="status" aria-live="polite"></span>
             <button class="btn" id="open-replay" type="button">Open replay</button>
-            <button class="btn btn-primary" id="save-note" type="submit" form="replay-form">Save</button>
+            <button class="btn btn-primary" id="save-note" type="submit" form="replay-form" title="Save (Ctrl+S)" aria-keyshortcuts="Control+s Meta+s">Save</button>
           </div>
           </div>
         </section>

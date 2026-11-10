@@ -4,12 +4,13 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
 const { app, BrowserWindow, WebContentsView, Menu, ipcMain, nativeTheme, shell, dialog,
-  protocol, session: electronSession } = require('electron');
+  protocol, session: electronSession, screen } = require('electron');
 require('./profile').configureProfile(app);
 const { Settings } = require('./settings');
 const { ShowdownBridge } = require('./showdown');
 const { Replays } = require('./replays');
 const { Logger } = require('./logging');
+const { WindowState } = require('./window-state');
 const { ShowdexIntegration, registerShowdexScheme } = require('./showdex-integration');
 
 if (!app.isReady()) registerShowdexScheme(protocol);
@@ -38,6 +39,7 @@ let confirmingClose = false;
 let allowClose = false;
 let maintenance = false;
 let logger = null;
+let windowState = null;
 const bridge = new ShowdownBridge(() => (client ? client.webContents : null));
 
 function background() {
@@ -141,10 +143,15 @@ function hideClient() {
   if (client) client.setVisible(false);
 }
 
+function windowDisplays() {
+  const primary = screen.getPrimaryDisplay().id;
+  return screen.getAllDisplays().map((display) => ({ ...display, primary: display.id === primary }));
+}
+
 function createWindow() {
+  const { maximized, ...savedBounds } = windowState.load(windowDisplays());
   win = new BrowserWindow({
-    width: 1366,
-    height: 768,
+    ...savedBounds,
     minWidth: 1024,
     minHeight: 640,
     title: 'Showdown Desktop',
@@ -157,6 +164,20 @@ function createWindow() {
       nodeIntegration: false,
     },
   });
+
+  const currentWindow = win;
+  let windowSaveTimer;
+  const persistWindow = () => {
+    if (!currentWindow.isDestroyed()) windowState.save({
+      bounds: currentWindow.getNormalBounds(), maximized: currentWindow.isMaximized(),
+    });
+  };
+  for (const event of ['move', 'resize', 'maximize', 'unmaximize']) {
+    currentWindow.on(event, () => {
+      clearTimeout(windowSaveTimer);
+      windowSaveTimer = setTimeout(persistWindow, 250);
+    });
+  }
 
   const contents = win.webContents;
   contents.setWindowOpenHandler(({ url }) => {
@@ -177,7 +198,7 @@ function createWindow() {
   });
 
   win.on('close', (event) => {
-    if (allowClose) return;
+    if (allowClose) { persistWindow(); return; }
     event.preventDefault();
     if (confirmingClose) return;
     confirmingClose = true;
@@ -192,8 +213,12 @@ function createWindow() {
     })().catch(() => {}).finally(() => { confirmingClose = false; });
   });
 
-  win.once('ready-to-show', () => win.show());
+  win.once('ready-to-show', () => {
+    if (maximized) win.maximize();
+    win.show();
+  });
   win.on('closed', () => {
+    clearTimeout(windowSaveTimer);
     if (client && !client.webContents.isDestroyed()) client.webContents.close();
     win = null;
     client = null;
@@ -404,6 +429,7 @@ ipcMain.handle('settings:sign-out', async (event) => {
       await clientSession.clearCache();
       await clientSession.clearAuthCache();
       bridge.ratings.clear();
+      bridge.friendsCache.clear();
       logger.write('showdown-signed-out');
     } finally {
       const next = ensureClient();
@@ -431,6 +457,11 @@ ipcMain.handle('settings:reset', async (event) => {
     // Remove only the launcher's two data files, never the Showdown partition.
     settings.reset();
     fs.rmSync(path.join(app.getPath('userData'), 'replays.json'), { force: true });
+    fs.rmSync(path.join(app.getPath('userData'), 'window-state.json'), { force: true });
+    win.unmaximize();
+    const defaultBounds = windowState.load(windowDisplays());
+    win.setSize(defaultBounds.width, defaultBounds.height);
+    win.center();
     nativeTheme.themeSource = settings.get('theme');
     await win.webContents.executeJavaScript('localStorage.clear(); sessionStorage.clear(); void 0');
     replayDirty = false;
@@ -462,6 +493,7 @@ app.whenReady().then(async () => {
   logger = new Logger(app.getPath('userData'));
   logger.write('app-started');
   settings = new Settings(app.getPath('userData'));
+  windowState = new WindowState(app.getPath('userData'));
   replays = new Replays(app.getPath('userData'));
   try {
     showdexBundle = await showdex.registerAssets(electronSession.fromPartition(CLIENT_PARTITION));

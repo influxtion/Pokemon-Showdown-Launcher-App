@@ -340,6 +340,22 @@
   ui.form.addEventListener('submit', save);
   ui.delete.addEventListener('click', remove);
   ui.open.addEventListener('click', openReplay);
+  document.addEventListener('keydown', (event) => {
+    if (event.isComposing || event.altKey) return;
+    const command = event.ctrlKey || event.metaKey;
+    if (command && event.key.toLowerCase() === 'f') {
+      event.preventDefault();
+      ui.search.focus();
+      ui.search.select();
+    } else if (command && event.key.toLowerCase() === 's') {
+      event.preventDefault();
+      if (editing && !pending) ui.form.requestSubmit();
+    } else if (event.key === 'Escape' && event.target === ui.search) {
+      event.preventDefault();
+      ui.search.value = '';
+      renderList();
+    }
+  });
   [ui.title, ui.format, ui.url, ui.body].forEach((field) => field.addEventListener('input', () => {
     setError('');
     if (field === ui.title) { ui.title.removeAttribute('aria-invalid'); ui.titleError.textContent = ''; }

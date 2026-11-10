@@ -42,6 +42,10 @@ Search matches titles, formats and note text. Saved replay links cannot be chang
 duplicate link offers the existing note without replacing it. **Open replay** explicitly opens
 the saved link in your default browser.
 
+In Replay notes, **Ctrl+F** focuses search, **Escape** clears the focused search, and **Ctrl+S**
+saves the current note. The app also remembers window size, position, and maximized state,
+and repositions a saved window when its monitor is no longer available.
+
 Only the notes and links are stored in `replays.json` in Electron's userData folder
 (normally `%APPDATA%/showdown-desktop` on Windows); Showdown hosts the replay itself.
 Titles are limited to 120 characters, notes to 5,000, and the collection to 1,000 entries / 8 MiB.
@@ -51,6 +55,11 @@ whether to discard them. Deleting a note leaves the hosted replay intact.
 
 Before an alpha release, manually verify sign-in persistence, ratings, team selection,
 challenges, a real search becoming a battle, and the friends list using your own account.
+
+Home reads structured friends presence when the signed-in account and server support it.
+Online, idle, busy, and offline are displayed as reported; busy is not treated as battling.
+The list refreshes at most every 30 seconds and keeps **Open friends list** as a fallback.
+No battle links or trainer avatars are inferred from presence data.
 Settings include appearance, start page, close confirmation, explicit client reload, logs,
 sign out, and launcher reset. The client stays loaded across page changes. Sign out clears
 the Showdown partition, including locally stored teams and preferences; export teams first.
