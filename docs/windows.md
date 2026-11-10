@@ -36,8 +36,9 @@ verify, merge, push and remove each task branch before moving to the next task.
 
 ### 1. Prove installation on a clean Windows machine
 
-Start with a short installer acceptance checklist and a results template. Rebuild current
-main, record the exact commit/version and installer SHA-256, and test in a clean Windows
+Use the [installer acceptance checklist](windows-installer-checklist.md) and copy its
+[results template](windows-installer-results-template.md). Rebuild current main, record
+the exact commit/version and installer SHA-256, and test in a clean Windows
 VM or separate machine without development tools. Use a standard user account.
 
 Check installation, Start-menu launch, restart, sign-in persistence, team selection, replay
@@ -129,10 +130,12 @@ cost and identity setup, and changes to upstream Showdown/Showdex interfaces. Th
 evidence that another large feature is needed to make downloading/installing feasible.
 Plan for ongoing Electron security updates and upstream compatibility checks after release.
 
-The next task is **write the clean-Windows installer checklist and results template** from
-stage 1, then arrange an isolated machine for the actual test. This is a bounded documentation
-task; building CI, signing, an updater or Laplace is outside it. No release date is promised
-until clean-machine results and the owner's distribution decisions are available.
+The checklist and results template are written; actual clean-machine results are still
+pending. The next small task is **prepare a current installer with recorded build evidence
+and SHA-256 for the first clean-Windows run**, then execute the checklist on an isolated
+machine. Upgrade proof additionally needs two distinct versioned installers. Building CI,
+signing, an updater or Laplace is outside that task. No release date is promised until
+clean-machine results and the owner's distribution decisions are available.
 
 This is planned release work. No public download or automatic update service is live yet.
 
