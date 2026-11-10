@@ -19,6 +19,16 @@ try {
   Module._load = originalLoad;
 }
 
+// Just enough DOM for readSession to mark the page as launcher-driven.
+function fakeDocument(header = true) {
+  const classes = new Set();
+  return {
+    documentElement: { classList: { toggle: (name, on) => { if (on) classes.add(name); else classes.delete(name); } } },
+    getElementById: (id) => (id === 'header' && header ? {} : null),
+    shell: () => classes.has('sd-launcher-shell'),
+  };
+}
+
 function fakeContents(result = true) {
   const codes = [];
   return {
@@ -84,8 +94,10 @@ test('session reads connection state and sanitizes room data', async () => {
     curRoom: { id: 'battle-gen9ou-1' },
     popups: [{}],
     updateLayout: () => { layouts += 1; },
+    focusRoom() {}, leaveRoom() {}, joinRoom() {}, addPopup() {},
   };
-  const contents = fakeContents((code) => vm.runInNewContext(code, { window: { app }, app }));
+  const document = fakeDocument();
+  const contents = fakeContents((code) => vm.runInNewContext(code, { window: { app, document }, app, document }));
   const state = await new ShowdownBridge(() => contents).session();
   assert.equal(state.ready, true);
   assert.equal(state.connected, false);
@@ -99,6 +111,8 @@ test('session reads connection state and sanitizes room data', async () => {
     [['battle', 7, false, 'gen9ou'], ['chat', null, true, ''], ['other', null, false, '']]);
   // One room at a time is a runtime flag, applied once per client load.
   assert.equal(app.singlePanelMode, true);
+  assert.equal(state.shell, true);
+  assert.equal(document.shell(), true);
   await new ShowdownBridge(() => contents).session();
   assert.equal(layouts, 1);
 
@@ -211,4 +225,50 @@ test('rooms are focused and left through the client, keeping its forfeit confirm
   assert.equal(await bridge.act('options', {}), true);
   assert.deepEqual(calls, [['focus', ''], ['focus', 'lobby'], ['leave', 'lobby'], ['leave', 'battle-gen9ou-1'],
     ['popup', 'sounds'], ['popup', 'options']]);
+});
+
+test('the client keeps its own header unless a full read confirms the launcher can drive rooms', async () => {
+  const make = () => ({
+    user: { get: (key) => key === 'name' ? 'Player' : false },
+    rooms: { '': { $: () => ({ length: 0 }) }, lobby: { type: 'chat', title: 'Lobby' } },
+    curRoom: { id: 'lobby' },
+    popups: [],
+    updateLayout() {}, focusRoom() {}, leaveRoom() {}, joinRoom() {}, addPopup() {},
+  });
+  const read = async (app, document) => {
+    const contents = fakeContents((code) => vm.runInNewContext(code, { window: { app, document }, app, document }));
+    return new ShowdownBridge(() => contents).session();
+  };
+
+  const document = fakeDocument();
+  let app = make();
+  assert.equal((await read(app, document)).shell, true);
+  assert.equal(document.shell(), true);
+
+  // A room control disappears: rooms are still listed, but the client's tabs must return.
+  app = make();
+  delete app.leaveRoom;
+  const degraded = await read(app, document);
+  assert.equal(degraded.ready, true);
+  assert.equal(degraded.shell, false);
+  assert.equal(degraded.rooms.length, 1);
+  assert.equal(document.shell(), false);
+  assert.equal(app.singlePanelMode, undefined);
+
+  // The header element is gone or renamed.
+  const noHeader = fakeDocument(false);
+  assert.equal((await read(make(), noHeader)).shell, false);
+  assert.equal(noHeader.shell(), false);
+
+  // The read itself breaks part-way: withdraw the class set by an earlier good read.
+  assert.equal((await read(make(), document)).shell, true);
+  app = make();
+  app.user.get = () => { throw new Error('client changed'); };
+  assert.deepEqual(await read(app, document), { ready: false, rooms: [] });
+  assert.equal(document.shell(), false);
+
+  // The client is not there at all.
+  assert.equal((await read(make(), document)).shell, true);
+  assert.deepEqual(await read(undefined, document), { ready: false, rooms: [] });
+  assert.equal(document.shell(), false);
 });

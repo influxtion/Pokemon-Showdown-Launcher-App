@@ -14,6 +14,7 @@
     "test:desktop": "node scripts/test-desktop.js",
     "test:showdex:live": "node scripts/test-desktop.js --showdex-live",
     "test:replays:live": "node scripts/test-desktop.js --replay-review-live",
+    "test:shell:live": "node scripts/test-desktop.js --shell-live",
     "test:practice": "node scripts/test-desktop.js --practice",
     "pack:win:dir": "electron-builder --win --dir --x64 --publish never",
     "pack:win": "electron-builder --win nsis --x64 --publish never",
