@@ -47,6 +47,7 @@
 
     <main class="content">
       <div class="page page--narrow">
+        <p id="settings-status" role="status" aria-live="polite" hidden></p>
 
         <div class="banner" hidden>
           Showdex changes apply the next time the client reloads. An active battle is never reloaded automatically.
@@ -107,23 +108,17 @@
                 <div class="setting-desc">Screen shown when the app opens.</div>
               </div>
               <div class="setting-control">
-                <select class="select" aria-label="Start page">
-                  <option>Home</option>
-                  <option>Showdown</option>
-                  <option>Replay notes</option>
+                <select class="select" id="start-page" aria-label="Start page">
+                  <option value="home">Home</option>
+                  <option value="showdown">Showdown</option>
+                  <option value="replays">Replay notes</option>
                 </select>
               </div>
             </div>
             <div class="setting-row">
               <div class="setting-text">
                 <div>Keep client loaded in the background</div>
-                <div class="setting-desc">Switching screens keeps your battle running. Turning this off reloads the client on return.</div>
-              </div>
-              <div class="setting-control">
-                <label class="switch" aria-label="Keep client loaded">
-                  <input type="checkbox" checked>
-                  <span class="switch-track"></span>
-                </label>
+                <div class="setting-desc">The Showdown client stays loaded while you switch screens, so battles keep running.</div>
               </div>
             </div>
             <div class="setting-row">
@@ -132,7 +127,7 @@
               </div>
               <div class="setting-control">
                 <label class="switch" aria-label="Confirm before closing">
-                  <input type="checkbox" checked>
+                  <input type="checkbox" id="confirm-on-close">
                   <span class="switch-track"></span>
                 </label>
               </div>
@@ -148,28 +143,28 @@
                 <div>Reload client</div>
                 <div class="setting-desc">Reloads the Showdown view. Any battle in progress will reconnect.</div>
               </div>
-              <div class="setting-control"><button class="btn" type="button">Reload</button></div>
+              <div class="setting-control"><button class="btn" id="reload-client" type="button">Reload</button></div>
             </div>
             <div class="setting-row">
               <div class="setting-text">
                 <div>Logs</div>
                 <div class="setting-desc">Attach these when reporting a bug.</div>
               </div>
-              <div class="setting-control"><button class="btn" type="button">Open logs folder</button></div>
+              <div class="setting-control"><button class="btn" id="open-logs" type="button">Open logs folder</button></div>
             </div>
             <div class="setting-row">
               <div class="setting-text">
                 <div>Sign out of Showdown</div>
-                <div class="setting-desc">Clears the saved Showdown session. Replay notes are kept.</div>
+                <div class="setting-desc">Clears saved Showdown data, including your sign-in, local teams and client preferences. Replay notes are kept.</div>
               </div>
-              <div class="setting-control"><button class="btn" type="button">Sign out</button></div>
+              <div class="setting-control"><button class="btn" id="sign-out" type="button">Sign out…</button></div>
             </div>
             <div class="setting-row">
               <div class="setting-text">
                 <div>Reset launcher data</div>
-                <div class="setting-desc">Deletes settings and all replay notes. This cannot be undone.</div>
+                <div class="setting-desc">Deletes launcher settings, preferences and replay notes. Your Showdown sign-in and teams are kept. This cannot be undone.</div>
               </div>
-              <div class="setting-control"><button class="btn btn-danger" type="button">Reset…</button></div>
+              <div class="setting-control"><button class="btn btn-danger" id="reset-launcher" type="button">Reset…</button></div>
             </div>
           </div>
         </section>

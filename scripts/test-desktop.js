@@ -4,7 +4,7 @@ const { spawnSync } = require('node:child_process');
 const path = require('node:path');
 const env = { ...process.env };
 delete env.ELECTRON_RUN_AS_NODE;
-for (const file of ['desktop.cjs', 'replays-desktop.cjs']) {
+for (const file of ['desktop.cjs', 'replays-desktop.cjs', 'settings-desktop.cjs']) {
   const result = spawnSync(require('electron'), [path.join(__dirname, '..', 'tests', file)], {
     stdio: 'inherit', env, timeout: 90000,
   });
