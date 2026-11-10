@@ -6,7 +6,12 @@ const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('desktop', {
   showClient: (bounds) => ipcRenderer.send('client:show', bounds),
   hideClient: () => ipcRenderer.send('client:hide'),
-  reloadClient: () => ipcRenderer.send('client:reload'),
+  reloadClient: () => ipcRenderer.invoke('client:reload'),
+  getSettings: () => ipcRenderer.invoke('settings:get'),
+  setSetting: (key, value) => ipcRenderer.invoke('settings:set', key, value),
+  openLogs: () => ipcRenderer.invoke('settings:open-logs'),
+  signOutShowdown: () => ipcRenderer.invoke('settings:sign-out'),
+  resetLauncher: () => ipcRenderer.invoke('settings:reset'),
   getTheme: () => ipcRenderer.invoke('settings:get-theme'),
   setTheme: (theme) => ipcRenderer.invoke('settings:set-theme', theme),
   getSession: () => ipcRenderer.invoke('showdown:session'),

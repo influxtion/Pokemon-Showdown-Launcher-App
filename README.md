@@ -50,4 +50,11 @@ whether to discard them. Deleting a note leaves the hosted replay intact.
 
 Before an alpha release, manually verify sign-in persistence, ratings, team selection,
 challenges, a real search becoming a battle, and the friends list using your own account.
-Showdex, settings beyond appearance, packaging, and licensing remain pending.
+Settings include appearance, start page, close confirmation, explicit client reload, logs,
+sign out, and launcher reset. The client stays loaded across page changes. Sign out clears
+the Showdown partition, including locally stored teams and preferences; export teams first.
+Launcher reset removes settings, launcher preferences, and replay notes while keeping the
+Showdown partition. Both destructive actions ask for confirmation. Logs contain fixed event
+names and numeric error codes, not usernames, credentials, replay URLs or note content.
+
+Showdex, packaging, and licensing remain pending.
