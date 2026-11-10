@@ -1,5 +1,10 @@
 # Windows app delivery plan and packaging
 
+**Priority update — November 10, 2026:** the owner wants installer work last. Continue
+feature work in small, verified increments before resuming this release plan. A spare
+Windows PC is available for later testing; its Windows version and clean-test setup remain
+to be confirmed. The checklist is retained for that stage, not the next development task.
+
 The alpha target is a Windows x64 NSIS installer. The same configuration can also produce an unpacked app for inspection and smoke testing. Neither command installs or publishes the app. The installer is unsigned and uses Electron's default icon until project licensing and release branding are settled.
 
 ## Feasibility and intended experience
@@ -131,8 +136,9 @@ evidence that another large feature is needed to make downloading/installing fea
 Plan for ongoing Electron security updates and upstream compatibility checks after release.
 
 The checklist and results template are written; actual clean-machine results are still
-pending. The next small task is **prepare a current installer with recorded build evidence
-and SHA-256 for the first clean-Windows run**, then execute the checklist on an isolated
+pending. When feature work is ready and installer work resumes, the next release task is
+**prepare a current installer with recorded build evidence and SHA-256 for the first
+clean-Windows run**, then execute the checklist on an isolated
 machine. Upgrade proof additionally needs two distinct versioned installers. Building CI,
 signing, an updater or Laplace is outside that task. No release date is promised until
 clean-machine results and the owner's distribution decisions are available.

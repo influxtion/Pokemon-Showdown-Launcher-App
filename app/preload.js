@@ -19,6 +19,7 @@ contextBridge.exposeInMainWorld('desktop', {
   getShowdown: () => ipcRenderer.invoke('showdown:snapshot'),
   showdown: (action, args = {}) => ipcRenderer.invoke('showdown:action', action, args),
   getReplayNotes: () => ipcRenderer.invoke('replays:list'),
+  exportReplayNotes: () => ipcRenderer.invoke('replays:export'),
   saveReplayNote: (note) => ipcRenderer.invoke('replays:save', note),
   deleteReplayNote: (id) => ipcRenderer.invoke('replays:delete', id),
   openReplayNote: (id) => ipcRenderer.invoke('replays:open', id),

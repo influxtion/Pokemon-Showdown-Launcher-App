@@ -144,6 +144,47 @@ class Replays {
     return this.write({ version: 1, notes: current.data.notes.filter((note) => note.id !== id) }, current.bytes);
   }
 
+  exportTo(destination) {
+    const current = this.read();
+    if (!current.ok) return { ok: false, error: current.error };
+    let temporary;
+    let fd;
+    try {
+      if (typeof destination !== 'string' || !path.isAbsolute(destination)) {
+        return { ok: false, error: 'Choose a file for the export.' };
+      }
+      // Resolve directory aliases too: an export must never replace live profile data.
+      const directory = this.fs.realpathSync(path.dirname(destination));
+      const profile = this.fs.realpathSync(path.dirname(this.file));
+      const relative = path.relative(profile, directory);
+      if (!relative || (!path.isAbsolute(relative) && relative !== '..' && !relative.startsWith(`..${path.sep}`))) {
+        return { ok: false, error: 'Choose a location outside the app data folder.' };
+      }
+      const serialized = JSON.stringify(current.data, null, 2) + '\n';
+      if (Buffer.byteLength(serialized) > MAX_FILE_BYTES) {
+        return { ok: false, error: 'Replay notes export would be too large.' };
+      }
+      temporary = path.join(directory, `.showdown-replays-${randomUUID()}.tmp`);
+      fd = this.fs.openSync(temporary, 'wx', 0o600);
+      this.fs.writeFileSync(fd, serialized);
+      this.fs.fsyncSync(fd);
+      this.fs.closeSync(fd);
+      fd = undefined;
+      this.fs.renameSync(temporary, destination);
+      temporary = undefined;
+      return { ok: true, count: current.data.notes.length };
+    } catch {
+      return { ok: false, error: 'Could not export replay notes. Choose a writable location and try again.' };
+    } finally {
+      if (fd !== undefined) {
+        try { this.fs.closeSync(fd); } catch {}
+      }
+      if (temporary) {
+        try { this.fs.unlinkSync(temporary); } catch {}
+      }
+    }
+  }
+
   write(data, previousBytes) {
     const serialized = JSON.stringify(data, null, 2) + '\n';
     if (Buffer.byteLength(serialized) > MAX_FILE_BYTES) return { ok: false, error: 'Replay notes file would be too large.' };

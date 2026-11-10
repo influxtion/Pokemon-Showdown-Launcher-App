@@ -4,6 +4,7 @@
   const desktop = window.desktop;
   const $ = (id) => document.getElementById(id);
   const ui = {
+    export: $('export-replays'), exportStatus: $('export-status'),
     add: $('add-replay'), search: $('replay-search'), filter: $('replay-format-filter'),
     list: $('replay-list'), count: $('replay-count'), listEmpty: $('replay-list-empty'),
     detailEmpty: $('replay-detail-empty'), editor: $('replay-editor'), error: $('replay-error'),
@@ -68,6 +69,7 @@
     ui.delete.disabled = value || !selectedId;
     ui.open.disabled = value || !selectedId;
     ui.add.disabled = value;
+    ui.export.disabled = value || !notes.length;
     if (value) setStatus(action);
     else updateDirty();
   };
@@ -168,6 +170,7 @@
     ui.filter.value = formats.includes(prior) ? prior : '';
   };
   const renderList = () => {
+    ui.export.disabled = pending || !notes.length;
     const query = ui.search.value.trim().toLocaleLowerCase();
     const format = ui.filter.value;
     const matches = notes.filter((note) => (!format || note.format === format) &&
@@ -283,6 +286,21 @@
       if (!result?.ok) setError(resultError(result, 'Could not open the replay.'));
     } catch (error) { setError(error.message || 'Could not open the replay.'); }
   };
+  const exportNotes = async () => {
+    if (pending || !notes.length) return;
+    setError('');
+    ui.exportStatus.hidden = true;
+    setPending(true, 'Exporting…');
+    try {
+      const result = await call('exportReplayNotes');
+      if (result?.cancelled) return;
+      if (!result?.ok) { setError(resultError(result, 'Could not export replay notes.')); return; }
+      ui.exportStatus.textContent = `Exported ${result.count} saved ${result.count === 1 ? 'note' : 'notes'}.` +
+        (dirty ? ' Unsaved changes were not included.' : '');
+      ui.exportStatus.hidden = false;
+    } catch (error) { setError(error.message || 'Could not export replay notes.'); }
+    finally { setPending(false); }
+  };
   const init = async () => {
     try {
       const result = await call('getReplayNotes');
@@ -335,6 +353,7 @@
   };
 
   ui.add.addEventListener('click', () => addReplay());
+  ui.export.addEventListener('click', exportNotes);
   ui.search.addEventListener('input', renderList);
   ui.filter.addEventListener('change', renderList);
   ui.form.addEventListener('submit', save);
@@ -357,6 +376,7 @@
     }
   });
   [ui.title, ui.format, ui.url, ui.body].forEach((field) => field.addEventListener('input', () => {
+    ui.exportStatus.hidden = true;
     setError('');
     if (field === ui.title) { ui.title.removeAttribute('aria-invalid'); ui.titleError.textContent = ''; }
     if (field === ui.format) { ui.format.removeAttribute('aria-invalid'); ui.formatError.textContent = ''; }

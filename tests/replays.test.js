@@ -201,3 +201,66 @@ test('outside changes detected before replacement keep both versions intact', (t
   assert.equal(normal.get(saved.note.id).title, 'Outside edit');
   assert.equal(fs.readdirSync(dir).filter((name) => name.endsWith('.tmp')).length, 0);
 });
+
+test('export preserves all saved fields and private links without changing the store', (t) => {
+  const dir = fixture(t);
+  const destination = path.join(fixture(t), 'notes.json');
+  const store = new Replays(dir);
+  assert.deepEqual(store.exportTo(destination), { ok: true, count: 0 });
+  assert.deepEqual(JSON.parse(fs.readFileSync(destination)), { version: 1, notes: [] });
+  store.save({ url: PRIVATE, title: 'Private review', notes: 'Turn 12: switch — 雨' });
+  store.save({ url: PUBLIC, title: 'Public review' });
+  const before = fs.readFileSync(store.file);
+  assert.deepEqual(store.exportTo(destination), { ok: true, count: 2 });
+  assert.deepEqual(JSON.parse(fs.readFileSync(destination)), JSON.parse(before));
+  assert.deepEqual(fs.readFileSync(store.file), before);
+  // The exported versioned format is readable by the same store on another profile.
+  const restored = fixture(t);
+  fs.copyFileSync(destination, path.join(restored, 'replays.json'));
+  assert.deepEqual(new Replays(restored).list(), store.list());
+});
+
+test('export refuses corrupt data without replacing a previous export', (t) => {
+  const store = new Replays(fixture(t));
+  const destination = path.join(fixture(t), 'notes.json');
+  fs.writeFileSync(destination, 'previous export');
+  fs.writeFileSync(store.file, '{broken');
+  assert.equal(store.exportTo(destination).ok, false);
+  assert.equal(fs.readFileSync(destination, 'utf8'), 'previous export');
+  assert.equal(fs.readFileSync(store.file, 'utf8'), '{broken');
+});
+
+test('export failures preserve the store and previous export and remove temporary files', (t) => {
+  const dir = fixture(t);
+  const output = fixture(t);
+  const destination = path.join(output, 'notes.json');
+  const store = new Replays(dir);
+  store.save({ url: PRIVATE, title: 'Original' });
+  const before = fs.readFileSync(store.file);
+  fs.writeFileSync(destination, 'previous export');
+  for (const method of ['writeFileSync', 'fsyncSync', 'renameSync']) {
+    const failingFs = Object.assign(Object.create(fs), {
+      [method]() { throw new Error('injected export failure'); },
+    });
+    assert.equal(new Replays(dir, failingFs).exportTo(destination).ok, false, method);
+    assert.deepEqual(fs.readFileSync(store.file), before);
+    assert.equal(fs.readFileSync(destination, 'utf8'), 'previous export');
+    assert.deepEqual(fs.readdirSync(output), ['notes.json']);
+  }
+});
+
+test('export refuses live profile paths including directory aliases', (t) => {
+  const dir = fixture(t);
+  const store = new Replays(dir);
+  store.save({ url: PUBLIC, title: 'Keep' });
+  fs.mkdirSync(path.join(dir, 'nested'));
+  const before = fs.readFileSync(store.file);
+  for (const destination of [store.file, path.join(dir, 'settings.json'), path.join(dir, 'nested', 'notes.json'), 'relative.json', null]) {
+    assert.equal(store.exportTo(destination).ok, false);
+  }
+  const alias = path.join(fixture(t), 'profile-alias');
+  fs.symlinkSync(dir, alias, process.platform === 'win32' ? 'junction' : 'dir');
+  assert.equal(store.exportTo(path.join(alias, 'replays.json')).ok, false);
+  assert.deepEqual(fs.readFileSync(store.file), before);
+  assert.equal(fs.existsSync(path.join(dir, 'settings.json')), false);
+});

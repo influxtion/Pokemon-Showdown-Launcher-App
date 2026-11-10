@@ -36,6 +36,7 @@ let client = null;
 let settings = null;
 let replays = null;
 let replayDirty = false;
+let exportingReplays = false;
 let confirmingClose = false;
 let allowClose = false;
 let maintenance = false;
@@ -306,6 +307,28 @@ ipcMain.handle('replays:list', (event) => {
 ipcMain.handle('replays:save', (event, value) => {
   if (!isLauncherFrame(event)) return { ok: false, error: 'Access denied.' };
   return replays.save(value);
+});
+
+ipcMain.handle('replays:export', async (event) => {
+  if (!isLauncherFrame(event)) return { ok: false, error: 'Access denied.' };
+  if (exportingReplays) return { ok: false, error: 'An export is already in progress.' };
+  exportingReplays = true;
+  try {
+    const current = replays.list();
+    if (!current.ok) return current;
+    const result = await dialog.showSaveDialog(win, {
+      title: 'Export saved replay notes and links',
+      defaultPath: path.join(app.getPath('documents'), `showdown-replay-notes-${new Date().toISOString().slice(0, 10)}.json`),
+      filters: [{ name: 'Replay notes (JSON)', extensions: ['json'] }],
+      properties: ['showOverwriteConfirmation'],
+    });
+    if (result.canceled || !result.filePath) return { ok: true, cancelled: true };
+    return replays.exportTo(result.filePath);
+  } catch {
+    return { ok: false, error: 'Could not export replay notes. Try again.' };
+  } finally {
+    exportingReplays = false;
+  }
 });
 
 ipcMain.handle('replays:delete', async (event, id) => {
