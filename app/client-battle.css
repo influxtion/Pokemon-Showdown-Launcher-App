@@ -284,13 +284,23 @@ html.sd-launcher-shell:not(.sd-menu-community) {
   .menugroup .button.big small {
     display: none !important;
   }
+  /* The client's label is "Battle!"; this replaces it while idle. */
+  .menugroup .button.big:not(.disabled) strong {
+    font-size: 0 !important;
+    letter-spacing: 0 !important;
+  }
   .menugroup .button.big:not(.disabled) strong::before {
+    content: "Battle";
+    font-size: 18px;
+    letter-spacing: 0.02em;
+  }
+  .menugroup .button.big:not(.disabled) strong::after {
     content: "\f061";
     display: inline-block;
-    margin-right: 10px;
+    margin-left: 10px;
     font: 16px/1 FontAwesome;
   }
-  .menugroup .button.big:not(.disabled):hover strong::before {
+  .menugroup .button.big:not(.disabled):hover strong::after {
     animation: sd-nudge 0.7s ease-in-out infinite !important;
   }
   .menugroup .button.big.disabled {
