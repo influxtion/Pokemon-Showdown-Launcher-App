@@ -58,148 +58,220 @@ html.sd-launcher-shell:not(.sd-menu-community) {
     grid-column: 1 / -1 !important;
   }
 
-  /* Battle card */
+  /* Battle card: flat rows that match the tiles below it. */
   .mainmenu > .menugroup {
     max-width: none !important;
     margin: 0 !important;
-    padding: 28px !important;
-    border-radius: 16px !important;
-    box-shadow: 0 12px 32px rgba(8, 18, 40, 0.18) !important;
+    padding: 18px !important;
+    border-radius: 14px !important;
+    box-shadow: none !important;
     text-align: left !important;
+  }
+  .mainmenu > .menugroup:has(.battleform[data-search]) {
+    padding: 0 !important;
+    overflow: hidden !important;
   }
   .battleform {
     width: auto !important;
   }
   .battleform[data-search] {
     display: grid !important;
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    gap: 16px !important;
-  }
-  .battleform[data-search]::before {
-    content: "Find a battle";
-    grid-column: 1 / -1;
-    color: var(--sd-text);
-    font-size: 26px;
-    font-weight: 700;
-    letter-spacing: -0.01em;
-    line-height: 1.2;
+    grid-template-columns: auto auto minmax(0, 1fr) auto !important;
+    align-items: center !important;
+    column-gap: 8px !important;
+    padding: 0 14px 12px !important;
   }
   .battleform p {
     margin: 0 !important;
   }
-  .battleform p:has(> .select) {
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 6px !important;
+  .battleform[data-search] > p {
+    margin-top: 12px !important;
   }
-  .battleform p:has(> label[name="partner"]),
-  .battleform p:has(> button.big),
-  .battleform p.cancel {
+  .battleform[data-search] > p:has(> .select) {
+    display: grid !important;
+    grid-column: 1 / -1 !important;
+    margin: 0 -14px !important;
+    border-bottom: 1px solid var(--sd-border) !important;
+  }
+  .battleform p:has(> label[name="partner"]) {
     grid-column: 1 / -1 !important;
   }
   .battleform p:has(> label[name="partner"][style*="none"]) {
     display: none !important;
   }
-  .battleform .label {
-    color: var(--sd-text-2) !important;
-    font-size: 12px !important;
-    font-weight: 600 !important;
-  }
 
-  /* Format and team pickers */
-  .menugroup .select {
-    flex: 1 !important;
+  /* Format and team rows. The label is laid over the button's lower line. */
+  .battleform p:has(> .select) > * {
+    grid-area: 1 / 1 !important;
+  }
+  .battleform p:has(> .select) > .label {
+    z-index: 1 !important;
+    align-self: end !important;
+    margin: 0 0 13px 64px !important;
+    font-size: 0 !important;
+    pointer-events: none !important;
+  }
+  .battleform p:has(> .select) > .label::after {
+    color: var(--sd-text-2);
+    font-size: 12px;
+    font-weight: 400;
+  }
+  .battleform p:has(> .formatselect) > .label::after { content: "Format"; }
+  .battleform p:has(> .teamselect) > .label::after { content: "Team"; }
+  .battleform .select {
+    position: relative !important;
     width: 100% !important;
-    min-height: 68px !important;
-    padding: 8px 28px 8px 14px !important;
-    text-align: left !important;
-    border-radius: 10px !important;
+    height: 64px !important;
+    min-height: 0 !important;
+    padding: 0 36px 16px 64px !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
     box-shadow: none !important;
     color: var(--sd-text) !important;
     font-family: inherit !important;
     font-size: 14px !important;
     font-weight: 600 !important;
-    transition: border-color 0.15s ease, background-color 0.15s ease !important;
+    text-align: left !important;
+    transition: background-color 0.15s ease !important;
   }
-  .menugroup .select:not(:disabled):hover {
-    border-color: var(--sd-accent) !important;
+  .battleform .select:not(:disabled):hover {
     background: var(--sd-hover) !important;
   }
-  .menugroup .select:focus-visible,
+  .battleform .select:focus-visible,
   .mainmenu .button:focus-visible {
+    outline: 2px solid var(--sd-accent) !important;
+    outline-offset: -2px !important;
+  }
+  .battleform .select:disabled {
+    opacity: 1 !important;
+  }
+  /* The icon is drawn by the row, over the button, and lets clicks through. */
+  .battleform p:has(> .select)::before {
+    grid-area: 1 / 1;
+    z-index: 1;
+    align-self: center;
+    pointer-events: none;
+    justify-self: start;
+    width: 38px;
+    margin-left: 14px;
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--sd-accent) 16%, transparent);
+    color: var(--sd-accent);
+    font: 18px/38px FontAwesome;
+    text-align: center;
+  }
+  .battleform p:has(> .formatselect)::before { content: "\f11b"; }
+  .battleform p:has(> .teamselect)::before { content: "\f1b0"; }
+  .battleform .teamselect strong {
+    display: block !important;
+    max-width: calc(100% - 220px) !important;
+    height: auto !important;
+    overflow: hidden !important;
+    line-height: 20px !important;
+    color: var(--sd-text) !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    text-align: left !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+  .battleform .teamselect small {
+    position: absolute !important;
+    top: 50% !important;
+    right: 34px !important;
+    transform: translateY(-50%) !important;
+    white-space: nowrap !important;
+  }
+
+  /* Options as icon toggles */
+  .battleform .checkbox {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    height: 32px !important;
+    margin: 0 !important;
+    padding: 0 12px !important;
+    border: 1px solid var(--sd-border) !important;
+    border-radius: 999px !important;
+    color: var(--sd-text-2) !important;
+    font-family: inherit !important;
+    cursor: pointer !important;
+    transition: border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease !important;
+  }
+  .battleform .checkbox:hover {
+    border-color: var(--sd-border-strong) !important;
+    color: var(--sd-text) !important;
+  }
+  .battleform .checkbox:has(input:checked) {
+    border-color: var(--sd-accent) !important;
+    background: color-mix(in srgb, var(--sd-accent) 16%, transparent) !important;
+    color: var(--sd-text) !important;
+  }
+  .battleform .checkbox:has(input:focus-visible) {
     outline: 2px solid var(--sd-accent) !important;
     outline-offset: 2px !important;
   }
-  .menugroup .select:disabled {
-    opacity: 1 !important;
-  }
-  .menugroup .teamselect strong {
-    display: block !important;
-    margin-bottom: 2px !important;
-    color: var(--sd-text) !important;
-    font-size: 13px !important;
-    font-weight: 600 !important;
-    text-align: left !important;
-  }
-  .menugroup .teamselect small {
-    display: block !important;
-    text-align: left !important;
-  }
-
-  /* Options */
-  .battleform .checkbox {
-    display: flex !important;
-    align-items: center !important;
-    gap: 8px !important;
-    margin: 0 !important;
-    color: var(--sd-text-2) !important;
-    font-size: 13px !important;
-    cursor: pointer !important;
-  }
   .battleform .checkbox input {
-    flex: none !important;
-    width: 16px !important;
-    height: 16px !important;
+    position: absolute !important;
+    appearance: none !important;
+    width: 0 !important;
+    height: 0 !important;
     margin: 0 !important;
-    accent-color: var(--sd-accent) !important;
+    opacity: 0 !important;
   }
+  .battleform .checkbox::before {
+    font: 14px/1 FontAwesome;
+  }
+  .battleform .checkbox:has(input[name="private"])::before { content: "\f070"; }
+  .battleform .checkbox:has(input[name="allowbots"])::before { content: "\f17b"; }
   .battleform .checkbox abbr {
+    font-size: 0 !important;
     text-decoration: none !important;
   }
+  .battleform .checkbox abbr::after {
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .battleform .checkbox:has(input[name="private"]) abbr::after { content: "No spectators"; }
+  .battleform .checkbox:has(input[name="allowbots"]) abbr::after { content: "Allow bots"; }
 
   /* Battle! */
+  .battleform p:has(> button.big) {
+    justify-self: end !important;
+  }
   .menugroup .button.big {
     display: block !important;
-    width: 100% !important;
-    height: 64px !important;
-    border-radius: 12px !important;
+    width: auto !important;
+    min-width: 148px !important;
+    height: 40px !important;
+    padding: 0 22px !important;
+    border-radius: 10px !important;
     font-family: inherit !important;
-    font-size: 20px !important;
-    transition: background-color 0.15s ease, box-shadow 0.15s ease !important;
+    font-size: 15px !important;
+    transition: background-color 0.15s ease !important;
   }
-  .menugroup .button.big:not(.disabled) {
-    box-shadow: 0 6px 18px color-mix(in srgb, var(--sd-primary) 32%, transparent) !important;
-  }
-  .menugroup .button.big:not(.disabled):hover {
-    box-shadow: 0 8px 24px color-mix(in srgb, var(--sd-primary) 48%, transparent) !important;
-  }
+  .menugroup .button.big br,
   .menugroup .button.big small {
-    font-size: 12px !important;
-    font-weight: 500 !important;
+    display: none !important;
+  }
+  .menugroup .button.big:not(.disabled) strong::before {
+    content: "\f0e7";
+    margin-right: 8px;
+    font: 15px/1 FontAwesome;
   }
   .menugroup .button.big.disabled {
     border-color: var(--sd-accent) !important;
+    background: transparent !important;
     color: var(--sd-text) !important;
     opacity: 1 !important;
   }
-  .battleform p.cancel {
-    text-align: center !important;
-  }
   .battleform p.cancel .button {
     width: auto !important;
-    padding: 6px 24px !important;
+    height: 40px !important;
+    padding: 0 18px !important;
     border-color: var(--sd-border-strong) !important;
-    border-radius: 8px !important;
+    border-radius: 10px !important;
     background: transparent !important;
     color: var(--sd-text) !important;
     font-family: inherit !important;
@@ -302,7 +374,14 @@ html.sd-launcher-shell:not(.sd-menu-community) {
       grid-template-columns: minmax(0, 1fr) !important;
     }
     .battleform[data-search] {
-      grid-template-columns: minmax(0, 1fr) !important;
+      grid-template-columns: auto minmax(0, 1fr) !important;
+    }
+    .battleform p:has(> button.big) {
+      grid-column: 1 / -1 !important;
+      justify-self: stretch !important;
+    }
+    .menugroup .button.big {
+      width: 100% !important;
     }
   }
   @media (prefers-reduced-motion: reduce) {
