@@ -194,7 +194,7 @@ app.whenReady().then(async () => {
         }
       },
       user: {get: (key) => key === 'name' ? 'Tester' : ''},
-      curRoom: {id: 'battle-gen9ou-1234567890'},
+      curRoom: {id: 'battle-gen9ou-1234567890'}, updateLayout() {},
       isDisconnected: false, popups: [],
       send: (...args) => window.__testSends.push(args)
     }; 0`);

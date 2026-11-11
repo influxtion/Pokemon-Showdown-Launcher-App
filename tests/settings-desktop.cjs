@@ -19,7 +19,7 @@ fs.writeFileSync(fixtureFile, `<!doctype html><html><body><script>
 window.app = {
   rooms: { '': { searching: false, $: () => ({ length: 0 }) } },
   user: { get: key => key === 'name' ? 'Tester' : '' },
-  curRoom: { id: '' }, isDisconnected: false, popups: []
+  curRoom: { id: '' }, updateLayout() {}, isDisconnected: false, popups: []
 };
 </script></body></html>`);
 app.setPath('userData', profile);

@@ -19,6 +19,16 @@ try {
   Module._load = originalLoad;
 }
 
+// Just enough DOM for readSession to mark the page as launcher-driven.
+function fakeDocument(header = true) {
+  const classes = new Set();
+  return {
+    documentElement: { classList: { toggle: (name, on) => { if (on) classes.add(name); else classes.delete(name); } } },
+    getElementById: (id) => (id === 'header' && header ? {} : null),
+    shell: () => classes.has('sd-launcher-shell'),
+  };
+}
+
 function fakeContents(result = true) {
   const codes = [];
   return {
@@ -70,17 +80,24 @@ test('snapshot and session survive malformed client results', async () => {
 });
 
 test('session reads connection state and sanitizes room data', async () => {
+  let layouts = 0;
   const app = {
     isDisconnected: true,
-    user: { get: (key) => key === 'name' ? 'Player' : '' },
+    user: { get: (key) => key === 'name' ? 'Player' : key === 'named' },
     rooms: {
-      '': { searching: [{ format: 'gen9ou' }], $: () => ({ length: 1 }) },
-      'battle-gen9ou-1': { title: 'Battle', battle: { p1: { name: 'Player' }, p2: { name: 'Rival' }, tier: 'Gen 9 OU', ended: false } },
+      '': { searching: [{ format: 'gen9ou' }], $: () => ({ length: 1 }), notifications: { pm: {} } },
+      'battle-gen9ou-1': { type: 'battle', title: 'Battle', notifications: null,
+        battle: { p1: { name: 'Player' }, p2: { name: 'Rival' }, tier: 'Gen 9 OU', ended: false, turn: 7 } },
+      lobby: { type: 'chat', title: 'Lobby', notifications: { msg: {} } },
+      'view-thing': { type: 'html', title: 'Thing' },
     },
     curRoom: { id: 'battle-gen9ou-1' },
     popups: [{}],
+    updateLayout: () => { layouts += 1; },
+    focusRoom() {}, leaveRoom() {}, joinRoom() {}, addPopup() {},
   };
-  const contents = fakeContents((code) => vm.runInNewContext(code, { window: { app }, app }));
+  const document = fakeDocument();
+  const contents = fakeContents((code) => vm.runInNewContext(code, { window: { app, document }, app, document }));
   const state = await new ShowdownBridge(() => contents).session();
   assert.equal(state.ready, true);
   assert.equal(state.connected, false);
@@ -88,6 +105,16 @@ test('session reads connection state and sanitizes room data', async () => {
   assert.deepEqual(Array.from(state.search.formats), ['gen9ou']);
   assert.equal(state.rooms[0].id, 'battle-gen9ou-1');
   assert.deepEqual(Array.from(state.rooms[0].players), ['Player', 'Rival']);
+  assert.equal(state.named, true);
+  assert.equal(state.menuUnread, true);
+  assert.deepEqual(Array.from(state.rooms, (r) => [r.kind, r.turn, r.unread, r.formatId]),
+    [['battle', 7, false, 'gen9ou'], ['chat', null, true, ''], ['other', null, false, '']]);
+  // One room at a time is a runtime flag, applied once per client load.
+  assert.equal(app.singlePanelMode, true);
+  assert.equal(state.shell, true);
+  assert.equal(document.shell(), true);
+  await new ShowdownBridge(() => contents).session();
+  assert.equal(layouts, 1);
 
   contents.executeJavaScript = async () => ({ rooms: [null, { id: 'bad/room' }, { id: 'battle-1', players: ['p'.repeat(100), 44], title: 'x'.repeat(100) }], current: 'bad/room', search: { formats: ['ok', 'bad/id'] }, popups: -1 });
   const cleaned = await new ShowdownBridge(() => contents).session();
@@ -96,6 +123,7 @@ test('session reads connection state and sanitizes room data', async () => {
   assert.equal(cleaned.rooms.length, 1);
   assert.deepEqual(cleaned.rooms[0].players, ['p'.repeat(40), '']);
   assert.deepEqual(cleaned.search.formats, ['ok']);
+  assert.deepEqual([cleaned.rooms[0].kind, cleaned.rooms[0].turn, cleaned.rooms[0].formatId, cleaned.named], ['other', null, '', false]);
   assert.equal(cleaned.popups, 0);
 });
 
@@ -115,6 +143,12 @@ test('only allowlisted actions with valid arguments reach the client', async () 
   }
   assert.equal(await bridge.act('edit-team', { team: 0, name: 'x'.repeat(81), format: 'gen9ou' }), false);
   assert.equal(await bridge.act('edit-team', { team: 0, name: 'Team', format: 'bad/id' }), false);
+  for (const room of [undefined, null, 5, 'bad/room', 'x'.repeat(81)]) {
+    assert.equal(await bridge.act('focus-room', { room }), false);
+    assert.equal(await bridge.act('leave-room', { room }), false);
+  }
+  assert.equal(await bridge.act('leave-room', { room: '' }), false);
+  assert.equal(await bridge.act('leave-room', { room: 'rooms' }), false);
   assert.equal(contents.codes.length, 0);
   assert.equal(await bridge.act('challenge', { user: 'Rival', format: 'gen9ou' }), true);
   assert.match(contents.codes[0], /\("Rival", "gen9ou"\)$/);
@@ -167,4 +201,74 @@ test('missing team stays empty when the old client renders its team control', as
   const app = { rooms: { '': menu }, focusRoom: () => {}, popups: [] };
   const contents = fakeContents((code) => vm.runInNewContext(code, { app, BattleFormats: { gen9ou: { team: false } } }));
   assert.equal(await new ShowdownBridge(() => contents).act('search', { format: 'gen9ou', team: null }), true);
+});
+
+test('rooms are focused and left through the client, keeping its forfeit confirmation', async () => {
+  const calls = [];
+  const app = {
+    rooms: { '': {}, lobby: {}, 'battle-gen9ou-1': {} },
+    popups: [],
+    focusRoom: (id) => calls.push(['focus', id]),
+    // The client refuses to leave a player's live battle and shows its own popup instead.
+    leaveRoom: (id) => { calls.push(['leave', id]); return id !== 'battle-gen9ou-1'; },
+    addPopup: (popup) => calls.push(['popup', popup]),
+  };
+  const contents = fakeContents((code) => vm.runInNewContext(code, { app, SoundsPopup: 'sounds', OptionsPopup: 'options' }));
+  const bridge = new ShowdownBridge(() => contents);
+  assert.equal(await bridge.act('focus-room', { room: '' }), true);
+  assert.equal(await bridge.act('focus-room', { room: 'lobby' }), true);
+  assert.equal(await bridge.act('focus-room', { room: 'gone' }), false);
+  assert.equal(await bridge.act('leave-room', { room: 'lobby' }), true);
+  assert.equal(await bridge.act('leave-room', { room: 'battle-gen9ou-1' }), 'needs-client');
+  assert.equal(await bridge.act('leave-room', { room: 'gone' }), true);
+  assert.equal(await bridge.act('sounds', {}), true);
+  assert.equal(await bridge.act('options', {}), true);
+  assert.deepEqual(calls, [['focus', ''], ['focus', 'lobby'], ['leave', 'lobby'], ['leave', 'battle-gen9ou-1'],
+    ['popup', 'sounds'], ['popup', 'options']]);
+});
+
+test('the client keeps its own header unless a full read confirms the launcher can drive rooms', async () => {
+  const make = () => ({
+    user: { get: (key) => key === 'name' ? 'Player' : false },
+    rooms: { '': { $: () => ({ length: 0 }) }, lobby: { type: 'chat', title: 'Lobby' } },
+    curRoom: { id: 'lobby' },
+    popups: [],
+    updateLayout() {}, focusRoom() {}, leaveRoom() {}, joinRoom() {}, addPopup() {},
+  });
+  const read = async (app, document) => {
+    const contents = fakeContents((code) => vm.runInNewContext(code, { window: { app, document }, app, document }));
+    return new ShowdownBridge(() => contents).session();
+  };
+
+  const document = fakeDocument();
+  let app = make();
+  assert.equal((await read(app, document)).shell, true);
+  assert.equal(document.shell(), true);
+
+  // A room control disappears: rooms are still listed, but the client's tabs must return.
+  app = make();
+  delete app.leaveRoom;
+  const degraded = await read(app, document);
+  assert.equal(degraded.ready, true);
+  assert.equal(degraded.shell, false);
+  assert.equal(degraded.rooms.length, 1);
+  assert.equal(document.shell(), false);
+  assert.equal(app.singlePanelMode, undefined);
+
+  // The header element is gone or renamed.
+  const noHeader = fakeDocument(false);
+  assert.equal((await read(make(), noHeader)).shell, false);
+  assert.equal(noHeader.shell(), false);
+
+  // The read itself breaks part-way: withdraw the class set by an earlier good read.
+  assert.equal((await read(make(), document)).shell, true);
+  app = make();
+  app.user.get = () => { throw new Error('client changed'); };
+  assert.deepEqual(await read(app, document), { ready: false, rooms: [] });
+  assert.equal(document.shell(), false);
+
+  // The client is not there at all.
+  assert.equal((await read(make(), document)).shell, true);
+  assert.deepEqual(await read(undefined, document), { ready: false, rooms: [] });
+  assert.equal(document.shell(), false);
 });

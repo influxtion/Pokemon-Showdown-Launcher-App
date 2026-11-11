@@ -1,0 +1,13 @@
+/* The launcher owns room navigation: its rail lists open rooms and its top bar names the
+   current one, so the client's own header, tabs and user bar are hidden and rooms fill the
+   view. Only for the live client; the replay and practice views keep their own chrome.
+
+   Fail safe: these rules apply only while the bridge (readSession in showdown.js) keeps the
+   sd-launcher-shell class set, which it does only when it can still drive rooms. If the
+   client changes underneath us, its own header and tabs return. */
+html.sd-launcher-shell #header {
+  display: none !important;
+}
+html.sd-launcher-shell .ps-room {
+  top: 0 !important;
+}
