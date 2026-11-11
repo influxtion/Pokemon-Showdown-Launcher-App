@@ -3,8 +3,8 @@
 
    Like client-shell.css, this applies only while the bridge sets sd-launcher-shell. Do not
    give .leftmenu, .mainmenu, .menugroup, .battleform or their <p> rows a position or
-   transform: the client's team picker expects the select's offsetParent to be
-   .mainmenuwrapper. */
+   lasting transform: the client's team picker expects the select's offsetParent to be
+   .mainmenuwrapper. The entrance animation below only moves them while it plays. */
 html.sd-launcher-shell:not(.sd-menu-community) {
   .mainmenuwrapper {
     background: radial-gradient(ellipse 900px 420px at 50% -80px,
@@ -81,6 +81,17 @@ html.sd-launcher-shell:not(.sd-menu-community) {
     column-gap: 10px !important;
     padding: 0 20px 18px !important;
   }
+  .battleform[data-search]::before {
+    content: "Start Battle";
+    grid-column: 1 / -1;
+    margin: 0 -20px;
+    padding: 20px;
+    border-bottom: 1px solid var(--sd-border);
+    color: var(--sd-text);
+    font-size: 22px;
+    font-weight: 700;
+    line-height: 1.2;
+  }
   .battleform p {
     margin: 0 !important;
   }
@@ -120,13 +131,15 @@ html.sd-launcher-shell:not(.sd-menu-community) {
   .battleform p:has(> .teamselect) > .label::after { content: "Team"; }
   .battleform .select {
     position: relative !important;
+    /* Without this Chromium paints a gray native button under user-origin styles. */
+    appearance: none !important;
     width: 100% !important;
     height: 84px !important;
     min-height: 0 !important;
     padding: 0 44px 22px 84px !important;
     border: 0 !important;
     border-radius: 0 !important;
-    background: transparent !important;
+    background: var(--sd-input) !important;
     box-shadow: none !important;
     color: var(--sd-text) !important;
     font-family: inherit !important;
@@ -250,27 +263,42 @@ html.sd-launcher-shell:not(.sd-menu-community) {
     display: block !important;
     width: auto !important;
     min-width: 190px !important;
-    height: 52px !important;
+    height: 50px !important;
+    margin-bottom: 4px !important;
     padding: 0 30px !important;
-    border-radius: 12px !important;
+    border-radius: 6px !important;
     font-family: inherit !important;
     font-size: 18px !important;
-    transition: background-color 0.15s ease !important;
+    letter-spacing: 0.02em !important;
+    transition: background-color 0.12s ease, transform 0.08s ease, box-shadow 0.08s ease !important;
+  }
+  /* A hard bottom edge that the button presses down into. */
+  .menugroup .button.big:not(.disabled) {
+    box-shadow: 0 4px 0 color-mix(in srgb, var(--sd-primary) 62%, black) !important;
+  }
+  .menugroup .button.big:not(.disabled):active {
+    transform: translateY(3px) !important;
+    box-shadow: 0 1px 0 color-mix(in srgb, var(--sd-primary) 62%, black) !important;
   }
   .menugroup .button.big br,
   .menugroup .button.big small {
     display: none !important;
   }
   .menugroup .button.big:not(.disabled) strong::before {
-    content: "\f0e7";
+    content: "\f061";
+    display: inline-block;
     margin-right: 10px;
-    font: 18px/1 FontAwesome;
+    font: 16px/1 FontAwesome;
+  }
+  .menugroup .button.big:not(.disabled):hover strong::before {
+    animation: sd-nudge 0.7s ease-in-out infinite !important;
   }
   .menugroup .button.big.disabled {
     border-color: var(--sd-accent) !important;
     background: transparent !important;
     color: var(--sd-text) !important;
     opacity: 1 !important;
+    animation: sd-pulse 1.4s ease-in-out infinite !important;
   }
   .battleform p.cancel .button {
     width: auto !important;
@@ -390,9 +418,66 @@ html.sd-launcher-shell:not(.sd-menu-community) {
       width: 100% !important;
     }
   }
+  /* Motion: the page rises in each time the tab opens, and controls answer the pointer. */
+  .mainmenu > .menugroup:has(.battleform) {
+    animation: sd-rise 0.32s cubic-bezier(0.2, 0.8, 0.3, 1) backwards !important;
+  }
+  .mainmenu button[value="ladder"],
+  .mainmenu button[value="/smogtours"],
+  .mainmenu button[value="battles"] {
+    animation: sd-rise 0.32s cubic-bezier(0.2, 0.8, 0.3, 1) backwards !important;
+  }
+  .mainmenu button[value="ladder"] { animation-delay: 0.07s !important; }
+  .mainmenu button[value="/smogtours"] { animation-delay: 0.12s !important; }
+  .mainmenu button[value="battles"] { animation-delay: 0.17s !important; }
+  .battleform p:has(> .select)::before,
+  .mainmenu button[value="ladder"]::before,
+  .mainmenu button[value="/smogtours"]::before,
+  .mainmenu button[value="battles"]::before {
+    transition: transform 0.16s cubic-bezier(0.3, 1.6, 0.5, 1);
+  }
+  .battleform p:has(> .select:not(:disabled):hover)::before,
+  .mainmenu button[value="ladder"]:not(.disabled):hover::before,
+  .mainmenu button[value="/smogtours"]:not(.disabled):hover::before,
+  .mainmenu button[value="battles"]:not(.disabled):hover::before {
+    transform: scale(1.1) rotate(-5deg);
+  }
+  .battleform .checkbox:active {
+    transform: scale(0.95) !important;
+  }
+  /* Team sprites hop in sequence. */
+  .battleform .teamselect:not(:disabled):hover .picon {
+    animation: sd-hop 0.42s ease-out !important;
+  }
+  .battleform .teamselect .picon:nth-child(2) { animation-delay: 0.05s !important; }
+  .battleform .teamselect .picon:nth-child(3) { animation-delay: 0.1s !important; }
+  .battleform .teamselect .picon:nth-child(4) { animation-delay: 0.15s !important; }
+  .battleform .teamselect .picon:nth-child(5) { animation-delay: 0.2s !important; }
+  .battleform .teamselect .picon:nth-child(6) { animation-delay: 0.25s !important; }
+
   @media (prefers-reduced-motion: reduce) {
-    .mainmenu * {
+    .mainmenu *,
+    .mainmenu *::before,
+    .mainmenu *::after {
+      animation: none !important;
       transition: none !important;
     }
   }
+}
+
+@keyframes sd-rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes sd-nudge {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(4px); }
+}
+@keyframes sd-pulse {
+  0%, 100% { border-color: var(--sd-accent); }
+  50% { border-color: var(--sd-border-strong); }
+}
+@keyframes sd-hop {
+  0%, 100% { transform: translateY(0); }
+  40% { transform: translateY(-5px); }
 }
