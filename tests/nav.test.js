@@ -78,8 +78,10 @@ function harness(states, { onPlay = false, saved = new Map(), act = async () => 
   });
   return {
     location, nav, events, timers, saved, calls,
-    rows: () => nav.rooms.children,
-    row: (i) => nav.rooms.children[i],
+    rows: () => nav.rooms.children.filter((c) => c.has('nav-room')),
+    row: (i) => nav.rooms.children.filter((c) => c.has('nav-room'))[i],
+    tabs: () => nav.rooms.children.filter((c) => c.has('nav-tab')),
+    tab: (title) => nav.rooms.children.find((c) => c.has('nav-tab') && c.children[0].children[1].children[0].textContent === title),
     main: (r) => r.children[0],
     close: (r) => r.children[1],
     title: (r) => r.children[0].children[1].children[0].textContent,
@@ -194,33 +196,38 @@ test('only the current room is marked on play, and none elsewhere', async () => 
   assert.deepEqual(other.rows().map((r) => r.getAttribute('aria-current')), [null, null]);
 });
 
-test('main menu row shows on play at the menu or room list, or when it has unread activity', async () => {
+test('the Battle tab is always shown, marks the main menu and carries its unread dot', async () => {
   const rooms = [chat('lobby', 'Lobby')];
   const menu = harness([session(rooms, { current: '' })], { onPlay: true });
   await menu.settle();
-  assert.equal(menu.title(menu.row(0)), 'Main menu');
-  assert.equal(menu.row(0).getAttribute('aria-current'), 'page');
-  assert.equal(menu.row(0).children.length, 1, 'main menu cannot be closed');
-  assert.equal(menu.row(1).getAttribute('aria-current'), null);
-
-  const list = harness([session(rooms, { current: 'rooms' })], { onPlay: true });
-  await list.settle();
-  assert.equal(list.title(list.row(0)), 'Main menu');
+  assert.equal(menu.tab('Battle').getAttribute('aria-current'), 'page');
+  assert.equal(menu.tab('Battle').children.length, 1, 'tabs cannot be closed');
+  assert.equal(menu.row(0).getAttribute('aria-current'), null);
 
   const inRoom = harness([session(rooms, { current: 'lobby' })], { onPlay: true });
   await inRoom.settle();
-  assert.equal(inRoom.rows().length, 1);
+  assert.equal(inRoom.tab('Battle').getAttribute('aria-current'), null);
 
   const offPlay = harness([session(rooms, { current: '' })]);
   await offPlay.settle();
-  assert.equal(offPlay.rows().length, 1);
+  assert.equal(offPlay.tab('Battle').getAttribute('aria-current'), null, 'nothing is current off play');
+
+  const notReady = harness([{ ready: false, rooms: [] }]);
+  await notReady.settle();
+  assert.ok(notReady.tab('Battle'), 'shown before the client is ready');
 
   const unread = harness([session(rooms, { current: 'lobby', menuUnread: true })]);
   await unread.settle();
-  assert.equal(unread.rows().length, 2);
-  assert.equal(unread.title(unread.row(0)), 'Main menu');
-  assert.ok(unread.main(unread.row(0)).children.some((c) => c.has('nav-unread')));
-  assert.equal(unread.row(0).getAttribute('aria-current'), null);
+  assert.ok(unread.main(unread.tab('Battle')).children.some((c) => c.has('nav-unread')));
+});
+
+test('the Battle tab focuses the main menu and opens play', async () => {
+  const h = harness([session([])]);
+  await h.settle();
+  h.main(h.tab('Battle')).click();
+  await h.settle();
+  assert.deepEqual(h.calls, [{ action: 'focus-room', args: { room: '' } }]);
+  assert.equal(h.location.href, 'play.html');
 });
 
 test('clicking a row, the Showdown label or Join focuses and opens play', async () => {

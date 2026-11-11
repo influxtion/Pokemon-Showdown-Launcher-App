@@ -15,7 +15,6 @@
     battle: svg('<path d="M5 3.5v9l7-4.5z"/>', round),
     chat: svg('<path d="M2.5 3.5h11v7h-6l-3 2.5v-2.5h-2z"/>', round),
     teambuilder: svg('<path d="M3 13l.5-3L10.5 3l2.5 2.5L6 12.5z"/>', round),
-    menu: svg('<path d="M2.5 7.5 8 3l5.5 4.5V13H10V9.5H6V13H2.5z"/>', round),
     other: svg('<rect x="3" y="3" width="10" height="10" rx="1.5"/>'),
     x: svg('<path d="M4 4l8 8M12 4l-8 8"/>', ' stroke-linecap="round"'),
   };
@@ -77,8 +76,19 @@
     return result;
   }
 
-  function row({ title, sub, kind, live, unread, current, id, closable }) {
-    const node = make('div', `nav-item nav-room${live ? ' nav-item--live' : ''}`);
+  // Fixed rail tabs. Each one says how to reach its view in the client.
+  const TABS = {
+    battle: { title: 'Battle', kind: 'battle', action: 'focus-room', args: { room: '' } },
+  };
+
+  async function openTab(name) {
+    await act(TABS[name].action, TABS[name].args);
+    if (onPlay) pollNow();
+    else go('play.html');
+  }
+
+  function row({ title, sub, kind, live, unread, current, id, closable, tab }) {
+    const node = make('div', `nav-item ${tab ? 'nav-tab' : 'nav-room'}${live ? ' nav-item--live' : ''}`);
     node.title = sub ? `${title} · ${sub}` : title;
     if (current) node.setAttribute('aria-current', 'page');
     const main = make('button', 'nav-room-main');
@@ -93,7 +103,7 @@
       dot.title = 'New activity';
       main.append(dot);
     }
-    main.addEventListener('click', () => focusRoom(id));
+    main.addEventListener('click', () => (tab ? openTab(tab) : focusRoom(id)));
     node.append(main);
     if (closable) {
       const close = make('button', 'rail-icon-btn nav-close');
@@ -117,14 +127,10 @@
     const current = typeof session.current === 'string' ? session.current : '';
     const me = session.me || '';
     const menuCurrent = current === '' || current === 'rooms';
-    const matched = rooms.some((r) => r.id === current);
-    const rows = [];
-    if ((onPlay && menuCurrent) || session.menuUnread) {
-      rows.push({
-        title: 'Main menu', kind: 'menu', unread: !!session.menuUnread, id: '', closable: false,
-        current: onPlay && menuCurrent && !matched,
-      });
-    }
+    const tabRow = (tab, isCurrent, unread) => ({
+      title: TABS[tab].title, kind: TABS[tab].kind, tab, unread, current: onPlay && isCurrent,
+    });
+    const rows = [tabRow('battle', menuCurrent, !!session.menuUnread)];
     for (const r of rooms) {
       rows.push({
         title: r.battle ? matchup(r, me) : r.title, sub: roomSub(r), kind: r.battle ? 'battle' : r.kind,
