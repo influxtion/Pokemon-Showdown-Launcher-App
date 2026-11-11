@@ -79,6 +79,7 @@
   // Fixed rail tabs. Each one says how to reach its view in the client.
   const TABS = {
     battle: { title: 'Battle', kind: 'battle', action: 'focus-room', args: { room: '' } },
+    teambuilder: { title: 'Teambuilder', kind: 'teambuilder', action: 'join', args: { room: 'teambuilder' } },
   };
 
   async function openTab(name) {
@@ -130,14 +131,17 @@
     const tabRow = (tab, isCurrent, unread) => ({
       title: TABS[tab].title, kind: TABS[tab].kind, tab, unread, current: onPlay && isCurrent,
     });
-    const rows = [tabRow('battle', menuCurrent, !!session.menuUnread)];
-    for (const r of rooms) {
-      rows.push({
-        title: r.battle ? matchup(r, me) : r.title, sub: roomSub(r), kind: r.battle ? 'battle' : r.kind,
-        live: !!r.battle && !r.ended, unread: !!r.unread, id: r.id, closable: true,
-        current: onPlay && r.id === current,
-      });
-    }
+    const roomRow = (r) => ({
+      title: r.battle ? matchup(r, me) : r.title, sub: roomSub(r), kind: r.battle ? 'battle' : r.kind,
+      live: !!r.battle && !r.ended, unread: !!r.unread, id: r.id, closable: true,
+      current: onPlay && r.id === current,
+    });
+    // The Teambuilder tab stands in for its room, so it never gets a row of its own.
+    const rows = [
+      tabRow('battle', menuCurrent, !!session.menuUnread),
+      tabRow('teambuilder', current === 'teambuilder', rooms.some((r) => r.id === 'teambuilder' && r.unread)),
+      ...rooms.filter((r) => r.id !== 'teambuilder').map(roomRow),
+    ];
     // Rebuild only on change so hover and focus survive each poll.
     const key = JSON.stringify([rows, !!session.ready, me, !!session.named]);
     if (key === lastKey) return;

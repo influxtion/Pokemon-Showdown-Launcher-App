@@ -11,3 +11,8 @@ html.sd-launcher-shell #header {
 html.sd-launcher-shell .ps-room {
   top: 0 !important;
 }
+
+/* The rail's tabs replace these main menu links. */
+html.sd-launcher-shell .mainmenu p:has(> button.button[value="teambuilder"]) {
+  display: none !important;
+}

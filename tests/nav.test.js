@@ -148,7 +148,7 @@ test('rooms render as rows with titles, sub-lines, unread dots and close labels'
   const tb = chat('teambuilder', 'Teambuilder', { kind: 'teambuilder' });
   const h = harness([session([live, done, lobby, tb])]);
   await h.settle();
-  assert.equal(h.rows().length, 4);
+  assert.equal(h.rows().length, 3, 'the Teambuilder room is its tab, not a row');
   assert.equal(h.title(h.row(0)), 'vs. Rival');
   assert.equal(h.sub(h.row(0)), 'Gen 9 OU · Turn 7');
   assert.ok(h.row(0).has('nav-item--live'));
@@ -157,7 +157,7 @@ test('rooms render as rows with titles, sub-lines, unread dots and close labels'
   assert.ok(!h.row(1).has('nav-item--live'));
   assert.equal(h.sub(h.row(2)), undefined);
   assert.ok(h.main(h.row(2)).children.some((c) => c.has('nav-unread')));
-  assert.ok(!h.main(h.row(3)).children.some((c) => c.has('nav-unread')));
+  assert.ok(!h.main(h.row(1)).children.some((c) => c.has('nav-unread')));
   assert.equal(h.close(h.row(2)).getAttribute('aria-label'), 'Close Lobby');
   assert.equal(h.close(h.row(0)).getAttribute('aria-label'), 'Close vs. Rival');
   assert.equal(h.nav.account.hidden, false);
@@ -228,6 +228,23 @@ test('the Battle tab focuses the main menu and opens play', async () => {
   await h.settle();
   assert.deepEqual(h.calls, [{ action: 'focus-room', args: { room: '' } }]);
   assert.equal(h.location.href, 'play.html');
+});
+
+test('the Teambuilder tab is always shown and opens its room', async () => {
+  const closed = harness([session([])]);
+  await closed.settle();
+  assert.equal(closed.tab('Teambuilder').children.length, 1, 'tabs cannot be closed');
+  closed.main(closed.tab('Teambuilder')).click();
+  await closed.settle();
+  assert.deepEqual(closed.calls, [{ action: 'join', args: { room: 'teambuilder' } }]);
+  assert.equal(closed.location.href, 'play.html');
+
+  const tb = chat('teambuilder', 'Teambuilder', { kind: 'teambuilder' });
+  const open = harness([session([tb], { current: 'teambuilder' })], { onPlay: true });
+  await open.settle();
+  assert.equal(open.tab('Teambuilder').getAttribute('aria-current'), 'page');
+  assert.equal(open.tab('Battle').getAttribute('aria-current'), null);
+  assert.equal(open.rows().length, 0);
 });
 
 test('clicking a row, the Showdown label or Join focuses and opens play', async () => {
