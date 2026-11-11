@@ -1,4 +1,5 @@
 'use strict';
+process.env.SHOWDOWN_DESKTOP_BACKGROUND = '1';
 
 // Settings smoke test. All Electron storage stays inside a disposable profile.
 const assert = require('node:assert/strict');
@@ -164,9 +165,7 @@ app.whenReady().then(async () => {
 
   await load('settings.html');
   win.setSize(1024, 640);
-  win.setAlwaysOnTop(true);
-  win.show();
-  win.focus();
+  win.showInactive();
   const captures = path.join(__dirname, '..', 'out', 'desktop-smoke');
   fs.mkdirSync(captures, { recursive: true });
   for (const theme of ['light', 'dark']) {

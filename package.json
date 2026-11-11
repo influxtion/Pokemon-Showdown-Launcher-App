@@ -11,6 +11,9 @@
     "start": "electron .",
     "build:showdex": "node scripts/build-showdex.js",
     "build:practice": "node scripts/build-practice.js",
+    "bots:setup": "node scripts/bots/setup.cjs",
+    "bots:serve": "node scripts/bots/service.cjs",
+    "test:bots": "node scripts/bots/test.cjs",
     "test": "node --test tests/*.test.js",
     "test:desktop": "node scripts/test-desktop.js",
     "test:showdex:live": "node scripts/test-desktop.js --showdex-live",
@@ -26,5 +29,8 @@
   "devDependencies": {
     "electron": "45.2.3",
     "electron-builder": "26.18.0"
+  },
+  "dependencies": {
+    "ws": "8.18.3"
   }
 }

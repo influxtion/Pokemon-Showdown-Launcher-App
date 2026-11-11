@@ -1,0 +1,31 @@
+'use strict';
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
+const { inventory, verifyInventory } = require('../app/bot-integrity');
+
+test('bot inventory detects changed, missing and additional files and supports cancellation', async t => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'bot-integrity-'));
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  const payload = path.join(root, 'payload');
+  fs.mkdirSync(payload);
+  const input = path.join(payload, 'engine.py');
+  fs.writeFileSync(input, 'original');
+  const manifest = path.join(root, 'inventory.json');
+  fs.writeFileSync(manifest, JSON.stringify(inventory([payload])));
+  const verify = () => verifyInventory(manifest, new AbortController().signal);
+  assert.equal(await verify(), true);
+  fs.writeFileSync(input, 'changed!');
+  assert.equal(await verify(), false);
+  fs.writeFileSync(input, 'original');
+  fs.writeFileSync(path.join(payload, 'injected.py'), 'extra');
+  assert.equal(await verify(), false);
+  fs.unlinkSync(path.join(payload, 'injected.py'));
+  const controller = new AbortController();
+  controller.abort();
+  assert.equal(await verifyInventory(manifest, controller.signal), false);
+  fs.unlinkSync(input);
+  assert.equal(await verify(), false);
+});

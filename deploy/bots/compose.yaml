@@ -1,0 +1,34 @@
+services:
+  battles:
+    build:
+      context: ../..
+      dockerfile: deploy/bots/Dockerfile
+    environment:
+      BOT_SERVICE_ORIGIN: https://${BOT_DOMAIN:?Set BOT_DOMAIN}
+      BOT_SERVICE_KEY: ${BOT_SERVICE_KEY:?Set a long random BOT_SERVICE_KEY}
+      BOT_MAX_SESSIONS: ${BOT_MAX_SESSIONS:-1}
+    restart: unless-stopped
+    init: true
+    stop_grace_period: 15s
+    mem_limit: 4g
+    cpus: 4
+    pids_limit: 128
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    networks: [bots]
+  proxy:
+    image: caddy:2.10
+    environment:
+      BOT_DOMAIN: ${BOT_DOMAIN:?Set BOT_DOMAIN}
+    ports: ['80:80', '443:443']
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    restart: unless-stopped
+    networks: [bots]
+networks:
+  bots:
+volumes:
+  caddy_data:
+  caddy_config:

@@ -1,0 +1,6 @@
+{
+  "foulPlay": {"url": "https://github.com/pmariglia/foul-play.git", "revision": "8f541f80f91f960603673796559f796b10ccf0fb"},
+  "randomSets": {"url": "https://raw.githubusercontent.com/pkmn/randbats/684abfaaba8e163532dfff73465c734e3432314a/data/full/gen9randombattle.json", "sha256": "0e1154ce67d5fcea6ecc449a994cead4781d1b19d244626d2a7a716a172c5458"},
+  "randomSetsLicense": {"url": "https://raw.githubusercontent.com/pkmn/randbats/684abfaaba8e163532dfff73465c734e3432314a/LICENSE", "sha256": "082f3d2348caa9ce13794c12591b3c545f27e652c640edd9f0f794cbc47ff833"},
+  "foulPlayPackages": ["requests==2.33.0", "websockets==14.1", "python-dateutil==2.8.0", "certifi==2026.10.23", "charset-normalizer==3.5.2", "idna==3.20", "urllib3==2.8.0", "six==1.17.0"]
+}

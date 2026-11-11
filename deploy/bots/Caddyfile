@@ -1,0 +1,4 @@
+{$BOT_DOMAIN} {
+    # No access logs: session URLs contain private capabilities.
+    reverse_proxy battles:8787
+}

@@ -12,6 +12,11 @@ Current priority is finishing features; installer validation and release deliver
 Replay notes now include export, import review, conflict resolution and undo of the last import.
 Saved replays can also be reviewed inside the app beside their notes.
 
+Practice supports **Laplace and Foul Play**, locally or through a private hosted battle
+service. See [playable bots and the hosting handoff](docs/playable-bots.md) for setup,
+the service API, Docker/HTTPS deployment files and verification commands. Hosting is
+prepared for a contributor to deploy; no cloud service is provisioned by this branch.
+
 ## Run
 
 Requires Node.js 24.

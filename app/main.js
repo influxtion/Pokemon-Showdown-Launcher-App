@@ -12,6 +12,8 @@ const { Replays } = require('./replays');
 const { ReplayImports } = require('./replay-imports');
 const { ReplayReview } = require('./replay-review');
 const { PracticeRuntime } = require('./practice-runtime');
+const { HostedPractice } = require('./hosted-practice');
+const { readBotConfig, runtimeOptions } = require('./bot-config');
 const { PracticeView } = require('./practice-view');
 const { Logger } = require('./logging');
 const { WindowState } = require('./window-state');
@@ -179,6 +181,8 @@ function createWindow() {
     title: 'Showdown Desktop',
     backgroundColor: background(),
     show: false,
+    opacity: process.env.SHOWDOWN_DESKTOP_BACKGROUND === '1' ? 0 : 1,
+    focusable: process.env.SHOWDOWN_DESKTOP_BACKGROUND !== '1',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       sandbox: true,
@@ -188,12 +192,25 @@ function createWindow() {
   });
 
   const currentWindow = win;
+  if (process.env.SHOWDOWN_DESKTOP_BACKGROUND === '1') win.setIgnoreMouseEvents(true);
   replayReview = new ReplayReview({ window: win, css: REPLAY_CSS, background: background() });
-  const practiceRoot = app.isPackaged ? path.join(process.resourcesPath, 'practice')
+  let practiceRoot = app.isPackaged ? path.join(process.resourcesPath, 'practice')
     : path.join(__dirname, '..', 'vendor', 'laplace', 'dist');
   const practiceScripts = app.isPackaged ? path.join(process.resourcesPath, 'practice-adapter')
     : path.join(__dirname, '..', 'scripts', 'laplace');
-  practice = new PracticeRuntime({ root: practiceRoot, scripts: practiceScripts });
+  try {
+    const service = process.env.SHOWDOWN_BOT_SERVICE_URL;
+    const botConfig = !service && !app.isPackaged ? readBotConfig(process.env.SHOWDOWN_BOT_CONFIG || path.join(__dirname, '../out/bots/config.json')) : null;
+    if (botConfig) practiceRoot = botConfig.root;
+    practice = service
+      ? new HostedPractice({ url: service, key: process.env.SHOWDOWN_BOT_SERVICE_KEY })
+      : new PracticeRuntime(botConfig ? runtimeOptions(botConfig, path.join(__dirname, '..')) : { root: practiceRoot, scripts: practiceScripts });
+  } catch {
+    practice = new PracticeRuntime({ root: practiceRoot, scripts: practiceScripts });
+    practice.installed = () => false;
+    practice.state = 'failed';
+    practice.error = 'Battle configuration could not load. Check the server address and runtime setup.';
+  }
   practiceView = new PracticeView({ window: win, root: path.join(practiceRoot, 'client'), css: CLIENT_CSS,
     background: background(), onFailure: token => practice?.clientFailed(token) });
   practice.on('ready', connection => { logger.write('practice-ready'); practiceView?.open(connection); });
@@ -246,7 +263,7 @@ function createWindow() {
       if (replayDirty && !(await confirmDiscardReplay())) return;
       if (settings.get('confirmOnClose') && practice?.battle && !practice.battle.finished) {
         const result = await dialog.showMessageBox(win, { type: 'question', buttons: ['Keep playing', 'Close app'],
-          defaultId: 0, cancelId: 0, message: 'Close during local practice?', detail: 'The local battle will end.' });
+          defaultId: 0, cancelId: 0, message: 'Close during practice?', detail: 'The practice battle will end.' });
         if (result.response !== 1) return;
       }
       if (settings.get('confirmOnClose') && !(await confirmClientInterruption('Close app', 'Close the app?'))) return;
@@ -259,14 +276,16 @@ function createWindow() {
 
   win.once('ready-to-show', () => {
     if (maximized) win.maximize();
-    win.show();
+    if (process.env.SHOWDOWN_DESKTOP_BACKGROUND === '1') win.showInactive();
+    else win.show();
   });
   win.on('closed', () => {
     clearTimeout(windowSaveTimer);
     if (client && !client.webContents.isDestroyed()) client.webContents.close();
     replayReview?.close();
     replayReview = null;
-    practice?.stop();
+    if (practice?.dispose) practice.dispose();
+    else practice?.stop();
     practiceView?.close();
     practice = null;
     practiceView = null;
@@ -297,7 +316,7 @@ ipcMain.handle('practice:stop', async event => {
   if (!isPracticeFrame(event)) return { ok: false };
   if (practice.battle && !practice.battle.finished) {
     const result = await dialog.showMessageBox(win, { type: 'question', buttons: ['Keep playing', 'Stop practice'],
-      defaultId: 0, cancelId: 0, message: 'Stop this practice session?', detail: 'The local battle will end.' });
+      defaultId: 0, cancelId: 0, message: 'Stop this practice session?', detail: 'The practice battle will end.' });
     if (result.response !== 1) return { ok: false, cancelled: true };
   }
   return practice.stop();

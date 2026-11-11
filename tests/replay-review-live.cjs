@@ -1,4 +1,5 @@
 'use strict';
+process.env.SHOWDOWN_DESKTOP_BACKGROUND = '1';
 
 // Optional official replay-site smoke in a temporary guest profile. No account or battle actions.
 const assert = require('node:assert/strict');
@@ -70,16 +71,13 @@ app.whenReady().then(async () => {
   })()`);
   assert.equal(await player.executeJavaScript('battle.paused'), true);
 
-  win.setAlwaysOnTop(true);
-  win.show();
-  win.focus();
+  win.showInactive();
   const captures = path.join(__dirname, '..', 'out', 'desktop-smoke');
   fs.mkdirSync(captures, { recursive: true });
   const battleBefore = await player.executeJavaScript('battle.turn');
   for (const [width, height] of [[1366, 768], [1024, 640]]) {
     win.setSize(width, height);
-    win.show();
-    win.focus();
+    win.showInactive();
     let geometry;
     await until(async () => {
       const [windowWidth, windowHeight] = win.getSize();

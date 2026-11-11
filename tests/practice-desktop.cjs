@@ -1,4 +1,5 @@
 'use strict';
+process.env.SHOWDOWN_DESKTOP_BACKGROUND = '1';
 
 // Real staged Practice runtime in a disposable Electron profile.
 const assert = require('node:assert/strict');
@@ -6,7 +7,7 @@ const childProcess = require('node:child_process');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const { app, BrowserWindow, dialog, session, shell } = require('electron');
+const { app, BrowserWindow, dialog, ipcMain, session, shell } = require('electron');
 
 const root = path.join(__dirname, '..');
 const captures = path.join(root, 'out', 'desktop-smoke');
@@ -14,9 +15,14 @@ const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'showdown-practice-test-')
 process.env.SHOWDOWN_DESKTOP_USER_DATA = profile;
 app.setPath('userData', profile);
 const pause = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-const deadline = Date.now() + 85000;
+const deadline = Date.now() + 240000;
 const children = [];
 const diagnose = process.argv.includes('--diagnose-practice');
+const opponent = process.env.BOT_TEST_OPPONENT || 'laplace';
+const hosted = process.env.BOT_TEST_HOSTED === '1';
+const selection = { opponent, preset: 'balanced' };
+let service;
+let statusRequests = 0;
 
 async function until(check, label, timeout = 12000) {
   const end = Math.min(Date.now() + timeout, deadline);
@@ -32,18 +38,32 @@ function childExited(child) {
   return child.exitCode !== null || child.signalCode !== null;
 }
 
-function recordRuntimeChildren() {
+async function recordPracticeLifecycle() {
   const originalSpawn = childProcess.spawn;
+  const originalHandle = ipcMain.handle;
   childProcess.spawn = (executable, args, options) => {
     const child = originalSpawn(executable, args, options);
-    const name = args.find(arg => typeof arg === 'string' && /[\\/]scripts[\\/]laplace[\\/](server\.cjs|runner\.py)$/.test(arg));
+    const name = args.find(arg => typeof arg === 'string' && /[\\/]scripts[\\/](laplace[\\/](server\.cjs|runner\.py)|bots[\\/]foulplay\.py)$/.test(arg));
     if (name) children.push(child);
     return child;
   };
+  ipcMain.handle = (channel, listener) => originalHandle.call(ipcMain, channel,
+    channel === 'practice:status' ? (...args) => { statusRequests++; return listener(...args); } : listener);
   try {
+    if (hosted) {
+      const { createService } = require('../scripts/bots/service.cjs');
+      const { PracticeRuntime } = require('../app/practice-runtime');
+      const { readBotConfig, runtimeOptions } = require('../app/bot-config');
+      const config = readBotConfig(path.join(root, 'out/bots/config.json'));
+      const key = require('node:crypto').randomBytes(32).toString('hex');
+      service = createService({ createRuntime: () => new PracticeRuntime(runtimeOptions(config, root)), clientRoot: path.join(config.root, 'client'), key });
+      process.env.SHOWDOWN_BOT_SERVICE_URL = await service.listen();
+      process.env.SHOWDOWN_BOT_SERVICE_KEY = key;
+    }
     require('../app/main');
   } finally {
     childProcess.spawn = originalSpawn;
+    ipcMain.handle = originalHandle;
   }
 }
 
@@ -69,7 +89,7 @@ async function capture(contents, name) {
     try {
       const screenshot = await contents.capturePage();
       if (!screenshot.isEmpty()) {
-        fs.writeFileSync(path.join(captures, `${name}.png`), screenshot.toPNG());
+        fs.writeFileSync(path.join(captures, `${opponent}-${hosted ? 'hosted-' : ''}${name}.png`), screenshot.toPNG());
         return;
       }
     } catch (error) {
@@ -108,7 +128,7 @@ async function smoke() {
     dialogs.push(options);
     return { response };
   };
-  recordRuntimeChildren();
+  await recordPracticeLifecycle();
 
   const win = await until(() => BrowserWindow.getAllWindows()[0], 'launcher window');
   const renderer = win.webContents;
@@ -127,9 +147,13 @@ async function smoke() {
   assert.equal((await call('startPractice', 'balanced')).ok, false, 'Home cannot start Practice');
 
   await load('practice.html');
-  assert.equal((await status()).installed, true, 'Stage the local server, Python runtime, model and client first');
+  await until(async () => (await status()).installed, 'bot catalog ready');
   assert.equal((await status()).state, 'idle');
-  assert.equal((await call('startPractice', 'balanced')).ok, true);
+  fs.mkdirSync(captures, { recursive: true });
+  await until(() => run("!document.getElementById('practice-start').disabled"), 'opponent picker ready');
+  await capture(renderer, 'opponent-picker');
+  await run(`document.getElementById('practice-opponent').value = ${JSON.stringify(opponent)}; 0`);
+  assert.equal((await call('startPractice', selection)).ok, true);
   await until(async () => {
     const state = await status();
     if (state.error || state.clientError) throw new Error(state.error || state.clientError);
@@ -138,7 +162,7 @@ async function smoke() {
   const view = practice();
   const player = view.webContents;
   const playerId = player.id;
-  await until(() => !player.isLoading() && player.getURL().startsWith('file:'), 'local client document');
+  await until(() => !player.isLoading() && player.getURL().startsWith(hosted ? 'http:' : 'file:'), 'battle client document');
   assert.equal(new URL(player.getURL()).pathname.endsWith('/practice-client.html'), true);
   assert.notEqual(player.session, live.webContents.session);
   const preferences = player.getLastWebPreferences();
@@ -150,7 +174,7 @@ async function smoke() {
   assert.equal(await player.executeJavaScript('typeof require'), 'undefined');
   assert.equal(await player.executeJavaScript(`(() => {
     const url = new URL(window.Config.practiceSocketUrl);
-    return url.protocol === 'ws:' && url.hostname === '127.0.0.1' && url.pathname === '/showdown/websocket';
+    return url.protocol === 'ws:' && url.hostname === '127.0.0.1' && url.pathname.endsWith('/websocket');
   })()`), true);
   assert.equal(live.getVisible(), false);
   const roomId = await until(async () => {
@@ -230,9 +254,7 @@ async function smoke() {
   assert.equal(live.getVisible(), false);
   assert.equal(live.webContents.id, liveId);
 
-  win.setAlwaysOnTop(true);
-  win.show();
-  win.focus();
+  win.showInactive();
   fs.mkdirSync(captures, { recursive: true });
   const turnBeforeResize = await battleEval(player, 'return room.battle.turn;');
   const layoutFailures = [];
@@ -264,6 +286,7 @@ async function smoke() {
       assert.equal(await battleEval(player, 'return room.battle.turn;'), turnBeforeResize);
       assert.equal(practice().webContents.id, playerId);
       await pause(250);
+      await until(() => battleEval(player, `return [...room.el.querySelectorAll('.innerbattle img')].some(img => img.naturalWidth > 0);`), 'official battle artwork loaded', 30000);
       const layout = await battleEval(player, `
         const box = element => {
           if (!element) return null;
@@ -319,14 +342,15 @@ async function smoke() {
   assert.equal(externalOpens, 0);
   assert.deepEqual(layoutFailures, [], 'Battlefield, sprites, HP, log and action controls remain visible or reachable');
 
-  assert.equal((await call('startPractice', 'balanced')).ok, true, 'restart after Stop');
-  const restarted = await until(async () => {
+  const waitForBattle = label => until(async () => {
     const state = await status();
     if (state.error || state.clientError) throw new Error(state.error || state.clientError);
     const current = practice();
     if (!current || !state.battle || state.clientState !== 'battle' || !current.getVisible()) return null;
     return (await battleEval(current.webContents, 'return room.id;')) === state.battle.room ? current : null;
-  }, 'new local battle after Stop', 27000);
+  }, label, 27000);
+  assert.equal((await call('startPractice', selection)).ok, true, 'restart after Stop');
+  const restarted = await waitForBattle('new local battle after Stop');
   const restartedPlayer = restarted.webContents;
   const forfeitedRoom = (await status()).battle.room;
   assert.notEqual(restartedPlayer.id, playerId);
@@ -374,15 +398,37 @@ async function smoke() {
   await until(() => children.every(childExited), 'both restarted runtime children exited after the crash');
   assert.equal(live.webContents.id, liveId);
   assert.equal(live.webContents.isDestroyed(), false);
-  console.log(`PASS Practice desktop: real loopback battle, move and switch, ${firstMove.tera ? 'server-confirmed Tera' : 'Tera unavailable'}, view retention, size/theme captures, Stop, Forfeit and rematch, crash cleanup`);
+
+  assert.equal((await call('startPractice', selection)).ok, true, 'restart after renderer crash');
+  const hiddenView = await waitForBattle('new local battle after renderer crash');
+  const hiddenPlayer = hiddenView.webContents;
+  const hiddenChildren = children.slice(4);
+  assert.equal(hiddenChildren.length, 2);
+  assert.ok(hiddenChildren.every(child => !childExited(child)));
+  await load('index.html');
+  await until(() => !hiddenView.getVisible(), 'Practice hidden on Home before disconnect');
+  const homeRequests = statusRequests;
+  assert.equal(await hiddenPlayer.executeJavaScript(`(() => {
+    if (window.app?.socket?.readyState !== WebSocket.OPEN) return false;
+    window.app.socket.close();
+    return true;
+  })()`), true, 'closed only the hidden player socket');
+  await until(() => !practice() && hiddenPlayer.isDestroyed(), 'disconnected hidden view disposed');
+  await until(() => hiddenChildren.every(childExited), 'both runtime children exited after hidden disconnect');
+  assert.equal(statusRequests, homeRequests, 'Home made no Practice status requests during cleanup');
+  assert.ok(win.isVisible() && renderer.getURL().endsWith('/index.html'), 'Home stayed visible');
+  assert.equal(live.webContents.id, liveId);
+  assert.equal(live.webContents.isDestroyed(), false);
+  console.log(`PASS Practice desktop: real loopback battle, move and switch, ${firstMove.tera ? 'server-confirmed Tera' : 'Tera unavailable'}, view retention, size/theme captures, Stop, Forfeit and rematch, crash and hidden disconnect cleanup`);
 }
 
-app.whenReady().then(smoke).then(() => app.exit(0), async error => {
+app.whenReady().then(smoke).then(async () => { await service?.close(); app.exit(0); }, async error => {
   console.error(error);
   for (const child of children) {
     if (!childExited(child)) child.kill();
   }
   const end = Date.now() + 1500;
   while (children.some(child => !childExited(child)) && Date.now() < end) await pause(50);
+  await service?.close();
   app.exit(1);
 });

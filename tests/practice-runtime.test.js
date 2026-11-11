@@ -23,6 +23,23 @@ function fixture() {
   return { runtime, children };
 }
 
+test('opponent selection stays allowlisted and Foul Play uses its own runner and readiness contract', async () => {
+  const { runtime, children } = fixture();
+  assert.equal((await runtime.start({ opponent: 'foulplay', preset: 'balanced' })).ok, false);
+  runtime.foulPlay = { python: '/foul/python', runner: '/foul/runner.py', source: '/foul/source' };
+  assert.equal((await runtime.start({ opponent: '../runner', preset: 'balanced' })).ok, false);
+  assert.equal((await runtime.start({ opponent: 'foulplay', preset: 'balanced' })).ok, true);
+  children[0].line({ type: 'ready', port: 41000 });
+  assert.equal(children[1].exe, '/foul/python');
+  assert(children[1].args.includes('/foul/source'));
+  assert.equal(runtime.connection.bot, 'FoulPlay');
+  children[1].line({ type: 'ready', protocol: 1, opponent: 'foulplay', bot: 'FoulPlay', human: 'Player',
+    format: 'gen9randombattle', threads: 2, searchMs: 100 });
+  assert.equal(runtime.state, 'ready');
+  assert.equal(runtime.status().opponent, 'foulplay');
+  runtime.stop();
+});
+
 test('practice starts server before bot and only signals ready after authenticated bot readiness', async () => {
   const { runtime, children } = fixture();
   assert.equal((await runtime.start('arbitrary')).ok, false);
@@ -112,4 +129,31 @@ test('integrity verification fails closed and cancellation never launches childr
   runtime.stop();
   assert.equal((await pending).cancelled, true);
   assert.equal(children.length, 0);
+});
+
+test('move recovery counts are bounded, cumulative, and reset for a new battle', async () => {
+  const { runtime, children } = fixture();
+  await runtime.start('full');
+  children[0].line({ type: 'ready', port: 41000 });
+  const bot = children[1];
+  bot.line({ type: 'ready', protocol: 1, bot: 'Laplace', human: 'Player',
+    format: 'gen9randombattle', threads: 8, determinizations: 8, searchMs: 150 });
+  const room = 'battle-gen9randombattle-1';
+  bot.line({ type: 'battle', room });
+  bot.line({ type: 'turn', room, turn: 1, fallback: true });
+  const recovery = { type: 'recovery', room, kind: 'rejected-choice', rejectedChoices: 2, defaultChoices: 1 };
+  bot.line(recovery);
+  bot.line(recovery);
+  bot.line({ ...recovery, rejectedChoices: 1, defaultChoices: 0 });
+  bot.line({ ...recovery, rejectedChoices: 10001 });
+  bot.line({ ...recovery, room: 'battle-gen9randombattle-999', defaultChoices: 99 });
+  assert.equal(runtime.battle.searchFallbacks, 1);
+  assert.equal(runtime.battle.rejectedChoices, 2);
+  assert.equal(runtime.battle.defaultChoices, 1);
+  bot.line({ type: 'end', room, result: 'loss' });
+  assert.equal(runtime.battle.defaultChoices, 1);
+  bot.line({ type: 'battle', room: 'battle-gen9randombattle-2' });
+  assert.equal(runtime.battle.searchFallbacks, undefined);
+  assert.equal(runtime.battle.rejectedChoices, undefined);
+  runtime.stop();
 });

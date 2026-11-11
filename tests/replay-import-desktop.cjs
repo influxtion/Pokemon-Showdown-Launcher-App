@@ -1,4 +1,5 @@
 'use strict';
+process.env.SHOWDOWN_DESKTOP_BACKGROUND = '1';
 
 // Real IPC/store round trips; native file dialogs are stubbed and all client requests blocked.
 const assert = require('node:assert/strict');
@@ -119,9 +120,7 @@ app.whenReady().then(async () => {
   assert.match(await run("document.getElementById('import-apply').textContent"), /Import 2 notes/);
 
   fs.mkdirSync(captures, { recursive: true });
-  win.setAlwaysOnTop(true);
-  win.show();
-  win.focus();
+  win.showInactive();
   for (const [width, height] of [[1366, 768], [1024, 640]]) {
     win.setSize(width, height);
     await pause(200);

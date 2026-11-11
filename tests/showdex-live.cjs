@@ -1,4 +1,5 @@
 'use strict';
+process.env.SHOWDOWN_DESKTOP_BACKGROUND = '1';
 
 // Optional live guest smoke. It uses the real Showdown site and never starts a battle.
 const assert = require('node:assert/strict');
@@ -58,9 +59,7 @@ app.whenReady().then(async () => {
   assert.equal(await client.executeJavaScript("Boolean(app.rooms['view-hellodex'] && document.querySelector('[data-showdex-module=hellodex]'))"), true);
 
   win.setSize(1366, 768);
-  win.setAlwaysOnTop(true);
-  win.show();
-  win.focus();
+  win.showInactive();
   const captures = path.join(__dirname, '..', 'out', 'desktop-smoke');
   fs.mkdirSync(captures, { recursive: true });
   const readChrome = (module, selectors) => client.executeJavaScript(`(() => {
@@ -116,8 +115,7 @@ app.whenReady().then(async () => {
   };
   const capture = async (theme, screen, size) => {
     win.setSize(size === 'minimum' ? 1024 : 1366, size === 'minimum' ? 640 : 768);
-    win.show();
-    win.focus();
+    win.showInactive();
     await pause(250);
     if (screen === 'hellodex' || screen === 'settings') {
       assert.equal(await client.executeJavaScript(`(() => {
