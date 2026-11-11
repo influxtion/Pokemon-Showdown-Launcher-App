@@ -81,6 +81,7 @@ app.whenReady().then(async () => {
   assert.equal(await page("window.desktop.showdown('show-menu', { tab: 'battle' })"), true);
   assert.equal((await session()).menuTab, 'battle');
   assert.deepEqual(await menuView(), { form: true, ladder: true, watch: true, teambuilder: false, finduser: false, friends: false, resources: false, chat: false });
+  assert.equal(await js("document.querySelector('.mainmenu button[name=format]').offsetParent.className"), 'mainmenuwrapper', 'team picker still finds the main menu');
 
   // Rooms appear in the rail and can be switched and closed from it.
   assert.equal(await page("window.desktop.showdown('join', { room: 'lobby' })"), true);
