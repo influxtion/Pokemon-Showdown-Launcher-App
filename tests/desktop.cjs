@@ -113,6 +113,7 @@ app.whenReady().then(async () => {
   await load('play.html');
   await until(() => run("document.querySelectorAll('[data-nav=rooms] .nav-room').length === 2"), 'rail rooms rendered');
   assert.equal(await run("document.querySelector('[data-nav=rooms] .nav-room[aria-current=page] .nav-room-title').textContent"), 'vs. Opponent');
+  assert.deepEqual(await run("[...document.querySelectorAll('[data-nav=rooms] .nav-tab .nav-room-title')].map((n) => n.textContent)"), ['Battle', 'Teambuilder', 'Community']);
   assert.equal(await run("document.querySelector('[data-nav=rooms] .nav-room-sub').textContent"), 'Random Battle · Turn 3');
   assert.equal(await run("document.querySelectorAll('[data-nav=rooms] .nav-unread').length"), 1);
   assert.equal(await run("document.querySelector('[data-nav=me]').textContent"), 'Tester');

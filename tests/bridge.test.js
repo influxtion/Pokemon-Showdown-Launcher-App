@@ -23,7 +23,10 @@ try {
 function fakeDocument(header = true) {
   const classes = new Set();
   return {
-    documentElement: { classList: { toggle: (name, on) => { if (on) classes.add(name); else classes.delete(name); } } },
+    documentElement: { classList: {
+      toggle: (name, on) => { if (on) classes.add(name); else classes.delete(name); },
+      contains: (name) => classes.has(name),
+    } },
     getElementById: (id) => (id === 'header' && header ? {} : null),
     shell: () => classes.has('sd-launcher-shell'),
   };
@@ -125,6 +128,30 @@ test('session reads connection state and sanitizes room data', async () => {
   assert.deepEqual(cleaned.search.formats, ['ok']);
   assert.deepEqual([cleaned.rooms[0].kind, cleaned.rooms[0].turn, cleaned.rooms[0].formatId, cleaned.named], ['other', null, '', false]);
   assert.equal(cleaned.popups, 0);
+});
+
+test('the menu tab is set through show-menu, reported by the session and validated', async () => {
+  const focused = [];
+  const app = {
+    user: { get: () => 'Player' }, rooms: { '': { $: () => ({ length: 0 }) } }, curRoom: { id: '' }, singlePanelMode: true,
+    focusRoom: (id) => focused.push(id), updateLayout() {}, leaveRoom() {}, joinRoom() {}, addPopup() {},
+  };
+  const document = fakeDocument();
+  const contents = fakeContents((code) => vm.runInNewContext(code, { window: { app, document }, app, document }));
+  const bridge = new ShowdownBridge(() => contents);
+  assert.equal((await bridge.session()).menuTab, 'battle');
+  assert.equal(await bridge.act('show-menu', { tab: 'community' }), true);
+  assert.equal((await bridge.session()).menuTab, 'community');
+  assert.equal(await bridge.act('show-menu', { tab: 'battle' }), true);
+  assert.equal((await bridge.session()).menuTab, 'battle');
+  assert.deepEqual(focused, ['', '']);
+
+  const count = contents.codes.length;
+  for (const tab of ['teambuilder', '', 1, null, undefined]) assert.equal(await bridge.act('show-menu', { tab }), false);
+  assert.equal(contents.codes.length, count);
+
+  contents.executeJavaScript = async () => ({ rooms: [], menuTab: 'bad' });
+  assert.equal((await bridge.session()).menuTab, 'battle');
 });
 
 test('only allowlisted actions with valid arguments reach the client', async () => {

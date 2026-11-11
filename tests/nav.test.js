@@ -49,7 +49,7 @@ function harness(states, { onPlay = false, saved = new Map(), act = async () => 
   const events = [];
   const calls = [];
   const nav = {};
-  for (const name of ['rooms', 'showdown', 'join', 'sign-in', 'account', 'me']) nav[name] = new Node('x');
+  for (const name of ['rooms', 'sign-in', 'account', 'me']) nav[name] = new Node('x');
   nav['sign-in'].hidden = true;
   nav.account.hidden = true;
   const location = { href: onPlay ? 'play.html' : 'index.html' };
@@ -226,7 +226,7 @@ test('the Battle tab focuses the main menu and opens play', async () => {
   await h.settle();
   h.main(h.tab('Battle')).click();
   await h.settle();
-  assert.deepEqual(h.calls, [{ action: 'focus-room', args: { room: '' } }]);
+  assert.deepEqual(h.calls, [{ action: 'show-menu', args: { tab: 'battle' } }]);
   assert.equal(h.location.href, 'play.html');
 });
 
@@ -247,7 +247,36 @@ test('the Teambuilder tab is always shown and opens its room', async () => {
   assert.equal(open.rows().length, 0);
 });
 
-test('clicking a row, the Showdown label or Join focuses and opens play', async () => {
+test('the Community tab is always shown, opens its menu view and marks it current', async () => {
+  const h = harness([session([])]);
+  await h.settle();
+  h.main(h.tab('Community')).click();
+  await h.settle();
+  assert.deepEqual(h.calls, [{ action: 'show-menu', args: { tab: 'community' } }]);
+  assert.equal(h.location.href, 'play.html');
+
+  const menu = harness([session([], { menuTab: 'community' })], { onPlay: true });
+  await menu.settle();
+  assert.equal(menu.tab('Community').getAttribute('aria-current'), 'page');
+  assert.equal(menu.tab('Battle').getAttribute('aria-current'), null);
+
+  const list = harness([session([], { current: 'rooms' })], { onPlay: true });
+  await list.settle();
+  assert.equal(list.tab('Community').getAttribute('aria-current'), 'page', 'the room list belongs to Community');
+  assert.equal(list.tab('Battle').getAttribute('aria-current'), null);
+});
+
+test('tabs keep their order and open rooms nest under the tab they belong to', async () => {
+  const h = harness([session([
+    chat('lobby', 'Lobby'), chat('ladder', 'Ladder', { kind: 'ladder' }), chat('battles', 'Battles', { kind: 'battles' }),
+    chat('tournaments', 'Tournaments'), room('battle-gen9ou-8', ['Alice', 'Bob']), chat('teambuilder', 'Teambuilder', { kind: 'teambuilder' }),
+  ])]);
+  await h.settle();
+  assert.deepEqual(h.nav.rooms.children.map((r) => h.title(r)),
+    ['Battle', 'Ladder', 'Battles', 'Tournaments', 'Alice vs. Bob', 'Teambuilder', 'Community', 'Lobby']);
+});
+
+test('clicking a row or Join a room focuses and opens play', async () => {
   const off = harness([session([chat('lobby', 'Lobby')])]);
   await off.settle();
   off.main(off.row(0)).click();
@@ -263,17 +292,11 @@ test('clicking a row, the Showdown label or Join focuses and opens play', async 
   assert.deepEqual(on.calls, [{ action: 'focus-room', args: { room: 'lobby' } }]);
   assert.equal(on.location.href, 'unchanged', 'already on play: no navigation');
 
-  const section = harness([session([])]);
-  await section.settle();
-  const event = section.nav.showdown.click();
-  await section.settle();
-  assert.equal(event.prevented, true);
-  assert.deepEqual(section.calls, [{ action: 'focus-room', args: { room: '' } }]);
-  assert.equal(section.location.href, 'play.html');
-
   const join = harness([session([])]);
   await join.settle();
-  join.nav.join.click();
+  const button = join.tab('Community').children[1];
+  assert.equal(button.getAttribute('aria-label'), 'Join a room');
+  button.click();
   await join.settle();
   assert.deepEqual(join.calls, [{ action: 'join', args: { room: 'rooms' } }]);
   assert.equal(join.location.href, 'play.html');

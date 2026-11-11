@@ -34,7 +34,7 @@ function renderRoom(session) {
   let format = '';
   let status = '';
   if (session.ready && current === '') {
-    title = 'Battle';
+    title = session.menuTab === 'community' ? 'Community' : 'Battle';
   } else if (current === 'rooms') {
     title = 'Rooms';
   } else if (room && room.battle) {

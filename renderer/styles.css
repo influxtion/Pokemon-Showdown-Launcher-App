@@ -1057,9 +1057,6 @@ a.list-row:hover { background: var(--bg-hover); text-decoration: none; }
 /* ---------- Rail rooms, room title and result bar ---------- */
 
 .rail-section { padding: 10px 16px 4px; font-size: var(--fs-xs); color: var(--rail-muted); display: flex; align-items: center; }
-.rail-section-label { color: inherit; }
-.rail-section-label:hover { color: var(--rail-text-strong); text-decoration: none; }
-.rail-section .rail-icon-btn { margin-left: auto; }
 .rail-icon-btn { width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: var(--radius); background: transparent; color: var(--rail-muted); cursor: pointer; padding: 0; flex: none; }
 .rail-icon-btn:hover { background: var(--rail-hover); color: var(--rail-text-strong); }
 .rail-icon-btn svg { width: 14px; height: 14px; }

@@ -108,6 +108,7 @@ function readSession() {
       me,
       named: Boolean(app.user.get('named')),
       menuUnread: Boolean(menu && menu.notifications),
+      menuTab: root && root.classList && root.classList.contains('sd-menu-community') ? 'community' : 'battle',
       rooms,
       current: app.curRoom ? app.curRoom.id : '',
       connected: !app.isDisconnected,
@@ -194,6 +195,13 @@ function challenge(name, format) {
 function join(roomid) {
   app.joinRoom(roomid);
   app.focusRoom(roomid);
+  return true;
+}
+
+// Battle and Community are two views of the one main menu room; client-shell.css filters it.
+function showMenu(tab) {
+  document.documentElement.classList.toggle('sd-menu-community', tab === 'community');
+  app.focusRoom('');
   return true;
 }
 
@@ -346,6 +354,7 @@ function sanitizeSession(raw) {
     me: str(raw.me, 40),
     named: Boolean(raw.named),
     menuUnread: Boolean(raw.menuUnread),
+    menuTab: raw.menuTab === 'community' ? 'community' : 'battle',
     shell: Boolean(raw.shell),
     connected: Boolean(raw.connected),
     current: typeof raw.current === 'string' && ROOM_ID.test(raw.current) ? raw.current : '',
@@ -529,6 +538,10 @@ class ShowdownBridge {
       case 'focus-room':
         if (!(args.room === '' || (typeof args.room === 'string' && ROOM_ID.test(args.room)))) return false;
         code = call(focusRoom, args.room);
+        break;
+      case 'show-menu':
+        if (args.tab !== 'battle' && args.tab !== 'community') return false;
+        code = call(showMenu, args.tab);
         break;
       case 'leave-room':
         if (!(typeof args.room === 'string' && ROOM_ID.test(args.room)) || args.room === 'rooms') return false;
