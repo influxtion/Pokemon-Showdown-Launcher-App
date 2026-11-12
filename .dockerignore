@@ -1,0 +1,13 @@
+.git
+node_modules
+out
+dist
+release
+vendor/laplace/dist
+vendor/laplace/pending*
+vendor/showdex/dist
+**/.env
+**/.env.*
+**/__pycache__
+**/*.pyc
+AGENTS.md

@@ -22,6 +22,7 @@ PROTOCOL = 1
 HOST = "127.0.0.1"
 WORLDS = 8
 SEARCH_MS = 150
+RECOVERY_LIMIT = 10_000
 MODEL_SHA256 = "502a47a59a6f87786c56b835e972828bc8cbab8e75028b5ddf90b49b8b5d2861"
 BOT_NAME = re.compile(r"Laplace(?:[0-9a-f]{10})?")
 HUMAN_NAME = re.compile(r"Player(?:[0-9a-f]{10})?")
@@ -80,7 +81,7 @@ def load_runtime(check):
     from laplace.value.net import ValueNet
     from laplace.value.value_features import N_VALUE_FEATURES, featurize
 
-    if version("poke-env") != "0.15.0" or hasattr(poke_engine, "featurize_state"):
+    if version("poke-env") != "0.15.0" or version("poke-engine") != "0.0.47" or hasattr(poke_engine, "featurize_state"):
         raise ValueError("Unsupported engine or client")
     for path in (paths.JOINT_SETS, paths.RANDBATS_STATS, paths.RANDBATS_SETS):
         with open(path, encoding="utf-8") as stream:
@@ -171,8 +172,22 @@ class PracticeSession:
         self.login_requested = False
         self.player = build_player(engine, model, args.bot, self.url, args.threads, self.observe_search)
         self.client = self.player.ps_client
+        self._send_message = self.client.send_message
+        self.client.send_message = self.send_message
+        self.recovery_counts = {"rejectedChoices": 0, "defaultChoices": 0}
         self.worlds = 0
         self.visits = 0
+
+    async def send_message(self, message, room="", message_2=None):
+        await self._send_message(message, room, message_2)
+        if room == self.room and message == "/choose default":
+            self.record_recovery("default-choice", "defaultChoices")
+
+    def record_recovery(self, kind, field):
+        if self.recovery_counts[field] >= RECOVERY_LIMIT:
+            return
+        self.recovery_counts[field] += 1
+        self.emit("recovery", room=self.room, kind=kind, **self.recovery_counts)
 
     def observe_search(self, event, **details):
         if event == "world":
@@ -192,6 +207,7 @@ class PracticeSession:
             elapsed = round(min(120_000, max(0, elapsed))) if math.isfinite(elapsed) else 0
             self.emit("turn", room=self.room, turn=turn, elapsedMs=elapsed,
                       visits=self.visits, worlds=self.worlds, fallback=details["fallback"])
+            self.worlds = self.visits = 0
 
     async def receive(self, message):
         if not isinstance(message, str):
@@ -247,18 +263,33 @@ class PracticeSession:
                 return
             self.room = room
             self.pending_until = 0
+            self.worlds = self.visits = 0
+            self.recovery_counts.update(rejectedChoices=0, defaultChoices=0)
             self.emit("battle", room=room)
         if self.room != room:
             return
         if "|deinit" in lines:
             raise SessionError("battle-lost")
+        for line in lines[1:]:
+            if line.startswith(("|error|[Invalid choice]", "|error|[Unavailable choice]")):
+                self.record_recovery("rejected-choice", "rejectedChoices")
         await self.player._handle_battle_message([line.split("|") for line in lines])
         battle = self.player.battles[room]
         if battle.finished:
             result = "loss" if battle.won else "win" if battle.lost else "tie"
-            self.emit("end", room=room, result=result)
-            self.player.reset_battles()
+            self.release_battle(room)
             self.room = None
+            self.emit("end", room=room, result=result)
+
+    def release_battle(self, room):
+        player = self.player
+        player.reset_battles()
+        # poke-env resets Battle objects only. Laplace's pinned guard history is separate.
+        for history in (player._opp_tracker, player._opp_speed, player._opp_item, player._opp_hazards,
+                        player._pending, player._futility_hist, player.traces):
+            history.pop(room, None)
+        player._worlds.clear()
+        player._vetoed.clear()
 
     async def listen(self):
         from websockets.asyncio.client import connect
@@ -327,8 +358,8 @@ def main():
     logging.disable(logging.CRITICAL)
     output = sys.stdout
 
-    def emit(kind, **fields):
-        print(json.dumps({"type": kind, **fields}, separators=(",", ":"), allow_nan=False),
+    def emit(event_type, **fields):
+        print(json.dumps({"type": event_type, **fields}, separators=(",", ":"), allow_nan=False),
               file=output, flush=True)
 
     with redirect_stdout(sys.stderr):

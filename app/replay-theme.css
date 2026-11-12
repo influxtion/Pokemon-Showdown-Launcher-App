@@ -6,8 +6,11 @@ body, input, select, button { font-family: "Segoe UI", system-ui, sans-serif !im
 body { margin: 0 !important; }
 body > div > header { display: none !important; }
 .main { margin: 0 !important; padding: 8px !important; }
-/* Upstream scales the battle from window width; leave its narrow viewport inset free. */
-@media (max-width: 660px) { .main { padding: 8px 0 !important; } }
+/* Upstream scales the battle from window width. Contain rounding overflow at its wrapper. */
+@media (max-width: 660px) {
+  .main { padding: 8px 0 !important; }
+  .mainbar > div:has(> .battle) { overflow-x: clip !important; }
+}
 .section, .replay-controls, .battle-log {
   background: var(--sd-panel) !important;
   color: var(--sd-text) !important;

@@ -1,4 +1,5 @@
 'use strict';
+process.env.SHOWDOWN_DESKTOP_BACKGROUND = '1';
 
 // Simulated desktop smoke test. Never loads the user's profile or contacts Showdown.
 const assert = require('node:assert/strict');
@@ -137,9 +138,7 @@ app.whenReady().then(async () => {
   await pause(1500);
   assert.equal(actions.some((a) => a.action === 'search'), false, 'no search without a click');
   fs.mkdirSync(path.join(__dirname, '..', 'out', 'desktop-smoke'), { recursive: true });
-  win.setAlwaysOnTop(true);
-  win.show();
-  win.focus();
+  win.showInactive();
   for (const theme of ['light', 'dark']) {
     await run(`window.desktop.setTheme('${theme}')`);
     await pause(250);
@@ -162,9 +161,7 @@ app.whenReady().then(async () => {
   assert.equal(await run('document.documentElement.scrollWidth <= innerWidth'), true);
   const captures = path.join(__dirname, '..', 'out', 'desktop-smoke');
   fs.mkdirSync(captures, { recursive: true });
-  win.setAlwaysOnTop(true);
-  win.show();
-  win.focus();
+  win.showInactive();
   for (const theme of ['light', 'dark']) {
     await run(`window.desktop.setTheme('${theme}')`);
     await pause(250);

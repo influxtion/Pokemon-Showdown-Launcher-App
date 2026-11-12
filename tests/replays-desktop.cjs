@@ -1,4 +1,5 @@
 'use strict';
+process.env.SHOWDOWN_DESKTOP_BACKGROUND = '1';
 
 // Isolated replay-notes smoke test. Uses real launcher IPC and a temporary profile.
 const assert = require('node:assert/strict');
@@ -275,9 +276,7 @@ app.whenReady().then(async () => {
 
   // Check both themes and both target widths; capture the actual launcher surface.
   fs.mkdirSync(captures, { recursive: true });
-  win.setAlwaysOnTop(true);
-  win.show();
-  win.focus();
+  win.showInactive();
   for (const [width, height] of [[1366, 768], [1024, 640]]) {
     win.setSize(width, height);
     await pause(250);

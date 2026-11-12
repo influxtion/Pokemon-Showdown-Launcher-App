@@ -9,6 +9,11 @@ from pathlib import Path
 import sys
 from types import SimpleNamespace
 import unittest
+from unittest.mock import patch
+
+from poke_env import AccountConfiguration, ServerConfiguration
+from poke_env.player import Player
+from poke_env.player.battle_order import SingleBattleOrder
 
 
 RUNNER = Path(__file__).resolve().parents[1] / "scripts" / "laplace" / "runner.py"
@@ -215,6 +220,154 @@ class LoopbackTests(unittest.IsolatedAsyncioTestCase):
                 self.assertEqual(event["type"], "error")
                 self.assertEqual(await asyncio.wait_for(process.wait(), 5), 1)
                 self.assertFalse(second_port_touched.is_set())
+
+
+NEXT_ROOM = "battle-gen9randombattle-2"
+
+
+class Socket:
+    def __init__(self):
+        self.sent = []
+        self.broken = False
+
+    async def send(self, message):
+        if self.broken:
+            raise OSError("test transport failure")
+        self.sent.append(message)
+
+
+class ProbePlayer(Player):
+    decisions = 0
+
+    def choose_move(self, _battle):
+        self.decisions += 1
+        return SingleBattleOrder("/choose move 1")
+
+
+class RecoveryTests(unittest.IsolatedAsyncioTestCase):
+    def session(self, engine=None):
+        args = runner.arguments([
+            "--port", "8000", "--token", "a" * 32, "--bot", "Laplace", "--human", "Player", "--threads", "8",
+        ])
+        events = []
+
+        def emit(event_type, **fields):
+            events.append({"type": event_type, **fields})
+
+        if engine is None:
+            player = ProbePlayer(
+                account_configuration=AccountConfiguration("Laplace", None),
+                server_configuration=ServerConfiguration("ws://127.0.0.1:8000", ""),
+                battle_format=runner.FORMAT, start_listening=False,
+                loop=asyncio.get_running_loop(),
+            )
+            with patch.object(runner, "build_player", return_value=player):
+                session = runner.PracticeSession(args, None, None, emit)
+        else:
+            session = runner.PracticeSession(args, engine, None, emit)
+        session.client.logged_in.set()
+        socket = Socket()
+        session.client.websocket = socket
+        return session, events, socket
+
+    async def open(self, session, room=ROOM):
+        session.pending_until = asyncio.get_running_loop().time() + 5
+        await session.receive(f">{room}\n|init|battle\n|title|Player vs. Laplace")
+
+    async def test_pinned_invalid_choice_default_and_retry_unchanged(self):
+        session, events, socket = self.session()
+        await self.open(session)
+        with patch("random.random", return_value=0):
+            await session.receive(f">{ROOM}\n|error|[Invalid choice] sensitive detail")
+        self.assertEqual(socket.sent, [f"{ROOM}|/choose default"])
+        self.assertEqual(session.player.decisions, 0)
+        self.assertEqual(events[-2:], [
+            {"type": "recovery", "room": ROOM, "kind": "rejected-choice",
+             "rejectedChoices": 1, "defaultChoices": 0},
+            {"type": "recovery", "room": ROOM, "kind": "default-choice",
+             "rejectedChoices": 1, "defaultChoices": 1},
+        ])
+        with patch("random.random", return_value=0.9):
+            await session.receive(f">{ROOM}\n|error|[Invalid choice] other detail")
+        self.assertEqual(socket.sent[-1], f"{ROOM}|/choose move 1")
+        self.assertEqual(session.player.decisions, 1)
+        self.assertEqual(events[-1], {"type": "recovery", "room": ROOM, "kind": "rejected-choice",
+                                     "rejectedChoices": 2, "defaultChoices": 1})
+        self.assertNotIn("detail", str(events))
+
+    async def test_unavailable_choice_waits_for_a_new_request(self):
+        session, events, socket = self.session()
+        await self.open(session)
+        await session.receive(f">{ROOM}\n|error|[Unavailable choice] sensitive detail")
+        self.assertTrue(session.player._trying_again.is_set())
+        self.assertEqual(socket.sent, [])
+        self.assertEqual(session.player.decisions, 0)
+        self.assertEqual(events[-1], {"type": "recovery", "room": ROOM, "kind": "rejected-choice",
+                                     "rejectedChoices": 1, "defaultChoices": 0})
+        await session.receive(f">{NEXT_ROOM}\n|error|[Unavailable choice] unrelated room")
+        await session.receive(f">{ROOM}\n|error|Unrelated server status")
+        self.assertEqual(len(events), 2)
+
+    async def test_default_telemetry_requires_a_sent_active_room_order_and_is_bounded(self):
+        session, events, socket = self.session()
+        await self.open(session)
+        socket.broken = True
+        with self.assertRaises(OSError):
+            await session.client.send_message("/choose default", ROOM)
+        socket.broken = False
+        await session.client.send_message("/choose default", NEXT_ROOM)
+        self.assertEqual(len(events), 1)
+        session.recovery_counts["defaultChoices"] = runner.RECOVERY_LIMIT - 1
+        await session.client.send_message("/choose default", ROOM, "29")
+        await session.client.send_message("/choose default", ROOM)
+        self.assertEqual(socket.sent, [
+            f"{NEXT_ROOM}|/choose default", f"{ROOM}|/choose default|29", f"{ROOM}|/choose default",
+        ])
+        self.assertEqual(len(events), 2)
+        self.assertEqual(events[-1]["defaultChoices"], runner.RECOVERY_LIMIT)
+
+    async def test_completed_room_history_is_released_and_rematch_resets_counters(self):
+        from laplace.agent.engine_search import EnginePlayer
+
+        session, events, socket = self.session(EnginePlayer)
+        await self.open(session)
+        player = session.player
+        histories = [player._opp_tracker, player._opp_speed, player._opp_item, player._opp_hazards,
+                     player._pending, player._futility_hist, player.traces]
+        for history in histories:
+            history[ROOM] = object()
+            history["unrelated"] = object()
+        player._worlds.append(object())
+        player._vetoed.add("other choice")
+        session.recovery_counts.update(rejectedChoices=2, defaultChoices=1)
+        session.worlds, session.visits = 8, 300
+        await session.receive(f">{ROOM}\n|win|Player")
+        self.assertEqual(events[-1], {"type": "end", "room": ROOM, "result": "win"})
+        self.assertEqual(socket.sent[-1], f"|/leave {ROOM}")
+        self.assertIsNone(session.room)
+        self.assertFalse(player.battles)
+        self.assertTrue(all(set(history) == {"unrelated"} for history in histories))
+        self.assertFalse(player._worlds)
+        self.assertFalse(player._vetoed)
+
+        await self.open(session, NEXT_ROOM)
+        self.assertEqual(session.recovery_counts, {"rejectedChoices": 0, "defaultChoices": 0})
+        self.assertEqual((session.worlds, session.visits), (0, 0))
+        await session.receive(f">{NEXT_ROOM}\n|tie")
+        self.assertEqual(events[-1], {"type": "end", "room": NEXT_ROOM, "result": "tie"})
+
+    async def test_fallback_without_turn_start_has_no_stale_search_visits(self):
+        session, events, _socket = self.session()
+        await self.open(session)
+        battle = SimpleNamespace(turn=2)
+        session.observe_search("turn_start", battle=battle)
+        session.observe_search("world", res=SimpleNamespace(total_visits=1234))
+        session.observe_search("decision", battle=battle, ms=1250, fallback=False)
+        session.observe_search("decision", battle=battle, ms=0, fallback=True)
+        self.assertEqual(events[-2], {"type": "turn", "room": ROOM, "turn": 2, "elapsedMs": 1250,
+                                      "worlds": 1, "visits": 1234, "fallback": False})
+        self.assertEqual(events[-1], {"type": "turn", "room": ROOM, "turn": 2, "elapsedMs": 0,
+                                     "worlds": 0, "visits": 0, "fallback": True})
 
 
 if __name__ == "__main__":

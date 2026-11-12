@@ -2,10 +2,11 @@
 
 (() => {
   const query = new URLSearchParams(location.search);
-  const port = query.get('port') || '';
-  const token = query.get('token') || '';
-  const human = query.get('human') || '';
-  const bot = query.get('bot') || '';
+  const hosted = /^\/s\/([a-f0-9]{64})\/practice-client\.html$/.exec(location.pathname);
+  const port = hosted ? (location.port || (location.protocol === 'https:' ? '443' : '80')) : query.get('port') || '';
+  const token = hosted ? hosted[1] : query.get('token') || '';
+  const human = hosted ? 'Player' : query.get('human') || '';
+  const bot = hosted ? document.documentElement.dataset.practiceBot : query.get('bot') || '';
   const guest = /^[a-z][a-z0-9]{2,17}$/i;
   const state = document.documentElement.dataset;
   state.practiceState = 'connecting';
@@ -16,11 +17,11 @@
     return;
   }
 
-  const localServer = { id: 'desktop-practice', host: '127.0.0.1', port: Number(port) };
+  const localServer = { id: 'desktop-practice', host: hosted ? location.hostname : '127.0.0.1', port: Number(port) };
   window.Config = {
     defaultserver: localServer,
     server: localServer,
-    practiceSocketUrl: `ws://127.0.0.1:${Number(port)}/showdown/websocket?token=${token}`,
+    practiceSocketUrl: hosted ? `${location.origin.replace(/^http/, 'ws')}/s/${token}/websocket` : `ws://127.0.0.1:${Number(port)}/showdown/websocket?token=${token}`,
     testclient: true,
     roomsFirstOpenScript() {},
     bannedHosts: [],
@@ -39,6 +40,9 @@
 
   document.addEventListener('DOMContentLoaded', () => {
     try {
+      // The HTTP development service still fetches artwork over HTTPS.
+      Dex.resourcePrefix = 'https://play.pokemonshowdown.com/';
+      Dex.fxPrefix = 'https://play.pokemonshowdown.com/fx/';
       // Load in the same isolated local storage partition as the practice view.
       Storage.prefs('theme', 'system');
       Storage.prefs('mute', true);

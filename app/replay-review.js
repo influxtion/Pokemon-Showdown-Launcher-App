@@ -143,7 +143,9 @@ class ReplayReview {
 
     const url = this.note.url;
     const view = new this.View({
-      webPreferences: { partition: PARTITION, sandbox: true, contextIsolation: true, nodeIntegration: false },
+      // Chromium can mark this embedded document hidden and defer its resize handler.
+      webPreferences: { partition: PARTITION, sandbox: true, contextIsolation: true,
+        nodeIntegration: false, backgroundThrottling: false },
     });
     this.view = view;
     view.setVisible(false);

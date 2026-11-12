@@ -19,8 +19,9 @@ This procedure is ready to run; it is not evidence that installation has passed.
   Get-FileHash -LiteralPath '.\out\windows\Showdown Desktop Setup 0.1.0-x64.exe' -Algorithm SHA256
   ```
 
-- Label the current candidate **unsigned, launcher-only test build**. It uses the
-  default Electron icon and excludes the Showdex runtime. No public release is implied.
+- Label the candidate **unsigned test build**, and record exactly which runtimes it contains.
+  The default Electron icon and Showdex exclusion remain until the distribution decision.
+  A candidate with local Practice must pass P1–P4 below. No public release is implied.
 - For the upgrade case, prepare two installers with distinct package versions, A and B
   (B newer than A). Record each source commit and hash separately. Renaming the same
   installer or reinstalling version A does not prove an upgrade. If only one version is
@@ -30,7 +31,9 @@ This procedure is ready to run; it is not evidence that installation has passed.
 
 - Use a clean Windows 11 x64 VM or separate PC with a standard, non-administrator user.
   Record Windows edition/build, display resolution/scaling, VM or hardware, and network.
-  Git, Node.js and the source checkout must not be required or installed for this test.
+  Git, Node.js, Python, Rust and the source checkout must not be required or installed for this test.
+  Record CPU model, installed RAM and storage type. Record whether the Microsoft C++
+  redistributable was already installed; do not install it to hide a missing app dependency.
 - Begin with no Showdown Desktop installation or `%APPDATA%\showdown-desktop` profile.
   Use a fresh VM snapshot or disposable Windows account rather than deleting a real profile.
   Leave `SHOWDOWN_DESKTOP_USER_DATA` unset: this run must exercise the normal profile path.
@@ -62,8 +65,12 @@ was expected.
 | W2 | Sign in, create a disposable named team, select its format/team on Home, and use Edit teams. | Account/team information is correct and the selected team opens. Navigate away and back with an editor open: its work survives. Never include credentials in evidence. |
 | W3 | Save a replay note using a real public replay URL; edit, search and reopen it. Leave a second note draft unsaved and navigate away/back. | Saved content matches, external replay opens, and unsaved draft survives navigation. Closing with a draft offers a discard choice; cancel leaves the app/draft intact. Save it before continuing. |
 | W4 | Try Light, Dark and Match Windows; resize/maximize at 100% and 125% Windows scaling. Visit Home, Showdown, Replay notes and Settings. | Controls remain reachable, no horizontal page overflow, text readable and client correctly aligned. Record physical display resolution and window size; include minimum 1024×640 logical window where the display permits. |
-| W5 | Check integration status. | This launcher-only package reports Showdex Not installed; normal Showdown works. Practice remains disabled. A future bundled-Showdex candidate needs its own installed integration checks. |
+| W5 | Check integration status. | Showdex reports Not installed when excluded; normal Showdown works. A Practice-enabled candidate reports Ready to start. A future bundled-Showdex candidate needs its own installed integration checks. |
 | W6 | Set a non-default appearance/start page, keep close protection enabled, resize the window, quit, reboot Windows and launch from Start. | Sign-in session, complete team contents, saved replay notes, settings and window state survive. Record the normal profile path and any unexpected sign-in prompt. |
+| P1 | On B with Practice included, start the full local setting without signing in. | Local Gen 9 Random Battle starts without downloads of Python/server/compiler or an administrator prompt. Record first startup time and any integrity or DLL errors. Artwork uses the official image host. |
+| P2 | Play a complete local game, using moves, switches and Terastallization; start a rematch. | Legal controls work, Laplace responds, the result is correct, and New battle works. Record computation setting, last-search times, CPU/memory observations and any stalls; do not infer Elo from one game. |
+| P3 | During local play, visit Home, Replay notes and Showdown, then return. Cancel Stop and Close confirmations; then stop deliberately and start again. | Both sessions survive page changes. Cancelling keeps the game. Stopping releases local Python/server processes; restarting works. Check both themes and 100%/125% scaling. |
+| P4 | Close the app during Practice with confirmation; reboot and reopen it. | No orphan Practice processes remain. Practice starts a new session normally. No local battle continuation across app restarts is promised. Record behavior on the actual consumer CPU/RAM. |
 | B1 | Human tester starts and cancels a search, then starts a search that becomes a battle. | Search state/cancel work and a new player battle switches to Showdown. Record the format and outcome without private opponent/account details. |
 | B2 | During the tester's battle, visit Home/Replay notes and return. Try closing and reloading the client, choosing Cancel in each confirmation. | Battle stays alive across pages; close/reload protection appears and cancelling preserves play. Finish the battle before upgrading. |
 | B3 | Human tester opens a challenge with a consenting partner; also checks Friends. | Challenge targets the intended user/format. Record presence behavior or fallback explicitly; an available fallback alone does not prove accurate friend presence. |
@@ -77,6 +84,11 @@ title/body/link, appearance/start page/close protection, window state and signed
 Keep a private copy of disposable team exports and saved notes outside the profile so loss
 can be diagnosed. Do not sign out or reset launcher data between persistence checks;
 those actions intentionally remove data and would invalidate the comparison.
+
+For B, also export notes, import the backup through conflict review, and undo that import.
+Review a real public replay beside its notes; confirm playback, editing and return to the list.
+Record these under W3. P1–P4 may be Not applicable for an older A without Practice; they
+remain required on a candidate that advertises local Practice.
 
 ## Record the decision
 

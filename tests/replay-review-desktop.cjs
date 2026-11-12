@@ -95,8 +95,11 @@ app.whenReady().then(async () => {
     for (const theme of ['light', 'dark']) {
       await call('setTheme', theme);
       await pause(80);
-      const expected = await run(`(() => { const r = document.getElementById('review-view').getBoundingClientRect(); return {x:Math.round(r.x),y:Math.round(r.y),width:Math.round(r.width),height:Math.round(r.height)}; })()`);
-      assert.deepEqual(first.getBounds(), expected);
+      await until(async () => {
+        const expected = await run(`(() => { const r = document.getElementById('review-view').getBoundingClientRect(); return {x:Math.round(r.x),y:Math.round(r.y),width:Math.round(r.width),height:Math.round(r.height)}; })()`);
+        const actual = first.getBounds();
+        return Object.keys(expected).every(key => actual[key] === expected[key]);
+      }, 'replay bounds follow window resize');
       assert.equal(await run('document.documentElement.scrollWidth <= innerWidth'), true);
       assert.equal(first.webContents.id, review().webContents.id);
       assert.equal(await first.webContents.executeJavaScript('window.fixtureCounter'), 1, 'resize/theme do not reload playback');

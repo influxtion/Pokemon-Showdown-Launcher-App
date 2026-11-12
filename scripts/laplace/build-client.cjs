@@ -47,14 +47,13 @@ function prepareSource(source, url, revision) {
   checkRevision(source, revision);
 }
 
-function installDependencies(source, packageName) {
-  if (fs.existsSync(path.join(source, 'node_modules', packageName, 'package.json'))) return;
+function installDependencies(source) {
   const command = process.platform === 'win32' ? 'cmd.exe' : 'npm';
   const args = process.platform === 'win32' ? ['/d', '/c', 'npm ci --no-audit'] : ['ci', '--no-audit'];
   run(command, args, source);
 }
 
-function buildClient() {
+function buildClient(target) {
   prepareSource(clientSource, 'https://github.com/smogon/pokemon-showdown-client.git', clientRevision);
   // Restore the exact LF bytes even if an existing Windows clone checked out CRLF.
   const template = 'translations/en-template.ts';
@@ -65,15 +64,15 @@ function buildClient() {
   // only a build input. Practice continues to run the Laplace-compatible simulator.
   const serverCache = path.join(clientSource, 'caches/pokemon-showdown');
   prepareSource(serverCache, 'https://github.com/smogon/pokemon-showdown.git', clientDataRevision);
-  installDependencies(clientSource, '@babel/core');
-  installDependencies(serverCache, 'esbuild');
+  installDependencies(clientSource);
+  installDependencies(serverCache);
   run(process.execPath, ['build', 'full', '--no-update'], clientSource);
-  return stageClient();
+  return stageClient(target);
 }
 
-function stageClient() {
+function stageClient(target) {
   const upstream = path.join(clientSource, 'play.pokemonshowdown.com');
-  const output = path.join(vendor, 'dist/client');
+  const output = target || path.join(vendor, 'dist/client');
   fs.mkdirSync(output, { recursive: true });
   const shell = fs.readFileSync(path.join(vendor, 'practice-client.html'), 'utf8');
   for (const [, asset] of shell.matchAll(/(?:src|href)="((?:js|data|style)\/[^"?]+)"/g)) {
@@ -144,4 +143,4 @@ if (require.main === module) {
   console.log(`Built practice client at ${buildClient()}`);
 }
 
-module.exports = { buildClient, stageClient };
+module.exports = { buildClient, stageClient, clientRevision, clientDataRevision };

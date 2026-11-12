@@ -37,14 +37,14 @@
     </div>
     <div class="rail-foot">
       <div class="rail-user" data-nav="account" hidden><strong data-nav="me"></strong><a href="play.html" data-nav="sign-in" hidden>Sign in</a></div>
-      <span>v0.1.0-dev</span>
+      <span>v0.2.0-dev</span>
     </div>
   </nav>
 
   <div class="main">
     <header class="topbar">
       <h1>Practice</h1>
-      <span class="faint">Local Gen 9 Random Battle</span>
+      <span class="faint">Gen 9 Random Battle</span>
       <div class="topbar-actions">
         <span class="status status--off" id="practice-status" role="status">Checking runtime…</span>
         <button class="btn" id="practice-next" hidden>New battle</button>
@@ -53,9 +53,17 @@
     </header>
     <main class="content content--flush practice-content">
       <section class="practice-setup panel" id="practice-setup">
-        <div class="panel-head">Play against Laplace</div>
+        <div class="panel-head">Choose an opponent</div>
         <div class="panel-body">
-          <p>Practice with generated teams on a server running on this computer. Your online Showdown account is separate.</p>
+          <p>Play an unrated battle with generated teams. Your online Showdown account is separate.</p>
+          <div class="field">
+            <label class="field-label" for="practice-opponent">Opponent</label>
+            <select class="select" id="practice-opponent">
+              <option value="laplace">Laplace</option>
+              <option value="foulplay">Foul Play</option>
+            </select>
+            <div class="field-hint" id="practice-opponent-description"></div>
+          </div>
           <div class="field">
             <label class="field-label" for="practice-preset">Computation</label>
             <select class="select" id="practice-preset">
@@ -63,14 +71,14 @@
               <option value="balanced">Balanced · 2 search threads</option>
               <option value="full" selected>Full · 8 search threads</option>
             </select>
-            <div class="field-hint">All settings use the same trained model and search time. More threads use more CPU; these are not Elo ratings.</div>
+            <div class="field-hint">More threads use more CPU. These settings control computation, not difficulty or Elo.</div>
           </div>
-          <p class="faint">The engine and battle server run locally. Pokémon artwork needs an internet connection.</p>
-          <button class="btn btn-primary" id="practice-start" disabled>Start practice</button>
+          <p class="faint" id="practice-location">The engine and battle server run on this computer. Pokémon artwork needs an internet connection.</p>
+          <button class="btn btn-primary" id="practice-start" disabled>Play against bot</button>
         </div>
       </section>
       <div class="banner banner--bar banner--warn" id="practice-message" role="status" hidden></div>
-      <div class="client-view practice-area" id="practice-area" hidden>Starting local battle client…</div>
+      <div class="client-view practice-area" id="practice-area" hidden>Starting battle client…</div>
     </main>
   </div>
 </div>

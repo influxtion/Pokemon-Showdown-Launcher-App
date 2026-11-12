@@ -3,7 +3,7 @@
 A desktop workspace for [Pokémon Showdown](https://play.pokemonshowdown.com/). It wraps the official client in a compact window that keeps your session, and adds space for tools and replay notes.
 
 Early prototype. Replay notes are stored locally. Showdex is an optional pinned integration;
-local Laplace practice has an optional development runtime.
+local Laplace practice has a pinned runtime build and is included in Windows test packages.
 
 The goal is an app players can download and install without development tools.
 See the [Windows delivery plan](docs/windows.md#feasibility-and-intended-experience)
@@ -11,6 +11,11 @@ for the stages from the current local installer to a public alpha.
 Current priority is finishing features; installer validation and release delivery come last.
 Replay notes now include export, import review, conflict resolution and undo of the last import.
 Saved replays can also be reviewed inside the app beside their notes.
+
+Practice supports **Laplace and Foul Play**, locally or through a private hosted battle
+service. See [playable bots and the hosting handoff](docs/playable-bots.md) for setup,
+the service API, Docker/HTTPS deployment files and verification commands. Hosting is
+prepared for a contributor to deploy; no cloud service is provisioned by this branch.
 
 ## Run
 
@@ -135,22 +140,32 @@ upstream search setting is the default; quieter options use fewer search threads
 are computation settings, not Elo ratings. Navigation keeps both local and online games
 loaded, and **Stop practice…** ends the local session and its processes.
 
-The optional Windows development runtime is staged separately; see
-[runtime sources and build instructions](vendor/laplace/SOURCE.md). It includes Python,
-the CPU engine/model, a server and the classic battle client. No developer Python is
-needed to run a staged build. Artwork still loads from the official Showdown image host.
-This runtime is not yet included in the installer or ready for public distribution.
+Build the optional Windows x64 development runtime from the desktop checkout:
+
+```powershell
+npm run build:practice
+npm start
+```
+
+See the [runtime build prerequisites and source pins](vendor/laplace/SOURCE.md) for the
+required Windows compiler, Rust toolchain and other build tools. The build stages pinned
+Python 3.12.16, the CPU engine and model, the local server and the classic battle client.
+Practice verifies the runtime in a background worker before launching. Artwork loads from
+the official Showdown image host. Windows test packages include the Practice runtime.
+Public distribution still awaits licensing/signing decisions and clean-machine testing.
 
 `npm run test:practice` exercises a real local battle through the desktop with an isolated
 profile and the public battle client blocked. See the [performance measurements](docs/laplace-performance.md),
 [local comparison pilot](docs/laplace-pilot.md), and [remaining implementation gates](docs/laplace-plan.md).
-The current measurements do not establish budget-PC performance or public-ladder Elo.
+Clean-machine performance and the playing-strength comparison remain open.
 
 ## Windows alpha
 
 ```sh
+npm run build:practice
 npm run pack:win:dir
 npm run smoke:packaged
+npm run smoke:practice-packaged
 npm run pack:win
 ```
 

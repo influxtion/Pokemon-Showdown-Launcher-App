@@ -7,6 +7,12 @@ const { WebContentsView } = require('electron');
 function allowRequest(details, root, connection) {
   let url;
   try { url = new URL(details.url); } catch { return false; }
+  if (connection.clientUrl) {
+    if (url.href === connection.socketUrl) return true;
+    if (url.origin === connection.serviceOrigin && url.pathname.startsWith(`/s/${connection.token}/`) &&
+        (!url.search || /^\?v=[a-zA-Z0-9.-]{1,32}$/.test(url.search)) && !url.hash && ['https:', 'http:'].includes(url.protocol)) return true;
+    if (url.protocol === 'file:' || url.protocol === 'ws:' || url.protocol === 'wss:') return false;
+  }
   if (url.protocol === 'file:') {
     try {
       if (url.hostname) return false;
@@ -32,16 +38,17 @@ class PracticeView {
     this.view = null;
     this.visible = false;
     this.bounds = null;
+    this.state = 'idle';
     this.error = '';
+    this.healthTimer = null;
   }
 
   open(connection) {
     this.close();
-    this.error = '';
     const view = new this.View({ webPreferences: { partition: `practice-${connection.token}`,
       sandbox: true, contextIsolation: true, nodeIntegration: false, backgroundThrottling: false } });
     this.view = view;
-    this.connectionToken = connection.token;
+    this.state = 'connecting';
     view.setBackgroundColor(this.background);
     view.setVisible(false);
     this.window.contentView.addChildView(view);
@@ -55,20 +62,42 @@ class PracticeView {
     contents.on('will-frame-navigate', event => event.preventDefault());
     contents.on('will-redirect', event => event.preventDefault());
     contents.on('dom-ready', () => {
-      if (this.view === view) contents.insertCSS(this.css, { cssOrigin: 'user' }).catch(() => {});
+      if (this.view === view) {
+        contents.insertCSS(this.css, { cssOrigin: 'user' }).catch(() => {});
+        // Artwork can finish much later than the usable battle document.
+        pollHealth();
+      }
     });
-    const failed = () => {
-      if (this.view !== view) return;
-      this.error = 'Practice client could not load. Stop and start a new session.';
-      view.setVisible(false);
-      contents.setAudioMuted(true);
+    const fail = message => {
+      if (this.view !== view || this.state === 'failed') return;
+      this.state = 'failed';
+      this.error = message;
+      clearTimeout(this.healthTimer);
+      this.healthTimer = null;
+      this.place();
       this.onFailure(connection.token);
     };
-    contents.on('render-process-gone', failed);
-    contents.on('did-fail-load', (_event, code, _description, _url, main) => { if (main && code !== -3) failed(); });
-    const url = pathToFileURL(path.join(this.root, 'practice-client.html'));
-    for (const key of ['port', 'token', 'human', 'bot']) url.searchParams.set(key, String(connection[key]));
-    contents.loadURL(url.href).catch(failed);
+    const loadFailed = () => fail('Practice client could not load. Stop and start a new session.');
+    const pollHealth = async () => {
+      if (this.view !== view || contents.isDestroyed() || this.state === 'failed') return;
+      let state;
+      try {
+        state = await contents.executeJavaScript('document.documentElement?.dataset.practiceState');
+      } catch { /* The view can close while a probe is pending. */ }
+      if (this.view !== view || contents.isDestroyed() || this.state === 'failed') return;
+      if (state === 'failed') {
+        fail('The battle client disconnected. Start a new session to try again.');
+        return;
+      }
+      if (['connecting', 'ready', 'battle', 'finished'].includes(state)) this.state = state;
+      this.healthTimer = setTimeout(pollHealth, 500);
+      this.healthTimer.unref();
+    };
+    contents.on('render-process-gone', loadFailed);
+    contents.on('did-fail-load', (_event, code, _description, _url, main) => { if (main && code !== -3) loadFailed(); });
+    const url = connection.clientUrl ? new URL(connection.clientUrl) : pathToFileURL(path.join(this.root, 'practice-client.html'));
+    if (!connection.clientUrl) for (const key of ['port', 'token', 'human', 'bot']) url.searchParams.set(key, String(connection[key]));
+    contents.loadURL(url.href).catch(loadFailed);
     this.place();
   }
 
@@ -85,20 +114,7 @@ class PracticeView {
 
   hide() { this.visible = false; this.place(); }
 
-  async status() {
-    if (!this.view || this.view.webContents.isDestroyed()) return { state: 'idle', error: this.error };
-    const view = this.view;
-    const token = this.connectionToken;
-    try {
-      const state = await view.webContents.executeJavaScript('document.documentElement.dataset.practiceState || "connecting"');
-      if (view !== this.view) return { state: 'idle', error: '' };
-      if (state === 'failed') {
-        this.error = 'The local battle client disconnected. Start a new session to try again.';
-        this.onFailure(token);
-      }
-      return { state: ['connecting', 'ready', 'battle', 'finished', 'failed'].includes(state) ? state : 'connecting', error: this.error };
-    } catch { return { state: 'connecting', error: this.error }; }
-  }
+  status() { return { state: this.state, error: this.error }; }
 
   place() {
     if (!this.view || this.view.webContents.isDestroyed()) return;
@@ -108,6 +124,9 @@ class PracticeView {
   }
 
   close() {
+    clearTimeout(this.healthTimer);
+    this.healthTimer = null;
+    this.state = 'idle';
     this.error = '';
     if (!this.view) return;
     const view = this.view;
