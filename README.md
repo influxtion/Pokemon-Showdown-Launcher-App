@@ -1,22 +1,11 @@
 # Showdown Desktop
 
-A desktop workspace for [Pokémon Showdown](https://play.pokemonshowdown.com/). It wraps the official client in a compact window that keeps your session, and adds space for tools and replay notes.
+A desktop workspace for [Pokémon Showdown](https://play.pokemonshowdown.com/). It hosts the official client in a dedicated window that keeps your session, and adds a Home hub, replay notes with in-app review and backup, an optional Showdex calculator, and practice against the Laplace and Foul Play bots on a private hosted battle service.
 
-Early prototype. Replay notes are stored locally. Showdex is an optional pinned integration;
-bot practice runs on a private hosted battle service, never on the player's computer.
+Early prototype, Windows first. Nothing is published yet.
 
-The goal is an app players can download and install without development tools.
-See the [Windows delivery plan](docs/windows.md#feasibility-and-intended-experience)
-for the stages from the current local installer to a public alpha.
-For how the app and its practice bots work, and why, see the [design document](docs/design.md).
-Current priority is finishing features; installer validation and release delivery come last.
-Replay notes now include export, import review, conflict resolution and undo of the last import.
-Saved replays can also be reviewed inside the app beside their notes.
-
-Practice supports **Laplace and Foul Play** through a private hosted battle
-service. See [playable bots and the hosting handoff](docs/playable-bots.md) for setup,
-the service API, Docker/HTTPS deployment files and verification commands. Hosting is
-prepared for a contributor to deploy; no cloud service is provisioned by this branch.
+- **[Design document](docs/design.md):** goals, architecture, features, decisions, security, testing, packaging and release plan.
+- **[Practice bots](docs/bots.md):** how Foul Play and Laplace work, their protocols, performance, and how to run, test and host them.
 
 ## Run
 
@@ -27,6 +16,8 @@ npm install
 npm start
 ```
 
+Optional Showdex build: `npm run build:showdex`, then enable it in Settings and reload the client.
+
 ## Verify
 
 ```sh
@@ -35,133 +26,19 @@ npm test
 npm run test:desktop
 ```
 
-Unit tests cover bridge sanitization, action validation, navigation timing, settings persistence,
-and replay URL validation and safe storage.
-The desktop smoke tests launch Electron with temporary profiles and simulated Showdown
-responses; outbound client requests are blocked. It checks connection feedback, client-view
-survival and sizing, theme changes, battle navigation, and replay-note editing and persistence
-without sending searches or challenges. Replay browser launches and confirmation dialogs are
-stubbed in the replay smoke test. Screenshots are written to `out/desktop-smoke/`.
-These checks do not verify live account behavior.
+Desktop tests use temporary profiles and simulated Showdown sessions. They never sign in, search or challenge. See [Testing](docs/design.md#7-testing) for the live and bot suites.
 
-## Replay notes
-
-Choose **Add replay** in Replay notes, paste a link from Showdown's **Upload and share replay**
-action, enter a title and save. **Save replay note** on the Showdown screen prefills the current
-battle's players and format when available; it does not upload the battle. Paste the full private
-link, including its access suffix, for a private replay.
-
-Search matches titles, formats and note text. Saved replay links cannot be changed. Adding a
-duplicate link offers the existing note without replacing it. **Open replay** explicitly opens
-the saved link in your default browser.
-
-Choose **Review replay** on a saved note to watch the official Showdown replay beside the
-note editor. **Hide notes** gives the player more space; **Reload replay** only reloads that
-replay. Save with the button or Ctrl+S while editing notes. Returning to the notes list or
-another page stops replay playback and keeps your unsaved draft. The live Showdown client
-stays connected, and a newly started player battle still takes priority. **Open in browser**
-remains available for the full replay site. See [Replay review](docs/replay-review.md).
-
-**Export notes…** saves all saved notes to a JSON file you choose, including notes hidden by
-the current search/filter. It preserves titles, note text, timestamps and full replay links,
-including private access links. Keep the file private if those links should stay private.
-Unsaved edits are not included; save them first. Export does not download hosted replays or
-change your notes.
-
-**Import notes…** opens an exported file for review before making changes. New notes are
-added, identical notes are skipped, and conflicts default to keeping the existing version.
-Compare both versions and choose which to keep per note, or apply one choice to all conflicts.
-Notes absent from the file are kept. Save any unsaved edit before applying the import.
-**Undo import…** restores the previous saved notes until they change or the app restarts.
-See [Replay-note backups and restore](docs/replay-backups.md) for the full workflow and limits.
-
-In Replay notes, **Ctrl+F** focuses search, **Escape** clears the focused search, and **Ctrl+S**
-saves the current note. The app also remembers window size, position, and maximized state,
-and repositions a saved window when its monitor is no longer available.
-
-Only the notes and links are stored in `replays.json` in Electron's userData folder
-(normally `%APPDATA%/showdown-desktop` on Windows); Showdown hosts the replay itself.
-Titles are limited to 120 characters, notes to 5,000, and the collection to 1,000 entries / 8 MiB.
-Writes use a temporary file and atomic replacement. An unreadable or invalid file is reported
-and left unchanged. Unsaved edits survive launcher navigation; closing with unsaved edits asks
-whether to discard them. Deleting a note leaves the hosted replay intact.
-
-Before an alpha release, manually verify sign-in persistence, ratings, team selection,
-challenges, a real search becoming a battle, and the friends list using your own account.
-
-Home reads structured friends presence when the signed-in account and server support it.
-Online, idle, busy, and offline are displayed as reported; busy is not treated as battling.
-The list refreshes at most every 30 seconds and keeps **Open friends list** as a fallback.
-No battle links or trainer avatars are inferred from presence data.
-Settings include appearance, start page, close confirmation, explicit client reload, logs,
-sign out, and launcher reset. The client stays loaded across page changes. Sign out clears
-the Showdown partition, including locally stored teams and preferences; export teams first.
-Launcher reset removes settings, launcher preferences, and replay notes while keeping the
-Showdown partition. Both destructive actions ask for confirmation. Logs contain fixed event
-names and numeric error codes, not usernames, credentials, replay URLs or note content.
-
-## Optional Showdex integration
-
-```sh
-npm run build:showdex
-npm start
-```
-
-The first build needs network access, Git, Corepack, and Node.js 24. It checks out the pinned
-Showdex revision, applies the recorded readiness patch, and verifies every generated asset
-against the committed SHA-256 manifest. Generated runtime files stay out of Git. Build inputs,
-the upstream AGPL-3.0 license, and source details are in `vendor/showdex/SOURCE.md`.
-
-Enable Showdex in Settings, then reload the client explicitly. Preference changes never
-reload a battle automatically. The status says Loaded only after the pinned bootstrap has
-rendered its room; a failed integration leaves ordinary Showdown play available. Showdex
-runs inside the sandboxed client without Node or the launcher preload. It downloads public
-competitive data from upstream services.
-
-Showdex panels follow the desktop Appearance setting (cobalt light or steel-blue dark).
-The desktop stylesheet flattens its chrome while preserving Pokémon type, HP, stat,
-and damage colors. Calculator behavior stays upstream.
-
-`npm run test:showdex:live` is an optional network-dependent smoke test with a temporary guest
-profile. It checks Hellodex, settings, and a populated standalone Honkdex calculator
-in both themes and at two window sizes, including readable damage, preserved type
-colors, and reachable footer controls. It requires the local Showdex build; it never signs
-in, searches, or challenges.
-The default desktop suite uses simulated sessions instead.
-
-`npm run test:replays:live` is a separate optional guest test of a real public replay. It
-checks upstream playback/pause, the review layout in both themes at both target sizes,
-and view cleanup. It does not sign in, upload, search for opponents or challenge anyone.
-
-## Practice
-
-Practice runs Gen 9 Random Battle against Laplace or Foul Play on a private hosted battle
-service. Bots never run on your computer, and practice never uses your online account.
-Choose an opponent and a computation setting, then **Start practice**. Quieter options use
-fewer search threads on the server; they are computation settings, not Elo ratings.
-Navigation keeps both practice and online games loaded, and **Stop practice…** ends the
-session on the service. See [how the bots work](docs/bots.md), [playable bots](docs/playable-bots.md)
-for configuring the service address and key, and the [performance measurements](docs/laplace-performance.md)
-for Laplace's compute cost.
-
-The code can also run both bots directly on a developer's machine. That path is a test
-harness and the base for self-hosting, not a player feature; see
-[the development harness](docs/bots.md#7-development-and-self-hosting-harness).
-
-## Windows alpha
+## Package
 
 ```sh
 npm run build:practice
 npm run pack:win:dir
 npm run smoke:packaged
-npm run smoke:practice-packaged
 npm run pack:win
 ```
 
-Packaging requires the verified Laplace runtime from `build:practice`, which test packages
-bundle for the development harness.
+This builds an unsigned Windows x64 installer in `out/windows/`. See [Build, packaging and release](docs/design.md#8-build-packaging-and-release).
 
-The unsigned x64 installer is written to `out/windows/`. The packaged app excludes the optional
-Showdex runtime while distribution licensing remains undecided. See [Windows packaging](docs/windows.md)
-for installation behavior, isolated smoke checks, measurements, and outstanding clean-machine testing.
-Nothing is automatically published. The project's own license remains undecided.
+## License
+
+Not chosen yet. Third-party sources and licenses are recorded under `vendor/`.

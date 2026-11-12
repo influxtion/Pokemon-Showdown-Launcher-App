@@ -5,8 +5,8 @@
 | **Status** | Living document. Describes v0.2.0. |
 | **Owner** | Jayden |
 | **Last reviewed** | 2026-11-12 |
-| **Scope** | The two practice opponents, the engine they share, every protocol layer between the player and a bot's decision, and how to run them for development. |
-| **Related** | [Design document](design.md) · [Playable bots and hosting](playable-bots.md) · [Laplace performance](laplace-performance.md) |
+| **Scope** | The two practice opponents, the engine they share, every protocol layer between the player and a bot's decision, performance, and how to run, test and host them. |
+| **Related** | [Design document](design.md) · [Runtime sources](../vendor/laplace/SOURCE.md) |
 
 This is the single reference for how the bots work. Other documents link here instead of repeating it.
 
@@ -18,7 +18,8 @@ This is the single reference for how the bots work. Other documents link here in
 4. [The shared search engine](#4-the-shared-search-engine-poke-engine-mcts)
 5. [Foul Play](#5-foul-play)
 6. [Laplace](#6-laplace)
-7. [Development and self-hosting harness](#7-development-and-self-hosting-harness)
+7. [Performance](#7-performance)
+8. [Running and hosting](#8-running-and-hosting)
 
 ## 1. Overview
 
@@ -51,7 +52,7 @@ For every session the service creates one `PracticeRuntime` (`app/practice-runti
 - a **simulator**: the pinned Showdown server (`scripts/laplace/server.cjs`), bound to `127.0.0.1` on an OS-chosen port and protected by a fresh 256-bit token;
 - a **bot**: `python -I -B runner.py` (Laplace) or `foulplay.py --source <checkout>` (Foul Play), told the port, token, both names and the thread count.
 
-The same `PracticeRuntime` can also run inside the desktop app. That path is kept for testing and for future self-hosting work, not as a player feature (section 7).
+The same `PracticeRuntime` can also run inside the desktop app. That path is kept for testing and for future self-hosting work, not as a player feature ([section 8](#development-and-self-hosting-harness)).
 
 ```mermaid
 sequenceDiagram
@@ -273,22 +274,103 @@ The runner refuses to start if versions or the model hash differ.
 | Guards | Absorb, futility, tiebreak, no-op, dead-lock on; gamble off |
 | Versions | poke-env 0.15.0, poke-engine 0.0.47 |
 
-*(snapshot)* On a 20-thread development CPU a warm decision takes a median 1.28 s (Quiet) to 1.64 s (Full). See [laplace-performance.md](laplace-performance.md).
+*(snapshot)* On a 20-thread development CPU a warm decision takes a median 1.28 s (Quiet) to 1.64 s (Full). See [section 7](#7-performance).
 
 **Connection.** `poke-env` parses every battle message into a `Battle` and calls `choose_move` on each request; the runner wraps its client to handle login, challenge filtering and telemetry (sections 3.2–3.3). A rejected choice is counted as a `recovery` event and poke-env's `/choose default` is sent instead. After each game all per-battle memory (poke-env battles and Laplace's evidence trackers) is cleared so a rematch starts fresh.
 
-## 7. Development and self-hosting harness
+## 7. Performance
 
-The desktop app can still start a `PracticeRuntime` itself, with the simulator and bot on the developer's own machine. This path is **not a player feature**. It is kept to prove the bots work end to end, and as the base for hosting the service ourselves later. It uses exactly the protocols in section 3; only the HTTPS layer (3.1) is skipped.
+*(snapshot, 2026-11-10)* `scripts/laplace/benchmark.py` runs Laplace's full move-selection pipeline (set sampling, 8 × 150 ms search, pooling, guards, optional re-rank, order conversion) on three synthetic positions: an opening with unrevealed opponents, a midgame with hazards and a boosted opponent, and a forced switch. It creates no rooms and needs no server. Every one of the 192 decisions was legal, with no engine fallback.
 
-| Command | Purpose |
+| Logical CPUs | Search threads | Median wall, ms | Median CPU, ms | Median visits | Peak memory, MiB |
+| ---: | ---: | ---: | ---: | ---: | ---: |
+| 20 | 1 (Quiet) | 1,276 | 1,266 | 538,000 | 293 |
+| 20 | 2 (Balanced) | 1,371 | 2,562 | 981,000 | 327 |
+| 20 | 8 (Full) | 1,637 | 9,828 | 2,353,000 | 408 |
+| 4 | 8 | 1,431 | 5,062 | 1,266,000 | 337 |
+| 2 | 8 | 1,355 | 2,578 | 762,000 | 305 |
+
+- **Host:** Intel Core i9-13900H (14 cores, 20 logical CPUs, 16 GiB), Windows 11, AC power. The 4- and 2-CPU rows use CPU affinity masks on the same chip. Each row is 15 warm decisions in a fresh process.
+- **Measured build:** Python 3.12.16 Windows x64; poke-engine 0.0.47 for `x86_64-pc-windows-gnu` (Rust 1.96.0, GCC 13.2.0); runtime manifest SHA-256 `e83e0864…`, engine binary `55da8bd3…`, value model `502a47a5…`.
+- **Cold start:** 3.19 s median to a loaded agent, 2.22 s of it Torch and feature imports. The first decision then takes 1.41 s median.
+- **Value re-rank:** skipped by all 180 warm decisions (no near-tie). Forced on a three-way tie, it costs 16–31 ms over 45–87 successor states; the net's forward pass is under 0.4 ms of that.
+- **What it means for hosting.** Search is time-limited, so fewer CPUs give similar wall times but shallower search: Full collects 46% fewer visits on 4 CPUs and 68% fewer on 2. The service's initial cap of 4 CPUs per container therefore limits Full. Size the real service VM by measurement.
+- **What it does not mean.** Timings and visits measure compute cost only. Playing strength needs controlled matches with paired seeds and uncertainty intervals; none have been completed.
+
+Reproduce with the staged runtime and the pinned Laplace checkout (writes ignored `out/laplace/benchmark.json`; `--repeats 1` for a short run):
+
+```powershell
+& '.\vendor\laplace\dist\python\python.exe' -I -B scripts/laplace/benchmark.py --laplace-root '<path to the Laplace checkout>'
+```
+
+## 8. Running and hosting
+
+### Pins
+
+| Component | Pin |
 | --- | --- |
-| `npm run build:practice` | Build the pinned Windows x64 Laplace runtime under ignored `vendor/laplace/dist/` ([sources and prerequisites](../vendor/laplace/SOURCE.md)) |
-| `npm run bots:setup` | Clone pinned Foul Play, build its engine and environment, download hash-checked set data, write `out/bots/config.json` |
-| `npm run bots:serve` | Run the battle service on loopback for development ([playable-bots.md](playable-bots.md)) |
-| `npm run test:practice` | A real Laplace battle through the desktop: move, switch, Tera, navigation, Stop, Forfeit, rematch, crash cleanup |
-| `npm run test:bots` | Real Electron games for both bots, direct and through the service |
-| `tests/bots-games.py` | Two complete games per bot against a heuristic test player |
-| `npm run smoke:practice-packaged` | The same checks against an unpacked package |
+| Laplace | `8b4173d`, MIT; model SHA-256 `502a47a5…`; poke-env 0.15.0, NumPy 2.4.6, Torch 2.12.0+cpu |
+| poke-engine (Laplace) | 0.0.47 from hashed sdist, Rust 1.96.0, Gen 9 Tera feature |
+| Foul Play | `8f541f8`, GPL-3.0; poke-engine 0.0.48; separate Python environment (`scripts/bots/lock.json`) |
+| Random-battle data (Foul Play) | `pkmn/randbats` `684abfa`, SHA-256 in `scripts/bots/lock.json` |
+| Showdown simulator | `smogon/pokemon-showdown` `a9caa4c`, MIT |
+| Classic client (practice view) | `smogon/pokemon-showdown-client` `49b5420`, AGPL-3.0, recorded patches |
+| Python | 3.12.16 (Windows standalone for the harness; `python:3.12.16-slim-bookworm` in the service image) |
 
-Without `SHOWDOWN_BOT_SERVICE_URL` and `SHOWDOWN_BOT_SERVICE_KEY`, a development launcher uses this direct path. All of these tests use disposable profiles and private servers, never the player's account or the public server.
+Source, license and build records: [`vendor/laplace/SOURCE.md`](../vendor/laplace/SOURCE.md). Manifests detect corruption; they are not publisher signatures.
+
+### Development setup
+
+Players never run these steps. Prerequisites: Node 24, Python 3.12, Git, a Rust toolchain, and on Windows the compiler listed in `vendor/laplace/SOURCE.md`.
+
+```powershell
+npm ci
+npm run build:practice      # Laplace runtime under ignored vendor/laplace/dist/
+npm run bots:setup -- --runtime "$PWD\vendor\laplace\dist"
+```
+
+`bots:setup` clones pinned Foul Play, builds its engine in its own Python environment, downloads hash-checked set data, checks both engines, and writes `out/bots/config.json` and `integrity.json` (override with `SHOWDOWN_BOT_CONFIG`). Do not run it while sessions are active. Generated files stay out of Git.
+
+### Development and self-hosting harness
+
+The desktop app can start a `PracticeRuntime` itself, with simulator and bot on the developer's machine. This path is **not a player feature**. It is kept to prove the bots work end to end and as the base for hosting the service ourselves. It uses the protocols in section 3 without the HTTPS layer. A development launcher uses it whenever `SHOWDOWN_BOT_SERVICE_URL` and `SHOWDOWN_BOT_SERVICE_KEY` are unset.
+
+To exercise the real service path instead, run the service and point the launcher at it:
+
+```powershell
+# Terminal 1
+$env:BOT_SERVICE_KEY = '<random secret, at least 32 characters>'
+npm run bots:serve                     # listens on 127.0.0.1:8787
+# Terminal 2
+$env:SHOWDOWN_BOT_SERVICE_URL = 'http://127.0.0.1:8787'
+$env:SHOWDOWN_BOT_SERVICE_KEY = '<the same secret>'
+npm start
+```
+
+| Command | Covers |
+| --- | --- |
+| `npm run test:practice` | A real Laplace battle through the desktop: move, switch, Tera, navigation, Stop, Forfeit, rematch, renderer-crash cleanup |
+| `npm run test:bots` | Real Electron games for both bots, direct and through the service, both themes and window sizes |
+| `tests/bots-games.py` (run with the runtime's Python) | Two complete games per bot against a heuristic player; result agreement and pipe shutdown |
+| `npm run smoke:practice-packaged` | A harness game inside an unpacked package, including a relocated copy |
+
+All of these use disposable profiles and private servers, never the player's account or the public server. They are integration checks, not strength benchmarks. Test windows run with `SHOWDOWN_DESKTOP_BACKGROUND=1` (non-focusing, transparent, ignores the mouse).
+
+### Deploying the service
+
+`deploy/bots/Dockerfile` builds a Linux x64 image (both engines compiled in it); `deploy/bots/compose.yaml` runs one service behind Caddy HTTPS.
+
+```sh
+export BOT_DOMAIN=bots.example.org
+export BOT_SERVICE_KEY='<new long random secret>'
+export BOT_MAX_SESSIONS=1
+docker compose -f deploy/bots/compose.yaml build
+docker compose -f deploy/bots/compose.yaml up -d
+```
+
+- Point DNS at the host and open only TCP 80 and 443. Keep 8787 and simulator ports private. `BOT_SERVICE_ORIGIN` is the exact external HTTPS origin, and the proxy must preserve `Host` (the supplied Caddyfile does, and supports WebSocket upgrades).
+- Caddy has no access log because session URLs are capability tokens.
+- Testers set `SHOWDOWN_BOT_SERVICE_URL=https://bots.example.org` and the shared key. Never put the key in a public build.
+- Initial caps: 1 session, 4 CPUs, 4 GiB, 128 processes. These are starting limits, not measured recommendations (see section 7).
+- One replica only: sessions live in memory, so a restart ends every battle. There is no persistence, resume, queue, horizontal routing, per-user credentials or quotas yet.
+- **Not yet verified:** the Linux image build, Caddy certificate issuance, cloud firewall rules and Linux native-library portability. Do this before inviting anyone.
