@@ -9,7 +9,7 @@ The Windows x64 development runtime under `dist/` is generated and ignored. Keep
 - [Pokémon Showdown classic client](https://github.com/smogon/pokemon-showdown-client), AGPL-3.0, revision `49b54209ebee54ceb8fff62a5eb5bedf7efcf6dc`. Its build tooling uses server data revision `202b6b385c2536977c60a97bf12d931c2d449586`; this does not replace the simulator.
 - [Python 3.12.16 Windows x64 standalone build](https://github.com/astral-sh/python-build-standalone/releases/tag/20261026). The archive, exact Windows wheels and their SHA-256 hashes are pinned in [runtime-lock.json](runtime-lock.json). Python and wheel packages retain their supplied metadata and notices.
 - Microsoft Visual C++ v14.51.36247 app-local runtime. The locked [official x64 CRT package](https://download.visualstudio.microsoft.com/download/pr/3984a6ef-2ffc-4c07-962e-bf9e9b862819/24a1c8dba0376d9b008ac2ba430d13c06664fc6f163511fd7866485030e289af/Microsoft.VC.14.51.CRT.Redist.X64.base.vsix) supplies four release CRT DLLs for Python and Torch. The build preserves the package manifest and checks that the DLLs load from the staged Python directory. Distribution is subject to [Microsoft's Visual Studio redistribution terms](https://learn.microsoft.com/en-us/visualstudio/releases/2026/redistribution).
-- Stock poke-engine 0.0.47 is compiled from the locked source distribution with Gen 9 Terastallization enabled and default features disabled. The build records the source, Cargo.lock and produced wheel hashes, along with the compiler, Rust target and maturin version. See [benchmark runtime identity](../../docs/laplace-performance.md#runtime-identity) for the build used in the measurements.
+- Stock poke-engine 0.0.47 is compiled from the locked source distribution with Gen 9 Terastallization enabled and default features disabled. The build records the source, Cargo.lock and produced wheel hashes, along with the compiler, Rust target and maturin version. See [performance](../../docs/bots.md#7-performance) for the build used in the measurements.
 
 Laplace's model SHA-256 is `502a47a59a6f87786c56b835e972828bc8cbab8e75028b5ddf90b49b8b5d2861`. The bot refuses an unexpected model. No experimental local engine fork is included.
 
@@ -54,4 +54,4 @@ Players use Practice through the hosted battle service. Test packages bundle thi
 only for the development harness.
 Before the service is offered to invited testers, review corresponding source and notices for
 the patched AGPL client and dependencies; the owner's licensing decision is still open.
-See [playable bots](../../docs/playable-bots.md).
+See [practice bots](../../docs/bots.md).
