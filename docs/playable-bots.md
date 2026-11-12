@@ -2,26 +2,23 @@
 
 Practice now offers **Laplace** and **Foul Play**, with Gen 9 Random Battle teams supplied by the simulator. Both support moves, switching, Terastallization, Forfeit, rematch, explicit Stop, and leaving the Practice page without losing the battle. Computation settings are CPU settings, not invented difficulty ratings. PS-PPO is excluded at the owner's request.
 
-The existing Electron launcher is the client. It can run the engines on the player's computer or use the same session protocol against a separately hosted service. The online Showdown partition, account and public ladder are independent. No cloud resources have been provisioned, no public bot accounts created, and no installer rebuilt.
+The existing Electron launcher is the client. The engines run only on a separately hosted battle service, never on the player's computer. The online Showdown partition, account and public ladder are independent. No cloud resources have been provisioned, no public bot accounts created, and no installer rebuilt.
 
-## Local development
+## Development setup
 
-Use this feature branch's checkout. Node 24, Python 3.12, Git and a Rust toolchain are development prerequisites. Windows native engine builds also need the compiler described in `vendor/laplace/SOURCE.md`.
+These steps prepare a development copy of the battle service; players never run them. Node 24, Python 3.12, Git and a Rust toolchain are prerequisites. Windows native engine builds also need the compiler described in `vendor/laplace/SOURCE.md`.
 
 ```powershell
 npm ci
-# If a verified local Laplace runtime already exists:
 npm run bots:setup -- --runtime 'C:\absolute\path\to\vendor\laplace\dist'
-npm start
 ```
 
-Otherwise build Laplace with `npm run build:practice` first, then run `npm run bots:setup`. Setup clones the pinned Foul Play revision, creates its separate Python environment, builds its Gen 9 engine, downloads hash-checked random battle data, checks both engines, and writes `out/bots/config.json` and `integrity.json`. The config is loaded automatically by the development launcher. Paths and generated dependencies stay out of Git. An alternate config can be selected with `SHOWDOWN_BOT_CONFIG`.
+The `--runtime` path is a Laplace runtime built with `npm run build:practice`. Setup clones the pinned Foul Play revision, creates its separate Python environment, builds its Gen 9 engine, downloads hash-checked random battle data, checks both engines, and writes `out/bots/config.json` and `integrity.json`. The development service loads that config. Paths and generated dependencies stay out of Git. An alternate config can be selected with `SHOWDOWN_BOT_CONFIG`.
 
-The original paused Laplace checkout and its runtime are preserved. This branch incorporates its committed runtime work, current main's launcher shell, and the uncommitted runner history/recovery and client disconnect fixes needed here. It does not complete the older 60-game strength pilot or consumer-PC packaging gate.
 
 Do not run setup while sessions are active. Setup is a development preparation command, not a consumer installer. Its Python environments remain tied to their preparation directory and Python installation. The existing standalone Laplace runtime remains separately verified; Foul Play and Linux inputs have their own recorded file inventory, checked asynchronously before launching. Canceling startup cancels verification. These inventories detect local inconsistency; they are not publisher signatures.
 
-## Exercise the service locally
+## Exercise the service on a development machine
 
 In one PowerShell terminal, from this checkout:
 
@@ -38,7 +35,7 @@ $env:SHOWDOWN_BOT_SERVICE_KEY = '<the same secret>'
 npm start
 ```
 
-The local service defaults to IPv4 loopback. The launcher now downloads the sandboxed battle client from the service and connects through its WebSocket gateway. The player's machine needs no local bot runtime in service mode. Remove the two `SHOWDOWN_BOT_SERVICE_*` variables to return to local play.
+The local service defaults to IPv4 loopback. The launcher now downloads the sandboxed battle client from the service and connects through its WebSocket gateway. The player's machine needs no bot runtime.
 
 Normal `npm start` opens the app normally. Test drivers use `SHOWDOWN_DESKTOP_BACKGROUND=1`: the test window is non-focusing, transparent and ignores mouse input. Captures still come from its web contents; tests no longer use always-on-top or window focus.
 
@@ -84,10 +81,10 @@ The gateway never accepts executable paths, shell commands, usernames, public se
 
 ## Sources and adapter behavior
 
-- Laplace: `8b4173dfdabff12e9228310ba25e3fd2ed5117df`, MIT; engine 0.0.47 and the already-pinned value model. Eight sampled worlds, 150 ms per world, selected 1/2/8 search threads. Existing runtime source/notice records remain in `vendor/laplace/SOURCE.md`.
+- Laplace: `8b4173dfdabff12e9228310ba25e3fd2ed5117df`, MIT; engine 0.0.47 and the already-pinned value model. Eight sampled worlds, 150 ms per world, selected 1/2/8 search threads. Runtime source/notice records are in `vendor/laplace/SOURCE.md`.
 - Foul Play: [`8f541f80f91f960603673796559f796b10ccf0fb`](https://github.com/pmariglia/foul-play/tree/8f541f80f91f960603673796559f796b10ccf0fb), GPL-3.0; engine 0.0.48 with Terastallization. Uses upstream battle parsing, state sampling, search and choice formatting. The adapter replaces online authentication/challenge handling, suppresses chat and battle timers, and uses one in-process search executor so Stop cannot leave search pools behind. Sampling parallelism is one, base search time 100 ms, with 1/2/8 native search threads. This is not a claim of upstream ladder strength.
 - Foul Play random battle data: [`pkmn/randbats` at `684abfa`](https://github.com/pkmn/randbats/tree/684abfaaba8e163532dfff73465c734e3432314a), exact URL/SHA-256 in `scripts/bots/lock.json`.
-- Simulator/classic client remain the pinned upstream sources from the existing Practice runtime. The hosted bootstrap uses same-origin secure WebSockets under HTTPS and HTTPS artwork even for local HTTP development.
+- Simulator/classic client are the pinned upstream sources recorded in `vendor/laplace/SOURCE.md`. The hosted bootstrap uses same-origin secure WebSockets under HTTPS and HTTPS artwork even for local HTTP development.
 
 Clones retain source and license files, and Python dependencies retain package notices. The app's own license choice and final distribution review are still open. No new project license is selected by this branch.
 
@@ -102,6 +99,6 @@ npm run test:bots
 & '<runtime>\python\python.exe' -I -B tests/bots-games.py
 ```
 
-`test:bots` runs real Electron games for both opponents in both direct-local and service modes. It checks upstream move/Tera/switch controls, both window sizes/themes, navigation retention, Stop, Forfeit/rematch, renderer crash and hidden disconnection cleanup. All sessions use disposable profiles and private servers; online Showdown traffic is blocked in the harness. `bots-games.py` completes two games per opponent against a local heuristic test player and checks rematch result agreement and parent-pipe shutdown. These are integration checks, not a strength benchmark.
+`test:bots` runs real Electron games for both opponents through the service. It checks upstream move/Tera/switch controls, both window sizes/themes, navigation retention, Stop, Forfeit/rematch, renderer crash and hidden disconnection cleanup. All sessions use disposable profiles and private servers; online Showdown traffic is blocked in the harness. `bots-games.py` completes two games per opponent against a heuristic test player and checks rematch result agreement and parent-pipe shutdown. These are integration checks, not a strength benchmark.
 
 Verified on Windows on November 11, 2026: syntax checks; 105 JavaScript unit tests passed (one optional staged-server test skipped); 12 Python runner tests passed; all five existing desktop suites passed; all four real bot desktop combinations passed. Complete-game checks finished two games per opponent with matching client/worker results and clean parent-pipe shutdown (Foul Play: 22 and 31 decisions; Laplace: 25 and 21). Screenshots and the game report are in ignored `out/desktop-smoke/` and `out/bots/games-result.json`. Linux container build and cloud deployment remain unverified.
