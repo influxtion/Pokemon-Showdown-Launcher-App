@@ -37,12 +37,16 @@ test('installer runs fixed setup for one allowlisted bot and reports progress', 
   assert.equal(child.exe, '/node');
   assert.deepEqual(child.args, [path.join(workspace, 'scripts/bots/setup.cjs'), '--bot', 'foulplay', '--build-linux', '--python', 'python3']);
   assert.equal(child.options.env.ELECTRON_RUN_AS_NODE, '1');
-  child.stdout.emit('data', Buffer.from('Fetching Foul Play…\nBuilding the Foul'));
+  assert.equal(installer.status().progress, null);
+  child.stdout.emit('data', Buffer.from('@@progress 0 12 Fetching Foul Play…\nnoisy build output\n@@progress 3 12 Building the Foul'));
   assert.equal(installer.status().line, 'Fetching Foul Play…');
+  assert.equal(installer.status().progress, 0);
   child.stdout.emit('data', Buffer.from(' Play search engine…\n'));
   assert.equal(installer.status().line, 'Building the Foul Play search engine…');
+  assert.equal(installer.status().progress, 0.25);
   child.emit('close', 0);
   assert.equal(installer.status().state, 'done');
+  assert.equal(installer.status().progress, 1);
   assert.equal(installed, 'foulplay');
   await new Promise(resolve => setTimeout(resolve, 20));
   assert.match(fs.readFileSync(path.join(workspace, 'out/bots/install.log'), 'utf8'), /search engine/);

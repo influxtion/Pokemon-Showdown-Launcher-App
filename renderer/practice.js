@@ -16,6 +16,8 @@
   const installStart = document.getElementById('practice-install-start');
   const installCancel = document.getElementById('practice-install-cancel');
   const installProgress = document.getElementById('practice-install-progress');
+  const installBar = document.getElementById('practice-install-bar');
+  const installFill = document.getElementById('practice-install-fill');
   let busy = false;
   let polling = false;
   let actionError = '';
@@ -55,7 +57,15 @@
       installStart.disabled = busy || starting || running;
       installCancel.hidden = !installing;
       installCancel.disabled = busy;
-      installProgress.textContent = installing ? job.line : job?.state === 'failed' ? job.error : '';
+      const fraction = installing && Number.isFinite(job.progress) ? Math.max(0, Math.min(1, job.progress)) : null;
+      const percent = fraction === null ? null : Math.round(fraction * 100);
+      installProgress.textContent = installing ? `${job.line}${percent === null ? '' : ` · ${percent}%`}` : job?.state === 'failed' ? job.error : '';
+      installBar.hidden = !installing;
+      // Before setup reports its first step the bar slides instead of showing a fraction.
+      installBar.classList.toggle('is-indeterminate', installing && percent === null);
+      installFill.style.width = percent === null ? '' : `${Math.max(percent, 2)}%`;
+      if (percent === null) installBar.removeAttribute('aria-valuenow');
+      else installBar.setAttribute('aria-valuenow', String(percent));
       location.textContent = value.hosted ? 'Battles run on the configured battle server. An internet connection is required.' : 'The engine and battle server run on this computer. Pokémon artwork needs an internet connection.';
       const name = value.opponent === 'foulplay' ? 'Foul Play' : 'Laplace';
       const recovery = Boolean(value.battle && (value.battle.searchFallbacks || value.battle.rejectedChoices || value.battle.defaultChoices));

@@ -18,7 +18,7 @@ class BotInstaller extends EventEmitter {
     this.platform = platform;
     this.spawnChild = spawnChild;
     this.child = null;
-    this.value = { state: 'idle', bot: null, line: '', error: '' };
+    this.value = { state: 'idle', bot: null, line: '', error: '', progress: null };
   }
 
   status() { return { ...this.value }; }
@@ -57,7 +57,7 @@ class BotInstaller extends EventEmitter {
     }
     this.child = child;
     this.cancelled = false;
-    this.set({ state: 'installing', bot, line: `Installing ${BOTS[bot]}…`, error: '' });
+    this.set({ state: 'installing', bot, line: `Installing ${BOTS[bot]}…`, error: '', progress: null });
     let lastError = '';
     const read = (stream, isError) => {
       let buffer = '';
@@ -69,8 +69,12 @@ class BotInstaller extends EventEmitter {
         for (const raw of lines) {
           const line = raw.trim().slice(0, MAX_LINE);
           if (!line) continue;
-          if (isError) lastError = line;
-          else if (this.child === child) this.set({ line });
+          if (isError) { lastError = line; continue; }
+          // Setup prints "@@progress <done> <total> <step>"; other output only goes to the log.
+          const marker = /^@@progress (\d{1,6}) (\d{1,6}) (.+)$/.exec(line);
+          if (marker && this.child === child && Number(marker[2]) > 0) {
+            this.set({ progress: Math.min(1, Number(marker[1]) / Number(marker[2])), line: marker[3] });
+          }
         }
       });
     };
@@ -80,9 +84,9 @@ class BotInstaller extends EventEmitter {
       if (this.child !== child) return;
       this.child = null;
       log.end();
-      if (this.cancelled) this.set({ state: 'idle', bot: null, line: '', error: '' });
+      if (this.cancelled) this.set({ state: 'idle', bot: null, line: '', error: '', progress: null });
       else if (code === 0) {
-        this.set({ state: 'done', line: `${BOTS[bot]} installed.`, error: '' });
+        this.set({ state: 'done', line: `${BOTS[bot]} installed.`, error: '', progress: 1 });
         this.emit('installed', bot);
       } else {
         this.set({ state: 'failed', line: '', error: `${BOTS[bot]} install failed${lastError ? `: ${lastError}` : '.'} Details are in out/bots/install.log.` });

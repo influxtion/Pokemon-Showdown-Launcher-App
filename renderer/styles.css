@@ -1055,6 +1055,14 @@ a.list-row:hover { background: var(--bg-hover); text-decoration: none; }
 .practice-area { flex: 1; min-height: 0; }
 .practice-install { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-2); }
 .practice-install-progress { flex: 1 1 200px; min-width: 0; overflow-wrap: anywhere; }
+.practice-install-bar { flex: 1 0 100%; height: 6px; border-radius: 3px; background: var(--border); overflow: hidden; }
+.practice-install-fill { height: 100%; width: 0; background: var(--primary); border-radius: inherit; transition: width 400ms ease; }
+.practice-install-bar.is-indeterminate .practice-install-fill { width: 30%; animation: practice-install-slide 1.2s ease-in-out infinite; }
+@keyframes practice-install-slide { from { transform: translateX(-100%); } to { transform: translateX(340%); } }
+@media (prefers-reduced-motion: reduce) {
+  .practice-install-fill { transition: none; }
+  .practice-install-bar.is-indeterminate .practice-install-fill { animation: none; width: 100%; opacity: 0.4; }
+}
 
 /* ---------- Rail rooms, room title and result bar ---------- */
 
