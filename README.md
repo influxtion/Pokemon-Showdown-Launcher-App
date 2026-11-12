@@ -8,6 +8,7 @@ local Laplace practice has a pinned runtime build and is included in Windows tes
 The goal is an app players can download and install without development tools.
 See the [Windows delivery plan](docs/windows.md#feasibility-and-intended-experience)
 for the stages from the current local installer to a public alpha.
+For how the app and its practice bots work, and why, see the [design document](docs/design.md).
 Current priority is finishing features; installer validation and release delivery come last.
 Replay notes now include export, import review, conflict resolution and undo of the last import.
 Saved replays can also be reviewed inside the app beside their notes.
