@@ -1,5 +1,7 @@
 # Playable bots and contributor hosting handoff
 
+How the bots decide and every protocol they speak are described in [bots.md](bots.md). This document covers setup, hosting and verification.
+
 Practice now offers **Laplace** and **Foul Play**, with Gen 9 Random Battle teams supplied by the simulator. Both support moves, switching, Terastallization, Forfeit, rematch, explicit Stop, and leaving the Practice page without losing the battle. Computation settings are CPU settings, not invented difficulty ratings. PS-PPO is excluded at the owner's request.
 
 The existing Electron launcher is the client. The engines run only on a separately hosted battle service, never on the player's computer. The online Showdown partition, account and public ladder are independent. No cloud resources have been provisioned, no public bot accounts created, and no installer rebuilt.
@@ -35,7 +37,7 @@ $env:SHOWDOWN_BOT_SERVICE_KEY = '<the same secret>'
 npm start
 ```
 
-The local service defaults to IPv4 loopback. The launcher now downloads the sandboxed battle client from the service and connects through its WebSocket gateway. The player's machine needs no bot runtime.
+The local service defaults to IPv4 loopback. The launcher now downloads the sandboxed battle client from the service and connects through its WebSocket gateway. The player's machine needs no bot runtime. Without the two `SHOWDOWN_BOT_SERVICE_*` variables, a development launcher uses the direct test harness instead ([bots.md §7](bots.md#7-development-and-self-hosting-harness)).
 
 Normal `npm start` opens the app normally. Test drivers use `SHOWDOWN_DESKTOP_BACKGROUND=1`: the test window is non-focusing, transparent and ignores mouse input. Captures still come from its web contents; tests no longer use always-on-top or window focus.
 
@@ -99,6 +101,6 @@ npm run test:bots
 & '<runtime>\python\python.exe' -I -B tests/bots-games.py
 ```
 
-`test:bots` runs real Electron games for both opponents through the service. It checks upstream move/Tera/switch controls, both window sizes/themes, navigation retention, Stop, Forfeit/rematch, renderer crash and hidden disconnection cleanup. All sessions use disposable profiles and private servers; online Showdown traffic is blocked in the harness. `bots-games.py` completes two games per opponent against a heuristic test player and checks rematch result agreement and parent-pipe shutdown. These are integration checks, not a strength benchmark.
+`test:bots` runs real Electron games for both opponents, directly and through the service. It checks upstream move/Tera/switch controls, both window sizes/themes, navigation retention, Stop, Forfeit/rematch, renderer crash and hidden disconnection cleanup. All sessions use disposable profiles and private servers; online Showdown traffic is blocked in the harness. `bots-games.py` completes two games per opponent against a heuristic test player and checks rematch result agreement and parent-pipe shutdown. These are integration checks, not a strength benchmark.
 
 Verified on Windows on November 11, 2026: syntax checks; 105 JavaScript unit tests passed (one optional staged-server test skipped); 12 Python runner tests passed; all five existing desktop suites passed; all four real bot desktop combinations passed. Complete-game checks finished two games per opponent with matching client/worker results and clean parent-pipe shutdown (Foul Play: 22 and 31 decisions; Laplace: 25 and 21). Screenshots and the game report are in ignored `out/desktop-smoke/` and `out/bots/games-result.json`. Linux container build and cloud deployment remain unverified.
