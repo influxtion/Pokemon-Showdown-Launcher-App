@@ -50,8 +50,7 @@ The client builder records its loopback connection, local storage and practice n
 
 ## Before distribution
 
-Windows test packages include the Practice runtime outside the app archive. The package
-hooks check the staged inputs and then every copied runtime file and adapter. Distribution
-still needs clean consumer Windows testing, review of corresponding source and notices for
-the patched AGPL client and dependencies, and the owner's licensing and signing decisions.
-See the [remaining acceptance gates](../../docs/laplace-plan.md).
+Practice runs only on the hosted battle service; app packages do not include this runtime.
+Before the service is offered to invited testers, review corresponding source and notices for
+the patched AGPL client and dependencies; the owner's licensing decision is still open.
+See [playable bots](../../docs/playable-bots.md).

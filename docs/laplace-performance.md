@@ -29,26 +29,9 @@ The 180 warm decisions all skipped the value model under the stock near-tie gate
 
 The timings and visits measure compute cost on three positions. Playing strength or an Elo estimate would require separate controlled matches with fixed opponents, paired seeds and uncertainty intervals.
 
-## Consumer-device feasibility
+## Hosting implications
 
-Local CPU play is technically feasible and the tested host responds within a few seconds
-without a GPU. Keeping the stock model and search settings does **not** guarantee the same
-strength on slower hardware: the eight-thread setting collected about 46% fewer visits with
-four logical CPUs and 68% fewer with two than it did unrestricted. Similar wall times come
-from a time-limited search, not equal search depth. The local match pilot is a separate,
-limited comparison of thread counts; it cannot establish public-ladder Elo.
-
-The exact NumPy wheel reports an x86-64-v2 instruction baseline. Torch selected its AVX2
-path on this host; this observation does not establish a minimum instruction set for every
-component. Validate the actual spare PC, including its CPU, RAM, cold startup, sustained
-play, thermals and responsiveness. CPU affinity on this i9 is not a substitute for that test.
-No 8 GB RAM minimum or low-end performance guarantee has been established.
-
-## Desktop verification
-
-`npm run test:practice` passed against the same staged runtime using a disposable profile. It exercised a real loopback battle, server-confirmed move, switch and Terastallization, view retention, both window sizes and themes, Stop confirmation, rematch, and cleanup after a renderer crash. The online Showdown client was blocked. The Practice client could load permitted artwork.
-
-A direct post-test verification of the manifest and all 20,988 payload files (858 MiB) passed in 4.26 seconds. That measures integrity scanning separately from the time needed to launch the server, load the client and create a battle. One Windows snapshot during the desktop smoke showed a 273 MiB Python working set and a 1,575 MiB sum across the Electron and Python processes. That sum can count shared pages multiple times and represents a single snapshot.
+Practice runs only on the hosted battle service, so these numbers size the service host, not players' computers. Search is time-limited: fewer CPUs give similar wall times but shallower searches. The eight-thread setting collected about 46% fewer visits with four logical CPUs and 68% fewer with two than it did unrestricted. The Compose file's initial cap of four CPUs per container therefore limits the Full preset. Measure the actual service VM before raising concurrency; this i9 is not a substitute for that test.
 
 ## Method
 
@@ -80,7 +63,7 @@ The prior development environment used Python 3.12.10 and a different stock engi
 
 ## Reproduce
 
-Build and stage the Windows Practice runtime first. Keep the pinned Laplace source checkout with its local Showdown set sheet for input verification. Run from the desktop repository.
+Build and stage the Laplace runtime first (`npm run build:practice`). Keep the pinned Laplace source checkout with its local Showdown set sheet for input verification. Run from the desktop repository.
 
 ```powershell
 $laplace = 'C:/Users/jayde/Desktop/Laplace/Pokemon Showdown AI'

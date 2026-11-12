@@ -52,10 +52,8 @@ In upgrade runs, B1–B3 need observations from both A and B, as directed by the
 | W4 Theme/scaling/layout | Not run | |
 | W5 Integration status | Not run | |
 | W6 Reboot/persistence | Not run | |
-| P1 Local Practice startup/dependencies | Not run | |
-| P2 Complete local game/rematch/performance | Not run | |
-| P3 Local navigation/Stop/restart/scaling | Not run | |
-| P4 Local process cleanup/reboot | Not run | |
+| P1 Hosted Practice game/rematch | Not run | |
+| P2 Practice navigation/Stop/restart/scaling | Not run | |
 | B1 Search/battle transition | Not run | |
 | B2 Battle survival/close/reload | Not run | |
 | B3 Challenge/friends | Not run | |
