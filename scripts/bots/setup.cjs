@@ -55,44 +55,92 @@ async function downloadSets(source) {
   }
 }
 
+const BOTS = ['laplace', 'foulplay'];
+
+function previousConfig() {
+  try {
+    const config = JSON.parse(fs.readFileSync(path.join(output, 'config.json'), 'utf8'));
+    return config.version === 1 ? config : null;
+  } catch { return null; }
+}
+
 async function main() {
-  const { values } = parseArgs({ options: { runtime: { type: 'string' }, python: { type: 'string', default: 'python' }, 'build-linux': { type: 'boolean' } } });
+  const { values } = parseArgs({ options: { runtime: { type: 'string' }, python: { type: 'string', default: 'python' },
+    'build-linux': { type: 'boolean' }, bot: { type: 'string' } } });
   if (values['build-linux'] && process.platform !== 'linux') throw new Error('--build-linux runs inside the Linux container.');
-  let root = path.resolve(values.runtime || path.join(workspace, 'vendor/laplace/dist'));
-  const source = checkout('foul-play', lock.foulPlay);
-  const foulPython = environment('foul-play-env', values.python);
-  pip(foulPython, ...lock.foulPlayPackages);
-  pip(foulPython, 'poke-engine==0.0.48', '--no-cache-dir', '--no-binary=poke-engine', '--config-settings=build-args=--features poke-engine/terastallization --no-default-features');
-  await downloadSets(source);
-  let laplacePython = path.join(root, 'python/python.exe');
-  let laplaceSource;
-  if (values['build-linux']) {
-    root = path.join(output, 'runtime');
+  if (values.bot && !BOTS.includes(values.bot)) throw new Error(`--bot must be one of: ${BOTS.join(', ')}`);
+  const wanted = values.bot ? [values.bot] : BOTS;
+  const portable = Boolean(values['build-linux']);
+  // Keep opponents a previous run installed; only the requested ones are (re)built here.
+  const previous = previousConfig();
+  const keep = previous && Boolean(previous.portable) === portable ? previous : {};
+  let root = path.resolve(values.runtime || (portable ? path.join(output, 'runtime') : keep.root || path.join(workspace, 'vendor/laplace/dist')));
+  let foul = keep.foulPlayPython && fs.existsSync(keep.foulPlayPython)
+    ? { python: keep.foulPlayPython, source: keep.foulPlaySource } : null;
+  let laplacePython = keep.laplacePython && fs.existsSync(keep.laplacePython) ? keep.laplacePython : null;
+  let laplaceSource = null;
+
+  if (portable) {
     fs.mkdirSync(root, { recursive: true });
     const { buildServer } = require('../laplace/build-server.cjs');
     const { buildClient } = require('../laplace/build-client.cjs');
+    console.log('Preparing the local simulator…');
     if (!fs.existsSync(path.join(root, 'server'))) buildServer(path.join(root, 'server'));
+    console.log('Preparing the battle client…');
     buildClient(path.join(root, 'client'));
-    laplaceSource = checkout('laplace', laplaceLock.laplace);
-    const sets = 'data/random-battles/gen9/sets.json';
-    fs.mkdirSync(path.dirname(path.join(laplaceSource, 'server', sets)), { recursive: true });
-    fs.copyFileSync(path.join(root, 'server', sets), path.join(laplaceSource, 'server', sets));
-    laplacePython = environment('laplace-env', values.python);
-    pip(laplacePython, 'torch==2.12.0+cpu', '--index-url', 'https://download.pytorch.org/whl/cpu');
-    pip(laplacePython, 'numpy==2.4.6', 'poke-env==0.15.0', 'websockets==16.0');
-    pip(laplacePython, 'poke-engine==0.0.47', '--no-cache-dir', '--no-binary=poke-engine', '--config-settings=build-args=--features poke-engine/terastallization --no-default-features');
-    // Editable metadata preserves upstream's __file__-relative model/data paths.
-    pip(laplacePython, '--no-deps', '-e', laplaceSource);
   }
   if (!fs.existsSync(path.join(root, 'client/practice-client.html'))) throw new Error('Build Laplace first or pass --runtime with an existing verified runtime.');
-  run(laplacePython, ['-I', '-B', path.join(workspace, 'scripts/laplace/runner.py'), '--check']);
-  run(foulPython, ['-I', '-B', '-c', "import poke_engine; assert poke_engine.monte_carlo_tree_search(poke_engine.State(), 20, threads=1).total_visits > 0"]);
-  const roots = [source, path.dirname(path.dirname(foulPython))];
-  if (values['build-linux']) roots.push(root, laplaceSource, path.dirname(path.dirname(laplacePython)));
+
+  if (wanted.includes('foulplay')) {
+    console.log('Fetching Foul Play…');
+    const source = checkout('foul-play', lock.foulPlay);
+    console.log('Creating the Foul Play Python environment…');
+    const python = environment('foul-play-env', values.python);
+    pip(python, ...lock.foulPlayPackages);
+    console.log('Building the Foul Play search engine…');
+    pip(python, 'poke-engine==0.0.48', '--no-cache-dir', '--no-binary=poke-engine', '--config-settings=build-args=--features poke-engine/terastallization --no-default-features');
+    console.log('Downloading random battle sets…');
+    await downloadSets(source);
+    console.log('Checking Foul Play…');
+    run(python, ['-I', '-B', '-c', "import poke_engine; assert poke_engine.monte_carlo_tree_search(poke_engine.State(), 20, threads=1).total_visits > 0"]);
+    foul = { python, source };
+  }
+  if (wanted.includes('laplace')) {
+    if (portable) {
+      console.log('Fetching Laplace…');
+      laplaceSource = checkout('laplace', laplaceLock.laplace);
+      const sets = 'data/random-battles/gen9/sets.json';
+      fs.mkdirSync(path.dirname(path.join(laplaceSource, 'server', sets)), { recursive: true });
+      fs.copyFileSync(path.join(root, 'server', sets), path.join(laplaceSource, 'server', sets));
+      console.log('Creating the Laplace Python environment…');
+      laplacePython = environment('laplace-env', values.python);
+      pip(laplacePython, 'torch==2.12.0+cpu', '--index-url', 'https://download.pytorch.org/whl/cpu');
+      pip(laplacePython, 'numpy==2.4.6', 'poke-env==0.15.0', 'websockets==16.0');
+      console.log('Building the Laplace search engine…');
+      pip(laplacePython, 'poke-engine==0.0.47', '--no-cache-dir', '--no-binary=poke-engine', '--config-settings=build-args=--features poke-engine/terastallization --no-default-features');
+      // Editable metadata preserves upstream's __file__-relative model/data paths.
+      pip(laplacePython, '--no-deps', '-e', laplaceSource);
+    } else {
+      laplacePython = path.join(root, 'python/python.exe');
+      if (!fs.existsSync(laplacePython)) throw new Error('Laplace needs the Windows practice runtime. Run npm run build:practice first.');
+    }
+    console.log('Checking Laplace…');
+    run(laplacePython, ['-I', '-B', path.join(workspace, 'scripts/laplace/runner.py'), '--check']);
+  }
+  if (!foul && !laplacePython) throw new Error('No opponent is installed.');
+
+  console.log('Recording installed files…');
+  const roots = [];
+  if (foul) roots.push(foul.source, path.dirname(path.dirname(foul.python)));
+  if (portable) {
+    roots.push(root);
+    if (laplacePython) roots.push(laplaceSource || checkout('laplace', laplaceLock.laplace), path.dirname(path.dirname(laplacePython)));
+  }
   const integrityFile = path.join(output, 'integrity.json');
   fs.writeFileSync(integrityFile, JSON.stringify(inventory(roots)));
-  const config = { version: 1, portable: Boolean(values['build-linux']), root, laplacePython,
-    foulPlayPython: foulPython, foulPlaySource: source, integrityFile };
+  const config = { version: 1, portable, root, integrityFile,
+    ...(laplacePython ? { laplacePython } : {}),
+    ...(foul ? { foulPlayPython: foul.python, foulPlaySource: foul.source } : {}) };
   fs.writeFileSync(path.join(output, 'config.json'), JSON.stringify(config, null, 2) + '\n');
   console.log('Bots prepared. Run npm start for local play, or npm run bots:serve for the hosted API.');
 }

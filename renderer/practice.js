@@ -12,6 +12,10 @@
   const opponent = document.getElementById('practice-opponent');
   const description = document.getElementById('practice-opponent-description');
   const location = document.getElementById('practice-location');
+  const install = document.getElementById('practice-install');
+  const installStart = document.getElementById('practice-install-start');
+  const installCancel = document.getElementById('practice-install-cancel');
+  const installProgress = document.getElementById('practice-install-progress');
   let busy = false;
   let polling = false;
   let actionError = '';
@@ -42,19 +46,29 @@
         option.textContent = `${bot?.name || (option.value === 'foulplay' ? 'Foul Play' : 'Laplace')}${bot?.available ? '' : ' · not installed'}`;
       }
       description.textContent = selected?.description || '';
+      const job = value.install;
+      const installing = job?.state === 'installing';
+      const selectedName = selected?.name || (opponent.value === 'foulplay' ? 'Foul Play' : 'Laplace');
+      install.hidden = !value.installable || !(installing || (selected && !selected.available));
+      installStart.hidden = installing || Boolean(selected?.available);
+      installStart.textContent = job?.state === 'failed' && job.bot === opponent.value ? `Retry ${selectedName} install` : `Install ${selectedName}`;
+      installStart.disabled = busy || starting || running;
+      installCancel.hidden = !installing;
+      installCancel.disabled = busy;
+      installProgress.textContent = installing ? job.line : job?.state === 'failed' ? job.error : '';
       location.textContent = value.hosted ? 'Battles run on the configured battle server. An internet connection is required.' : 'The engine and battle server run on this computer. Pokémon artwork needs an internet connection.';
       const name = value.opponent === 'foulplay' ? 'Foul Play' : 'Laplace';
       const recovery = Boolean(value.battle && (value.battle.searchFallbacks || value.battle.rejectedChoices || value.battle.defaultChoices));
       setup.hidden = running || starting;
       area.hidden = !running;
-      start.disabled = busy || !value.installed || !selected?.available || starting || running;
-      opponent.disabled = busy || starting || running;
+      start.disabled = busy || installing || !value.installed || !selected?.available || starting || running;
+      opponent.disabled = busy || starting || running || installing;
       preset.disabled = busy;
       stop.hidden = !running && !starting;
       stop.disabled = busy && !starting;
       next.hidden = !running || !value.battle?.finished;
       next.disabled = busy;
-      let text = !value.installed ? 'Bots unavailable' : starting ? `Starting ${name}…` : running ? `${name} ready` : value.state === 'failed' ? 'Practice failed' : 'Ready to play';
+      let text = installing ? `Installing ${job.bot === 'foulplay' ? 'Foul Play' : 'Laplace'}…` : !value.installed ? 'Bots unavailable' : starting ? `Starting ${name}…` : running ? `${name} ready` : value.state === 'failed' ? 'Practice failed' : 'Ready to play';
       if (running && value.clientState === 'connecting') text = 'Connecting battle client…';
       if (running && value.battle?.thinking) text = `${name} is thinking · turn ${value.battle.turn || 1}`;
       else if (running && value.battle?.finished) text = ({ win: 'You won', loss: `${name} won`, tie: 'Battle tied' })[value.battle.result] || 'Battle finished';
@@ -63,7 +77,7 @@
       if (value.error && !value.installed) text = value.hosted ? 'Battle service unavailable' : 'Runtime needs repair';
       status.textContent = text;
       status.className = `status status--${value.error || value.clientError ? 'err' : starting || recovery ? 'warn' : running ? 'ok' : 'off'}`;
-      message.textContent = actionError || value.error || value.clientError || (!value.installed ? 'The battle runtime is not available.' : starting ? 'Preparing the battle server and checking the engine. This can take a moment.' : recovery ? `${name} retried or recovered a move in this game.` : !selected?.available && !running ? 'This opponent is not installed on the battle server.' : '');
+      message.textContent = actionError || value.error || value.clientError || (installing ? '' : !value.installed && value.installable ? 'No opponent is installed yet. Install one below.' : !value.installed ? 'The battle runtime is not available.' : starting ? 'Preparing the battle server and checking the engine. This can take a moment.' : recovery ? `${name} retried or recovered a move in this game.` : !selected?.available && !running ? (value.installable ? 'This opponent is not installed yet.' : 'This opponent is not installed on the battle server.') : '');
       message.hidden = !message.textContent;
       sync();
     } catch {
@@ -75,7 +89,7 @@
   async function act(action) {
     busy = true;
     actionError = '';
-    start.disabled = stop.disabled = next.disabled = true;
+    start.disabled = stop.disabled = next.disabled = installStart.disabled = true;
     try {
       const result = await action();
       if (!result?.ok && !result?.cancelled) {
@@ -92,6 +106,8 @@
   opponent.addEventListener('change', () => { selectionInitialized = true; refresh(); });
   start.addEventListener('click', () => act(() => window.desktop.startPractice({ opponent: opponent.value, preset: preset.value })));
   stop.addEventListener('click', () => act(() => window.desktop.stopPractice()));
+  installStart.addEventListener('click', () => act(() => window.desktop.installPracticeBot(opponent.value)));
+  installCancel.addEventListener('click', () => act(() => window.desktop.cancelPracticeInstall()));
   next.addEventListener('click', () => act(() => window.desktop.nextPracticeBattle()));
   new ResizeObserver(sync).observe(area);
   window.addEventListener('resize', sync);

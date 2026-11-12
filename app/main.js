@@ -15,6 +15,7 @@ const { PracticeRuntime } = require('./practice-runtime');
 const { HostedPractice } = require('./hosted-practice');
 const { readBotConfig, runtimeOptions } = require('./bot-config');
 const { PracticeView } = require('./practice-view');
+const { BotInstaller } = require('./bot-installer');
 const { Logger } = require('./logging');
 const { WindowState } = require('./window-state');
 const { ShowdexIntegration, registerShowdexScheme } = require('./showdex-integration');
@@ -47,6 +48,7 @@ let replayImports = null;
 let replayReview = null;
 let practice = null;
 let practiceView = null;
+let botInstaller = null;
 let choosingReplayImport = false;
 let undoingReplayImport = false;
 let replayDirty = false;
@@ -194,28 +196,20 @@ function createWindow() {
   const currentWindow = win;
   if (process.env.SHOWDOWN_DESKTOP_BACKGROUND === '1') win.setIgnoreMouseEvents(true);
   replayReview = new ReplayReview({ window: win, css: REPLAY_CSS, background: background() });
-  let practiceRoot = app.isPackaged ? path.join(process.resourcesPath, 'practice')
-    : path.join(__dirname, '..', 'vendor', 'laplace', 'dist');
-  const practiceScripts = app.isPackaged ? path.join(process.resourcesPath, 'practice-adapter')
-    : path.join(__dirname, '..', 'scripts', 'laplace');
-  try {
-    const service = process.env.SHOWDOWN_BOT_SERVICE_URL;
-    const botConfig = !service && !app.isPackaged ? readBotConfig(process.env.SHOWDOWN_BOT_CONFIG || path.join(__dirname, '../out/bots/config.json')) : null;
-    if (botConfig) practiceRoot = botConfig.root;
-    practice = service
-      ? new HostedPractice({ url: service, key: process.env.SHOWDOWN_BOT_SERVICE_KEY })
-      : new PracticeRuntime(botConfig ? runtimeOptions(botConfig, path.join(__dirname, '..')) : { root: practiceRoot, scripts: practiceScripts });
-  } catch {
-    practice = new PracticeRuntime({ root: practiceRoot, scripts: practiceScripts });
-    practice.installed = () => false;
-    practice.state = 'failed';
-    practice.error = 'Battle configuration could not load. Check the server address and runtime setup.';
-  }
+  const practiceRoot = loadPractice();
   practiceView = new PracticeView({ window: win, root: path.join(practiceRoot, 'client'), css: CLIENT_CSS,
     background: background(), onFailure: token => practice?.clientFailed(token) });
-  practice.on('ready', connection => { logger.write('practice-ready'); practiceView?.open(connection); });
-  practice.on('failure', code => logger.write('practice-failed', { start: 1, exited: 2, timeout: 3, client: 4, integrity: 5 }[code] || 0));
-  practice.on('change', state => { if (state.state === 'failed' || state.state === 'idle') practiceView?.close(); });
+  // Opponents can be installed from Practice only in a development checkout using local engines.
+  if (!app.isPackaged && !process.env.SHOWDOWN_BOT_SERVICE_URL) {
+    botInstaller = new BotInstaller({ workspace: path.join(__dirname, '..') });
+    botInstaller.on('installed', bot => {
+      logger.write('bot-installed', { laplace: 1, foulplay: 2 }[bot]);
+      if (!practice || practice.state === 'starting' || practice.state === 'ready') return;
+      practice.stop();
+      practiceView.close();
+      practiceView.root = path.join(loadPractice(), 'client');
+    });
+  }
   let windowSaveTimer;
   const persistWindow = () => {
     if (!currentWindow.isDestroyed()) windowState.save({
@@ -287,8 +281,10 @@ function createWindow() {
     if (practice?.dispose) practice.dispose();
     else practice?.stop();
     practiceView?.close();
+    botInstaller?.cancel();
     practice = null;
     practiceView = null;
+    botInstaller = null;
     win = null;
     client = null;
     allowClose = false;
@@ -296,6 +292,32 @@ function createWindow() {
   const pages = { home: 'index.html', showdown: 'play.html', replays: 'replays.html' };
   win.loadFile(path.join(RENDERER_DIR, pages[settings.get('startPage')] || 'index.html'));
   ensureClient();
+}
+
+// Builds the practice backend from the current configuration and returns its runtime root.
+function loadPractice() {
+  let practiceRoot = app.isPackaged ? path.join(process.resourcesPath, 'practice')
+    : path.join(__dirname, '..', 'vendor', 'laplace', 'dist');
+  const practiceScripts = app.isPackaged ? path.join(process.resourcesPath, 'practice-adapter')
+    : path.join(__dirname, '..', 'scripts', 'laplace');
+  try {
+    const service = process.env.SHOWDOWN_BOT_SERVICE_URL;
+    const botConfig = !service && !app.isPackaged ? readBotConfig(process.env.SHOWDOWN_BOT_CONFIG || path.join(__dirname, '../out/bots/config.json')) : null;
+    if (botConfig) practiceRoot = botConfig.root;
+    practice = service
+      ? new HostedPractice({ url: service, key: process.env.SHOWDOWN_BOT_SERVICE_KEY })
+      : new PracticeRuntime(botConfig ? runtimeOptions(botConfig, path.join(__dirname, '..')) : { root: practiceRoot, scripts: practiceScripts });
+  } catch {
+    practice = new PracticeRuntime({ root: practiceRoot, scripts: practiceScripts });
+    practice.installed = () => false;
+    practice.state = 'failed';
+    practice.error = 'Battle configuration could not load. Check the server address and runtime setup.';
+  }
+  const current = practice;
+  current.on('ready', connection => { if (practice === current) { logger.write('practice-ready'); practiceView?.open(connection); } });
+  current.on('failure', code => logger.write('practice-failed', { start: 1, exited: 2, timeout: 3, client: 4, integrity: 5 }[code] || 0));
+  current.on('change', state => { if (practice === current && (state.state === 'failed' || state.state === 'idle')) practiceView?.close(); });
+  return practiceRoot;
 }
 
 function isPracticeFrame(event) {
@@ -306,10 +328,27 @@ function isPracticeFrame(event) {
 ipcMain.handle('practice:status', async event => {
   if (!isLauncherFrame(event)) return null;
   const clientState = await practiceView.status();
-  return { ...practice.status(), clientState: clientState.state, clientError: clientState.error };
+  return { ...practice.status(), clientState: clientState.state, clientError: clientState.error,
+    installable: Boolean(botInstaller), install: botInstaller?.status() || null };
+});
+ipcMain.handle('practice:install', async (event, bot) => {
+  if (!isPracticeFrame(event) || !botInstaller) return { ok: false };
+  if (practice.state === 'starting' || practice.state === 'ready') return { ok: false, error: 'Stop the current practice session before installing.' };
+  if (!['laplace', 'foulplay'].includes(bot)) return { ok: false, error: 'Choose a supported opponent.' };
+  const name = bot === 'foulplay' ? 'Foul Play' : 'Laplace';
+  const result = await dialog.showMessageBox(win, { type: 'question', buttons: ['Cancel', `Install ${name}`],
+    defaultId: 1, cancelId: 0, message: `Install ${name}?`,
+    detail: 'Downloads pinned sources and builds the engine on this computer. This can take several minutes and needs Git, Python 3.12 and a Rust toolchain.' });
+  if (result.response !== 1) return { ok: false, cancelled: true };
+  return botInstaller.install(bot);
+});
+ipcMain.handle('practice:cancel-install', event => {
+  if (!isPracticeFrame(event) || !botInstaller) return { ok: false };
+  return botInstaller.cancel();
 });
 ipcMain.handle('practice:start', (event, preset) => {
   if (!isPracticeFrame(event)) return { ok: false };
+  if (botInstaller?.child) return { ok: false, error: 'Wait for the opponent install to finish.' };
   return practice.start(preset);
 });
 ipcMain.handle('practice:stop', async event => {

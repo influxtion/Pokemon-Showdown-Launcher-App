@@ -13,6 +13,8 @@ contextBridge.exposeInMainWorld('desktop', {
   stopPractice: () => ipcRenderer.invoke('practice:stop'),
   showPractice: (bounds) => ipcRenderer.invoke('practice:show', bounds),
   nextPracticeBattle: () => ipcRenderer.invoke('practice:next'),
+  installPracticeBot: (bot) => ipcRenderer.invoke('practice:install', bot),
+  cancelPracticeInstall: () => ipcRenderer.invoke('practice:cancel-install'),
   getShowdex: () => ipcRenderer.invoke('showdex:status'),
   setSetting: (key, value) => ipcRenderer.invoke('settings:set', key, value),
   openLogs: () => ipcRenderer.invoke('settings:open-logs'),

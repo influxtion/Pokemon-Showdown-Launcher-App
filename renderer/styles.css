@@ -1053,6 +1053,8 @@ a.list-row:hover { background: var(--bg-hover); text-decoration: none; }
 .practice-setup { margin: 24px; max-width: 760px; flex-shrink: 0; }
 .practice-setup .field { margin: 16px 0; max-width: 500px; }
 .practice-area { flex: 1; min-height: 0; }
+.practice-install { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-2); }
+.practice-install-progress { flex: 1 1 200px; min-width: 0; overflow-wrap: anywhere; }
 
 /* ---------- Rail rooms, room title and result bar ---------- */
 

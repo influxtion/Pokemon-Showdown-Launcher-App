@@ -31,13 +31,14 @@ function childEnvironment(node = false) {
 }
 
 class PracticeRuntime extends EventEmitter {
-  constructor({ root, scripts, node = process.execPath, spawnChild = spawn, verify = verifyInWorker, timeoutMs = 120000, foulPlay = null, python = null, installed = null }) {
+  constructor({ root, scripts, node = process.execPath, spawnChild = spawn, verify = verifyInWorker, timeoutMs = 120000, foulPlay = null, python = null, installed = null, laplace = true }) {
     super();
     this.root = root;
     this.scripts = scripts;
     this.node = node;
     this.python = python || path.join(root, 'python/python.exe');
     this.foulPlay = foulPlay;
+    this.laplace = laplace;
     this.inspectInstalled = installed;
     this.opponent = 'laplace';
     this.spawnChild = spawnChild;
@@ -63,7 +64,7 @@ class PracticeRuntime extends EventEmitter {
     const inspection = this.inspectInstalled ? { ok: this.installed() } : inspectRuntime(this.root);
     return { installed: this.installed(), state: this.state, opponent: this.opponent,
       opponents: [
-        { id: 'laplace', name: 'Laplace', available: this.installed(), description: 'Search guided by a trained value model.' },
+        { id: 'laplace', name: 'Laplace', available: this.installed() && this.laplace, description: 'Search guided by a trained value model.' },
         { id: 'foulplay', name: 'Foul Play', available: this.installed() && Boolean(this.foulPlay), description: 'Monte Carlo search over possible opposing teams.' },
       ],
       error: this.error || (inspection.code === 'invalid' ? 'Practice runtime needs repair. Rebuild or reinstall it.' : ''),
@@ -75,7 +76,7 @@ class PracticeRuntime extends EventEmitter {
   async start(preset) {
     const opponent = typeof preset === 'object' && preset !== null ? preset.opponent : 'laplace';
     preset = typeof preset === 'object' && preset !== null ? preset.preset : preset;
-    if (!['laplace', 'foulplay'].includes(opponent) || (opponent === 'foulplay' && !this.foulPlay)) {
+    if (!['laplace', 'foulplay'].includes(opponent) || (opponent === 'foulplay' && !this.foulPlay) || (opponent === 'laplace' && !this.laplace)) {
       return { ok: false, error: 'This opponent is not installed on the battle server.' };
     }
     if (!Object.hasOwn(PRESETS, preset)) return { ok: false, error: 'Choose a supported computation setting.' };
