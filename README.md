@@ -140,17 +140,26 @@ service. Bots never run on your computer, and practice never uses your online ac
 Choose an opponent and a computation setting, then **Start practice**. Quieter options use
 fewer search threads on the server; they are computation settings, not Elo ratings.
 Navigation keeps both practice and online games loaded, and **Stop practice…** ends the
-session on the service. See [playable bots](docs/playable-bots.md) for configuring the
-service address and key, and the [performance measurements](docs/laplace-performance.md)
+session on the service. See [how the bots work](docs/bots.md), [playable bots](docs/playable-bots.md)
+for configuring the service address and key, and the [performance measurements](docs/laplace-performance.md)
 for Laplace's compute cost.
+
+The code can also run both bots directly on a developer's machine. That path is a test
+harness and the base for self-hosting, not a player feature; see
+[the development harness](docs/bots.md#7-development-and-self-hosting-harness).
 
 ## Windows alpha
 
 ```sh
+npm run build:practice
 npm run pack:win:dir
 npm run smoke:packaged
+npm run smoke:practice-packaged
 npm run pack:win
 ```
+
+Packaging requires the verified Laplace runtime from `build:practice`, which test packages
+bundle for the development harness.
 
 The unsigned x64 installer is written to `out/windows/`. The packaged app excludes the optional
 Showdex runtime while distribution licensing remains undecided. See [Windows packaging](docs/windows.md)

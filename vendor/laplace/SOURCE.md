@@ -50,7 +50,8 @@ The client builder records its loopback connection, local storage and practice n
 
 ## Before distribution
 
-Practice runs only on the hosted battle service; app packages do not include this runtime.
+Players use Practice through the hosted battle service. Test packages bundle this runtime
+only for the development harness.
 Before the service is offered to invited testers, review corresponding source and notices for
 the patched AGPL client and dependencies; the owner's licensing decision is still open.
 See [playable bots](../../docs/playable-bots.md).

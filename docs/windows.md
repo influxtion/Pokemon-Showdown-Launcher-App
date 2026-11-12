@@ -6,7 +6,8 @@ Windows PC is available for later testing; its Windows version and clean-test se
 to be confirmed. The checklist is retained for that stage, not the next development task.
 
 Replay backup/restore, in-app replay review and Practice are now implemented. Practice
-connects to a hosted battle service; the app package contains no bot runtime. Showdex
+connects to a hosted battle service. Test packages still bundle the Laplace runtime for the
+development harness ([bots.md §7](bots.md#7-development-and-self-hosting-harness)). Showdex
 distribution remains undecided. No public release or clean-machine pass is implied.
 
 The alpha target is a Windows x64 NSIS installer. The same configuration can also produce an unpacked app for inspection and smoke testing. Neither command installs or publishes the app. The installer is unsigned and uses Electron's default icon until project licensing and release branding are settled.
@@ -168,8 +169,11 @@ npm ci
 npm run check
 npm test
 npm run test:desktop
+npm run build:practice
+npm run test:practice
 npm run pack:win:dir
 npm run smoke:packaged
+npm run smoke:practice-packaged
 npm run pack:win
 ```
 
@@ -179,15 +183,29 @@ The NSIS installer is per-user, creates a Start menu shortcut, and does not crea
 shortcut. Signing is explicitly disabled for test builds; resource/version editing remains
 enabled. No custom icon is configured.
 
-The package contains no bot runtime; Practice uses the hosted battle service described in
-[playable bots](playable-bots.md).
+Players use Practice through the hosted battle service described in
+[playable bots](playable-bots.md). Test packages still bundle the Laplace runtime so the
+development harness can run. The Practice builder requires the pinned Windows toolchain described in
+[runtime sources](../vendor/laplace/SOURCE.md). Generated
+Python, model, server and client files go under `resources/practice`; the two process entry
+points go under `resources/practice-adapter`. Packaging fails if source inputs changed or
+copied runtime bytes differ from the verified candidate.
+
+When signing is introduced, preserve third-party runtime bytes: Electron Builder normally
+signs extra-resource executables during copying. Configure exclusions for locked Python,
+Torch and setuptools executables and do not re-sign locked DLLs. Sign the launcher and
+installer through the chosen release process. The after-pack integrity gate must still pass.
 
 Inspect the built `resources/app.asar` file list before distributing anything. It should contain `app/`, `renderer/`, `package.json`, and Showdex source metadata (`vendor/showdex/LICENSE`, `SOURCE.md`, and a manifest if present). It must not contain `tests/`, `scripts/`, local settings, credentials, `out/`, or `vendor/showdex/dist/`. The generated Showdex runtime stays out of the installer until the owner decides the licensing approach. The packaged UI should report Showdex as not installed, and ordinary Showdown use should still work.
 
 `smoke:packaged` launches only the unpacked executable with a new temporary profile and a
 system-only PATH. A local proxy blocks the public client. It checks Home, settings and a
 temporary replay-note IPC round trip, then closes the app and cleans its test data.
-Reports under `out/packaging-smoke/` measure this host only; any existing
+`smoke:practice-packaged` also plays a real harness game against the bundled runtime,
+confirms a move, visits Home and returns, forfeits, rematches, and verifies both processes
+exit normally. It never searches or challenges on the public server. Use
+`node scripts/smoke-packaged.js --practice --app-dir=<relocated-directory>` to test a moved
+unpacked build. Reports under `out/packaging-smoke/` measure this host only; any existing
 installer size is labeled separately and is not proof that it matches the tested app.
 Neither smoke installs NSIS or replaces clean-machine verification.
 
