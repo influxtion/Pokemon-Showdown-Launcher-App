@@ -17,6 +17,7 @@ const els = {
   challengeUser: $('challenge-user'),
   teamGrid: $('team-grid'),
   teamName: $('team-name'),
+  heroRecord: $('hero-record'),
   tileTeams: $('tile-teams'),
   tileBattles: $('tile-battles'),
   news: $('news'),
@@ -70,12 +71,12 @@ function el(tag, className, text) {
   return node;
 }
 
-const openFriends = el('button', 'btn', 'Open friends list');
+const openFriends = el('button', 'btn', 'Open list');
 openFriends.type = 'button';
 openFriends.addEventListener('click', () => {
   if (sessionReady && sessionConnected) act('friends');
 });
-els.friends.parentElement.querySelector('.friends-head').append(openFriends);
+$('friends-head').querySelector('.window-toggle').before(openFriends);
 
 function num(n) {
   return n === null || n === undefined ? '–' : n.toLocaleString('en-US');
@@ -173,6 +174,22 @@ function renderHero() {
   els.heroFormat.textContent = format ? format.name : 'Pokémon Showdown';
 
   const rating = format && state.ratings && state.ratings[format.id];
+  const record = format && state.stats && state.stats[format.id];
+  els.heroRecord.hidden = !(state.user.registered && record);
+  els.heroSub.hidden = !els.heroRecord.hidden;
+  if (!els.heroRecord.hidden) {
+    const games = record.wins + record.losses;
+    els.heroRecord.replaceChildren(...[
+      ['Rating', String(record.elo)],
+      ['Win rate', games ? `${Math.round((record.wins / games) * 100)}%` : '–'],
+      ['Record', `${num(record.wins)}–${num(record.losses)}`],
+      ['GXE', record.gxe === null ? '–' : `${record.gxe}%`],
+    ].map(([label, value]) => {
+      const cell = el('div');
+      cell.append(el('span', null, label), el('strong', null, value));
+      return cell;
+    }));
+  }
   if (!state.user.registered) {
     els.heroSub.textContent = 'Playing as a guest. Sign in on Showdown to keep a ladder rating.';
   } else if (rating) {
@@ -182,7 +199,7 @@ function renderHero() {
   }
 
   els.heroStats.replaceChildren(
-    el('strong', 'num', num(state.counts.users)), document.createTextNode(' online'), el('br'),
+    el('strong', 'num', num(state.counts.users)), document.createTextNode(' online · '),
     el('strong', 'num', num(state.counts.battles)), document.createTextNode(' battles'),
   );
 
@@ -233,31 +250,31 @@ function renderNews() {
     return;
   }
   els.news.replaceChildren(...state.news.map((n) => {
-    const card = el('a', 'news-card');
-    card.href = n.id ? `https://pokemonshowdown.com/news/${n.id}` : 'https://pokemonshowdown.com/news';
+    const post = el('a', 'post');
+    post.href = n.id ? `https://pokemonshowdown.com/news/${n.id}` : 'https://pokemonshowdown.com/news';
     const date = n.date ? new Date(n.date * 1000).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
-    card.append(
-      el('span', 'news-meta', [n.author, date].filter(Boolean).join(' · ')),
-      el('span', 'news-title', n.title),
-      el('span', 'news-text', n.text),
+    post.append(
+      el('span', 'post-title', n.title),
+      el('span', 'post-meta', [n.author, date].filter(Boolean).join(' · ')),
+      el('span', 'post-text', n.text),
     );
-    return card;
+    return post;
   }));
 }
 
 function renderRooms() {
-  const rooms = [...state.rooms].sort((a, b) => (b.users || 0) - (a.users || 0)).slice(0, 9);
+  const rooms = [...state.rooms].sort((a, b) => (b.users || 0) - (a.users || 0)).slice(0, 5);
   if (!rooms.length) {
     els.rooms.replaceChildren(el('div', 'empty', 'Room list not loaded yet.'));
     return;
   }
   els.rooms.replaceChildren(...rooms.map((r) => {
-    const link = el('a', 'room-card');
+    const link = el('a', 'room-row');
     link.href = '#';
     link.dataset.room = r.title.toLowerCase().replace(/[^a-z0-9]+/g, '');
-    const head = el('span', 'room-card-head');
-    head.append(el('span', 'room-card-title', r.title), el('span', 'room-card-users num', `${num(r.users)} users`));
-    link.append(head, el('span', 'room-card-desc', r.desc));
+    const head = el('span', 'room-row-head');
+    head.append(el('span', 'room-row-title', r.title), el('span', 'room-row-users num', `${num(r.users)} users`));
+    link.append(head, el('span', 'room-row-desc', r.desc));
     return link;
   }));
 }
@@ -326,6 +343,10 @@ function renderFriends() {
       }
     }
     els.friends.replaceChildren(...children);
+    const online = state.user.registered && !disconnected && friends?.available
+      ? friends.items.filter((friend) => friend.online).length : 0;
+    $('count-friends').hidden = !online;
+    $('count-friends').textContent = `${online} online`;
   }
   for (const button of els.friends.querySelectorAll('[data-friend-challenge]')) {
     button.disabled = !sessionReady || !sessionConnected || !currentFormat();
@@ -471,13 +492,30 @@ $('live-battle-return').addEventListener('click', () => {
   if (liveBattle) act('join', { room: liveBattle.id });
 });
 
+// Minimize buttons on the Home windows. The choice is remembered as a convenience only.
+function setWindow(button, open) {
+  const name = button.closest('.window').querySelector('h2').textContent;
+  button.closest('.window').classList.toggle('is-collapsed', !open);
+  button.setAttribute('aria-expanded', String(open));
+  button.setAttribute('aria-label', `${open ? 'Minimize' : 'Expand'} ${name}`);
+  button.title = open ? 'Minimize' : 'Expand';
+}
+for (const button of document.querySelectorAll('.window-toggle')) {
+  setWindow(button, prefs.get(`hub.window.${button.dataset.window}`) !== 'closed');
+  button.addEventListener('click', () => {
+    const open = button.getAttribute('aria-expanded') !== 'true';
+    setWindow(button, open);
+    prefs.set(`hub.window.${button.dataset.window}`, open ? 'open' : 'closed');
+  });
+}
+
 refresh();
 
 async function loadRecentReplays() {
   try {
     const result = await window.desktop.getReplayNotes();
     if (!result.ok || !result.notes.length) return;
-    const recent = [...result.notes].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).slice(0, 3);
+    const recent = [...result.notes].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).slice(0, 8);
     $('recent-replays').replaceChildren(...recent.map((note) => {
       const link = el('a', 'note-item');
       link.href = `replays.html?id=${encodeURIComponent(note.id)}`;
@@ -488,6 +526,9 @@ async function loadRecentReplays() {
       return link;
     }));
     $('recent-replays-section').hidden = false;
+    $('recent-replays-empty').hidden = true;
+    $('count-notes').hidden = false;
+    $('count-notes').textContent = result.notes.length;
   } catch {}
 }
 

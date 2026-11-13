@@ -119,10 +119,12 @@ Launcher pages ask main for a snapshot. Main runs `readClient()` inside the clie
 
 ### Launcher shell and Home
 
-- **Rail:** Home, Showdown, Practice, Replay notes and Settings, with the account at the foot. While rooms are open, a Showdown section lists them (battles, chats, teambuilder, ladder) with close buttons and a **Join a room** button. Closing an own live battle goes through the client's own leave path, so the forfeit prompt still appears.
+- **Rail:** Home, Showdown, Stats, Practice, Replay notes and Settings, with the account at the foot. While rooms are open, a Showdown section lists them (battles, chats, teambuilder, ladder) with close buttons and a **Join a room** button. Closing an own live battle goes through the client's own leave path, so the forfeit prompt still appears.
 - **Persistence:** the client stays loaded across page changes, so navigating never loses a battle. A newly started battle switches to the Showdown view and takes priority. Home shows **Return to battle** while one runs. An ended battle shows a result bar: **Save replay note**, **Close battle**, **Battle again**.
 - **Home hero:** format and team pickers (with the team's sprites), **Battle**, **Cancel** and **Challenge a user**. Search runs in the background with an animated state. Choices are remembered per format as a convenience only.
-- **Home panels:** account and ratings (cached 2 minutes), user and battle counts, Teambuilder and Watch tiles, **Edit teams** (opens the selected team), the latest three news posts, chat rooms and recent replay notes.
+- **Home hero record:** the selected format's rating, win rate, win–loss record and GXE, from the public profile endpoint (cached 2 minutes), with user and battle counts and **Edit teams** (opens the selected team).
+- **Home layout:** modelled on Showdown's main menu. The hero is a launcher column on the left with Teambuilder, Ladder, Watch a battle and Your stats rows beneath it. Beside it sit titled windows: **Latest news** and **Replay notes** in the middle, **Friends** and **Chat rooms** on the right.
+- **Stats page:** a rail page with ladder totals (battles, win rate, highest rating, most played) and a sortable, filterable per-format table of rating, win rate, wins, losses, battles and GXE. **Play** on a row preselects that format on Home; it never starts a search.
 - **Friends panel:** structured presence (online, idle, busy, offline as reported), refreshed at most every 30 s. **Open friends list** is the fallback. No battle state or avatars are inferred.
 
 ### Showdown client
