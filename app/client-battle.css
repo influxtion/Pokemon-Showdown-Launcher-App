@@ -491,3 +491,273 @@ html.sd-launcher-shell:not(.sd-menu-community) {
   0%, 100% { transform: translateY(0); }
   40% { transform: translateY(-5px); }
 }
+
+/* Format picker as a centered modal. showdown.js (installFormatModal) tags the client's own
+   FormatPopup with .sd-format-modal and adds the header and backdrop; everything inside is
+   still the client's markup: a search <ul>, then span[name=formats] holding one <ul> per
+   column with <details> sections of button.option rows. The client positions the popup
+   with inline styles, which user-origin !important rules override. */
+html.sd-launcher-shell {
+  .sd-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    background: rgb(6 10 22 / 0.55);
+    backdrop-filter: blur(4px);
+    animation: sd-fade 0.18s ease-out both;
+  }
+  .ps-popup.sd-format-modal {
+    position: fixed !important;
+    inset: 50% auto auto 50% !important;
+    z-index: 1001 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    box-sizing: border-box !important;
+    width: min(1040px, calc(100vw - 48px)) !important;
+    max-width: none !important;
+    height: min(760px, calc(100vh - 48px)) !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    border: 1px solid var(--sd-border-strong) !important;
+    border-radius: 18px !important;
+    background: var(--sd-panel) !important;
+    box-shadow: 0 24px 64px rgb(0 0 0 / 0.45), 0 2px 8px rgb(0 0 0 / 0.2) !important;
+    color: var(--sd-text) !important;
+    font-family: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif !important;
+    transform: translate(-50%, -50%);
+    animation: sd-modal-in 0.22s cubic-bezier(0.2, 0.8, 0.3, 1) both;
+  }
+  .sd-format-modal > p,
+  .sd-format-modal > div[style*="clear"] {
+    display: none !important;
+  }
+
+  .sd-format-modal .sd-modal-head {
+    display: flex;
+    flex: none;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 20px 0 24px;
+  }
+  .sd-format-modal .sd-modal-head h2 {
+    margin: 0;
+    color: var(--sd-text);
+    font-size: 20px;
+    font-weight: 700;
+  }
+  .sd-format-modal .sd-modal-close {
+    appearance: none;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--sd-text-2);
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease;
+  }
+  .sd-format-modal .sd-modal-close::before {
+    content: "\f00d";
+    font: 18px/36px FontAwesome;
+  }
+  .sd-format-modal .sd-modal-close:hover {
+    background: var(--sd-hover);
+    color: var(--sd-text);
+  }
+  .sd-format-modal .sd-modal-close:focus-visible {
+    outline: 2px solid var(--sd-accent);
+    outline-offset: -2px;
+  }
+
+  /* Search */
+  .sd-format-modal > ul.popupmenu {
+    flex: none !important;
+    margin: 0 !important;
+    padding: 16px 24px !important;
+    border-bottom: 1px solid var(--sd-border) !important;
+  }
+  .sd-format-modal > ul.popupmenu li {
+    position: relative !important;
+  }
+  .sd-format-modal > ul.popupmenu li::before {
+    content: "\f002";
+    position: absolute;
+    top: 50%;
+    left: 16px;
+    transform: translateY(-50%);
+    color: var(--sd-text-2);
+    font: 15px/1 FontAwesome;
+    pointer-events: none;
+  }
+  .sd-format-modal input[name="search"] {
+    display: block !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+    height: 46px !important;
+    margin: 0 !important;
+    padding: 0 16px 0 44px !important;
+    border: 1px solid var(--sd-border-strong) !important;
+    border-radius: 12px !important;
+    background: var(--sd-input) !important;
+    color: var(--sd-text) !important;
+    font-family: inherit !important;
+    font-size: 15px !important;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
+  }
+  .sd-format-modal input[name="search"]:focus {
+    border-color: var(--sd-accent) !important;
+    outline: none !important;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--sd-accent) 28%, transparent) !important;
+  }
+
+  /* Sections flow into balanced columns. The columns sit in an unbounded block inside the
+     scrolling body; on a fixed-height element they would spill sideways instead. */
+  .sd-format-modal .sd-modal-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 12px 16px 20px;
+    scrollbar-color: var(--sd-border-strong) transparent;
+    scrollbar-width: thin;
+  }
+  .sd-format-modal span[name="formats"] {
+    display: block !important;
+    columns: 3 240px !important;
+    column-gap: 16px !important;
+  }
+  .sd-format-modal span[name="formats"] ul.popupmenu {
+    display: contents !important;
+  }
+  .sd-format-modal span[name="formats"] p:empty {
+    display: none !important;
+  }
+  .sd-format-modal details,
+  .sd-format-modal span[name="formats"] > ul > li {
+    break-inside: avoid !important;
+  }
+  .sd-format-modal details {
+    margin: 0 0 8px !important;
+  }
+  .sd-format-modal summary {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    margin: 0 !important;
+    padding: 10px 10px 6px !important;
+    border-radius: 8px !important;
+    list-style: none !important;
+    cursor: pointer !important;
+  }
+  .sd-format-modal summary::-webkit-details-marker {
+    display: none !important;
+  }
+  .sd-format-modal summary::before {
+    content: "\f054";
+    width: 10px;
+    color: var(--sd-text-2);
+    font: 10px/1 FontAwesome;
+    transition: transform 0.15s ease;
+  }
+  .sd-format-modal details[open] > summary::before {
+    transform: rotate(90deg);
+  }
+  .sd-format-modal summary strong {
+    color: var(--sd-text-2) !important;
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.06em !important;
+    text-transform: uppercase !important;
+  }
+  .sd-format-modal summary:hover strong {
+    color: var(--sd-text) !important;
+  }
+
+  .sd-format-modal span[name="formats"] li {
+    margin: 0 !important;
+    list-style: none !important;
+  }
+  .sd-format-modal button.option {
+    appearance: none !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 8px !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+    min-height: 36px !important;
+    margin: 1px 0 !important;
+    padding: 6px 10px 6px 28px !important;
+    border: 1px solid transparent !important;
+    border-radius: 8px !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    color: var(--sd-text) !important;
+    font-family: inherit !important;
+    font-size: 14px !important;
+    line-height: 1.3 !important;
+    text-align: left !important;
+    text-shadow: none !important;
+    cursor: pointer !important;
+    transition: background-color 0.12s ease !important;
+  }
+  .sd-format-modal span[name="formats"] > ul > li button.option {
+    padding-left: 10px !important;
+  }
+  .sd-format-modal button.option:hover {
+    background: var(--sd-hover) !important;
+  }
+  .sd-format-modal button.option:focus-visible {
+    outline: 2px solid var(--sd-accent) !important;
+    outline-offset: -2px !important;
+  }
+  .sd-format-modal button.option.cur {
+    border-color: color-mix(in srgb, var(--sd-accent) 55%, transparent) !important;
+    background: color-mix(in srgb, var(--sd-accent) 18%, transparent) !important;
+    font-weight: 600 !important;
+  }
+  .sd-format-modal button.option i.fa-star {
+    flex: none !important;
+    float: none !important;
+    width: auto !important;
+    color: var(--sd-primary) !important;
+    text-shadow: none !important;
+    font-size: 13px !important;
+  }
+  .sd-format-modal button.option i.fa-star.subtle {
+    color: var(--sd-text-2) !important;
+    opacity: 0 !important;
+    transition: opacity 0.12s ease !important;
+  }
+  .sd-format-modal button.option:hover i.fa-star.subtle {
+    opacity: 0.6 !important;
+  }
+  .sd-format-modal button.option i.fa-star.subtle:hover {
+    color: var(--sd-primary) !important;
+    opacity: 1 !important;
+  }
+  .sd-format-modal span[name="formats"] em {
+    display: block;
+    padding: 40px 0;
+    color: var(--sd-text-2);
+    font-size: 15px;
+    text-align: center;
+    column-span: all;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .sd-modal-backdrop,
+    .ps-popup.sd-format-modal {
+      animation: none !important;
+    }
+  }
+}
+
+@keyframes sd-fade {
+  from { opacity: 0; }
+}
+@keyframes sd-modal-in {
+  from { opacity: 0; transform: translate(-50%, -48%) scale(0.97); }
+  to { opacity: 1; transform: translate(-50%, -50%); }
+}

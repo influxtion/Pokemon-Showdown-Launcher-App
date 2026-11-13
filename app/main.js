@@ -129,6 +129,7 @@ function ensureClient() {
   // Re-applied on every load; the stylesheet follows prefers-color-scheme, which tracks nativeTheme.
   contents.on('dom-ready', () => {
     contents.insertCSS(CLIENT_CSS, { cssOrigin: 'user' }).catch(() => {});
+    bridge.installFormatModal();
     showdexApplied = Boolean(showdexBundle.installed && settings.get('showdexEnabled'));
     showdexLoadFailed = false;
     if (showdexApplied) bridge.loadShowdex().then((loaded) => {

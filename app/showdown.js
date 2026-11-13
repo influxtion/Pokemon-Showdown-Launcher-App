@@ -277,6 +277,60 @@ function loadShowdex(entry) {
   return true;
 }
 
+// Turns the client's format picker into a centered modal (styled in client-battle.css).
+// The popup itself stays the client's own, so search, stars and selection keep working;
+// this only adds a header and a backdrop that closes it, so a click beside the modal
+// cannot also press whatever sits behind it, such as the Battle button.
+function installFormatModal() {
+  if (window.__SD_FORMAT_MODAL || !document.body) return true;
+  window.__SD_FORMAT_MODAL = true;
+  const enhance = (popup) => {
+    if (popup.classList.contains('sd-format-modal') || !popup.querySelector('span[name="formats"]')) return;
+    if (!document.documentElement.classList.contains('sd-launcher-shell')) return;
+    popup.classList.add('sd-format-modal');
+    popup.setAttribute('role', 'dialog');
+    popup.setAttribute('aria-modal', 'true');
+    popup.setAttribute('aria-label', 'Choose a format');
+    const head = document.createElement('div');
+    head.className = 'sd-modal-head';
+    const title = document.createElement('h2');
+    title.textContent = 'Choose a format';
+    const close = document.createElement('button');
+    close.type = 'button';
+    close.name = 'close'; // the popup's own button dispatch calls its close()
+    close.className = 'sd-modal-close';
+    close.setAttribute('aria-label', 'Close');
+    head.append(title, close);
+    popup.prepend(head);
+    // The client re-renders only span[name=formats] (found with find()), so wrapping it is safe.
+    const formats = popup.querySelector('span[name="formats"]');
+    const body = document.createElement('div');
+    body.className = 'sd-modal-body';
+    formats.before(body);
+    body.append(formats);
+    const backdrop = document.createElement('div');
+    backdrop.className = 'sd-modal-backdrop';
+    backdrop.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (window.app && typeof app.closePopup === 'function') app.closePopup();
+    });
+    popup.before(backdrop);
+    popup.__sdBackdrop = backdrop;
+  };
+  new MutationObserver((records) => {
+    for (const record of records) {
+      for (const node of record.addedNodes) {
+        if (node.nodeType === 1 && node.classList.contains('ps-popup')) enhance(node);
+      }
+      for (const node of record.removedNodes) {
+        if (node.__sdBackdrop) node.__sdBackdrop.remove();
+      }
+    }
+  }).observe(document.body, { childList: true });
+  return true;
+}
+
 function readShowdex() {
   const state = window.__SHOWDOWN_DESKTOP_SHOWDEX;
   // The pinned bootstrap sets this only after render; closing its room does not unload it.
@@ -417,6 +471,14 @@ class ShowdownBridge {
     if (!contents) return false;
     try {
       return await contents.executeJavaScript(call(loadShowdex, 'showdex://assets/main.js')) === true;
+    } catch { return false; }
+  }
+
+  async installFormatModal() {
+    const contents = this.getContents();
+    if (!contents) return false;
+    try {
+      return await contents.executeJavaScript(call(installFormatModal)) === true;
     } catch { return false; }
   }
 
