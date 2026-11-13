@@ -26,7 +26,7 @@ let showdexApplied = false;
 let showdexLoadFailed = false;
 
 const RENDERER_DIR = path.join(__dirname, '..', 'renderer');
-const CLIENT_CSS = ['client-theme.css', 'client-shell.css', 'client-battle.css', 'client-ladder.css', 'client-teambuilder.css', 'client-community.css', 'client-rooms.css', 'client-chat.css', 'showdex-theme.css']
+const CLIENT_CSS = ['client-theme.css', 'client-shell.css', 'client-battle.css', 'client-ladder.css', 'client-teambuilder.css', 'client-community.css', 'client-rooms.css', 'client-chat.css', 'client-tournament.css', 'showdex-theme.css']
   .map((file) => fs.readFileSync(path.join(__dirname, file), 'utf8')).join('\n');
 const REPLAY_CSS = ['client-theme.css', 'replay-theme.css']
   .map((file) => fs.readFileSync(path.join(__dirname, file), 'utf8')).join('\n');

@@ -1,0 +1,407 @@
+/* Tournaments: the bar, bracket and tools the client pins to the top of a chat room while a
+   tournament runs, its chat notices, and the bracket pop-out.
+
+   Like client-shell.css, this applies only while the bridge sets sd-launcher-shell. The
+   client sizes the box with an inline max-height to open and close it, so nothing here
+   touches max-height or transition on .tournament-box. The bracket tree is an SVG drawn by
+   the client; only its fills, strokes and type change. Room-authored HTML is left alone. */
+html.sd-launcher-shell {
+  --sd-tour-bar-h: 34px;
+  --sd-tour-win: #2e8a55;
+  --sd-tour-win-bg: #e2f3e9;
+  --sd-tour-loss: #c93434;
+  --sd-tour-loss-bg: #fbe5e5;
+  --sd-tour-draw: #b7791f;
+  --sd-tour-draw-bg: #fcf1d9;
+  --sd-tour-gold-bg: #fdf1c8;
+}
+
+@media (prefers-color-scheme: dark) {
+  html.sd-launcher-shell {
+    --sd-tour-win: #5ccb8b;
+    --sd-tour-win-bg: #1d3a2c;
+    --sd-tour-loss: #ff7878;
+    --sd-tour-loss-bg: #4a262e;
+    --sd-tour-draw: #f2b84b;
+    --sd-tour-draw-bg: #40351a;
+    --sd-tour-gold-bg: #3d3a2a;
+  }
+}
+
+html.sd-launcher-shell .ps-room {
+
+  /* ----- Title bar: a tinted header, like the Home windows ----- */
+
+  .tournament-wrapper {
+    height: var(--sd-tour-bar-h) !important;
+    border-bottom: 1px solid var(--sd-border) !important;
+    background: color-mix(in srgb, var(--sd-accent) 14%, var(--sd-panel)) !important;
+    color: var(--sd-text) !important;
+    font-family: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif !important;
+    font-size: 13px !important;
+    line-height: var(--sd-tour-bar-h) !important;
+  }
+  .tournament-wrapper.active + .chat-log {
+    top: calc(var(--sd-tour-bar-h) + 1px) !important;
+  }
+
+  .tournament-title {
+    position: relative !important;
+    height: 100% !important;
+    padding: 0 116px !important;
+    overflow: hidden !important;
+    font-weight: 600 !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    transition: background-color 0.15s ease !important;
+  }
+  .tournament-title::before {
+    content: "\f091";
+    margin-right: 8px;
+    color: var(--sd-accent);
+    font: 14px/1 FontAwesome;
+  }
+  .tournament-title:hover {
+    background: color-mix(in srgb, var(--sd-accent) 22%, var(--sd-panel)) !important;
+  }
+
+  /* Signups / In Progress, as a pill on the left. */
+  .tournament-status {
+    top: 50% !important;
+    left: 10px !important;
+    height: 22px !important;
+    padding: 0 10px !important;
+    border: 0 !important;
+    border-radius: 11px !important;
+    background: var(--sd-primary) !important;
+    color: var(--sd-on-primary) !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    line-height: 22px !important;
+    letter-spacing: 0.02em !important;
+    text-transform: uppercase !important;
+    transform: translateY(-50%) !important;
+  }
+  .tournament-status:empty {
+    display: none !important;
+  }
+
+  /* "Toggle" becomes a chevron button on the right. */
+  .tournament-toggle {
+    top: 50% !important;
+    right: 10px !important;
+    width: 24px !important;
+    height: 24px !important;
+    padding: 0 !important;
+    border: 1px solid var(--sd-border-strong) !important;
+    border-radius: 3px !important;
+    background: var(--sd-panel) !important;
+    color: transparent !important;
+    font-size: 0 !important;
+    line-height: 22px !important;
+    text-align: center !important;
+    transform: translateY(-50%) !important;
+  }
+  .tournament-toggle::after {
+    content: "\f078";
+    display: inline-block;
+    color: var(--sd-accent);
+    font: 11px/22px FontAwesome;
+    transition: transform 0.15s ease;
+  }
+  .tournament-title:hover .tournament-toggle {
+    border-color: var(--sd-accent) !important;
+  }
+  .tournament-wrapper:has(.tournament-box.active) .tournament-toggle::after {
+    transform: rotate(180deg);
+  }
+
+  /* ----- Drop-down: bracket and tools ----- */
+
+  .tournament-box {
+    top: var(--sd-tour-bar-h) !important;
+    border: 0 !important;
+    border-bottom: 1px solid var(--sd-border) !important;
+    background: var(--sd-panel) !important;
+    color: var(--sd-text) !important;
+    box-shadow: 0 6px 16px rgba(10, 25, 55, 0.14) !important;
+    line-height: 1.4 !important;
+    text-align: center !important;
+  }
+  .tournament-box:not(.active) {
+    box-shadow: none !important;
+  }
+  .tournament-bracket {
+    padding: 12px !important;
+    background: var(--sd-subtle) !important;
+    font-size: 12px !important;
+  }
+  .tournament-bracket-overflowing {
+    padding: 0 !important;
+    cursor: grab !important;
+  }
+  .tournament-popout-link {
+    padding: 2px 8px !important;
+    border: 1px solid var(--sd-border-strong) !important;
+    border-radius: 3px !important;
+    background: var(--sd-panel) !important;
+    color: var(--sd-accent) !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    line-height: 1.5 !important;
+    text-decoration: none !important;
+  }
+  .tournament-popout-link:hover {
+    border-color: var(--sd-accent) !important;
+    background: var(--sd-hover) !important;
+  }
+
+  .tournament-tools {
+    padding: 12px 16px 14px !important;
+    border-top: 1px solid var(--sd-border) !important;
+    font-size: 13px !important;
+  }
+  .tournament-team {
+    padding-bottom: 8px !important;
+  }
+  .tournament-team select.button,
+  .tournament-team .teamselect {
+    min-width: 220px !important;
+  }
+  .tournament-challenge-user,
+  .tournament-challenged-message,
+  .tournament-challenging-message,
+  .tournament-challengeby,
+  .tournament-nomatches {
+    padding-bottom: 8px !important;
+    font-size: 13px !important;
+  }
+  .tournament-nomatches,
+  .tournament-tools small {
+    color: var(--sd-text-2) !important;
+  }
+  .tournament-tools .button {
+    height: 30px !important;
+    margin: 0 2px !important;
+    padding: 0 14px !important;
+    font-family: inherit !important;
+    font-size: 13px !important;
+    line-height: 28px !important;
+  }
+  .tournament-tools select.button {
+    padding: 0 8px !important;
+  }
+
+  /* Join and Ready! are the main action, in Showdown yellow like Battle!. */
+  .tournament-join,
+  .tournament-challenge-challenge,
+  .tournament-challenge-accept {
+    border-color: var(--sd-primary) !important;
+    background: var(--sd-primary) !important;
+    color: var(--sd-on-primary) !important;
+    font-weight: 600 !important;
+  }
+  .tournament-join:hover,
+  .tournament-challenge-challenge:hover,
+  .tournament-challenge-accept:hover {
+    border-color: var(--sd-primary-hover) !important;
+    background: var(--sd-primary-hover) !important;
+  }
+  .tournament-leave:hover,
+  .tournament-challenge-cancel:hover {
+    border-color: var(--sd-tour-loss) !important;
+    color: var(--sd-tour-loss) !important;
+  }
+
+  /* ----- Chat notices ----- */
+
+  .message-log > .tournament-message-create,
+  .message-log > .tournament-message-start,
+  .message-log > .tournament-message-end-winner,
+  .message-log > .tournament-message-forceend {
+    margin: 8px 0 !important;
+    padding: 6px 12px !important;
+    border: 0 !important;
+    border-left: 3px solid var(--sd-accent) !important;
+    border-radius: 0 3px 3px 0 !important;
+    background: color-mix(in srgb, var(--sd-accent) 12%, var(--sd-panel)) !important;
+    color: var(--sd-text) !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+  }
+  .message-log > .tournament-message-end-winner {
+    border-left-color: var(--sd-primary) !important;
+    background: var(--sd-tour-gold-bg) !important;
+  }
+  .message-log > .tournament-message-end-winner::before {
+    content: "\f091";
+    margin-right: 8px;
+    color: color-mix(in srgb, var(--sd-primary) 60%, var(--sd-text));
+    font: 13px/1 FontAwesome;
+  }
+  .message-log > .tournament-message-forceend {
+    border-left-color: var(--sd-tour-loss) !important;
+  }
+  .message-log > .tournament-message-joinleave,
+  .message-log > .tournament-message-disqualify,
+  .message-log > .tournament-message-autodq-off,
+  .message-log > .tournament-message-autostart,
+  .message-log > .tournament-message-scouting,
+  .message-log > .tournament-message-end-runnerup {
+    color: var(--sd-text-2) !important;
+    font-size: 12px !important;
+  }
+  .message-log > .tournament-message-battlestart,
+  .message-log > .tournament-message-battleend {
+    font-size: 12px !important;
+  }
+  .message-log > .tournament-message-battlestart a.ilink,
+  .message-log > .tournament-message-battleend a.ilink {
+    color: var(--sd-accent) !important;
+    font-weight: 600 !important;
+    text-decoration: none !important;
+  }
+  .message-log > .tournament-message-battlestart a.ilink:hover,
+  .message-log > .tournament-message-battleend a.ilink:hover {
+    text-decoration: underline !important;
+  }
+  .message-log > .tournament-message-end-bracket {
+    margin: 8px 0 !important;
+    padding: 12px !important;
+    border: 1px solid var(--sd-border) !important;
+    border-radius: 4px !important;
+    background: var(--sd-subtle) !important;
+  }
+  .message-log > .tournament-message-end-bracket-overflowing {
+    padding: 0 !important;
+  }
+}
+
+/* ----- Bracket, wherever it is drawn: the box, the end-of-tour notice, the pop-out ----- */
+
+html.sd-launcher-shell {
+  .tournament-popout-bracket {
+    background: var(--sd-subtle) !important;
+    font-family: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif !important;
+    font-size: 12px !important;
+  }
+
+  /* Round robin: a grid of results. */
+  .tournament-bracket-table {
+    border: 0 !important;
+    border-collapse: separate !important;
+    border-spacing: 2px !important;
+    font-family: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif !important;
+    font-size: 12px !important;
+  }
+  .tournament-bracket-table td,
+  .tournament-bracket-table th {
+    padding: 5px 8px !important;
+    border: 1px solid var(--sd-border) !important;
+    border-radius: 3px !important;
+    background: var(--sd-panel) !important;
+    color: var(--sd-text) !important;
+  }
+  .tournament-bracket-table th {
+    background: color-mix(in srgb, var(--sd-accent) 14%, var(--sd-panel)) !important;
+    font-weight: 600 !important;
+  }
+  .tournament-bracket-table .empty,
+  .tournament-bracket-table .tournament-bracket-table-cell-null {
+    border-width: 0 !important;
+    background: transparent !important;
+  }
+  .tournament-bracket-table td.tournament-bracket-table-cell-result-win {
+    border-color: var(--sd-tour-win) !important;
+    background: var(--sd-tour-win-bg) !important;
+    color: var(--sd-tour-win) !important;
+    font-weight: 600 !important;
+  }
+  .tournament-bracket-table td.tournament-bracket-table-cell-result-draw {
+    border-color: var(--sd-tour-draw) !important;
+    background: var(--sd-tour-draw-bg) !important;
+    color: var(--sd-tour-draw) !important;
+  }
+  .tournament-bracket-table td.tournament-bracket-table-cell-result-loss {
+    border-color: var(--sd-tour-loss) !important;
+    background: var(--sd-tour-loss-bg) !important;
+    color: var(--sd-tour-loss) !important;
+  }
+  .tournament-bracket-table a.ilink {
+    color: var(--sd-accent) !important;
+    font-weight: 600 !important;
+  }
+
+  /* Elimination: the SVG tree. */
+  .tournament-bracket-tree-link {
+    stroke: var(--sd-border-strong) !important;
+    stroke-width: 1.5px !important;
+  }
+  .tournament-bracket-tree-link-active {
+    stroke: var(--sd-primary) !important;
+    stroke-width: 3px !important;
+  }
+  .tournament-bracket-tree-abbreviated {
+    fill: var(--sd-text-2) !important;
+  }
+  .tournament-bracket-tree-node,
+  .tournament-bracket-tree-node text {
+    font-family: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+  }
+  .tournament-bracket-tree-node text {
+    fill: var(--sd-text) !important;
+  }
+  .tournament-bracket-tree-node rect {
+    fill: var(--sd-panel) !important;
+    stroke: var(--sd-border-strong) !important;
+  }
+  /* A match being played links to its battle. */
+  .tournament-bracket-tree-node a rect {
+    fill: color-mix(in srgb, var(--sd-accent) 16%, var(--sd-panel)) !important;
+    stroke: var(--sd-accent) !important;
+  }
+  .tournament-bracket-tree-node a:hover rect {
+    fill: color-mix(in srgb, var(--sd-accent) 28%, var(--sd-panel)) !important;
+  }
+  .tournament-bracket-tree-node a text,
+  .tournament-bracket-tree-node a:hover text {
+    fill: var(--sd-accent) !important;
+  }
+  /* A match ready to start: Showdown yellow instead of the client's purple. */
+  .tournament-bracket-tree-node-match-available rect,
+  .tournament-bracket-tree-node-match-challenging rect {
+    fill: color-mix(in srgb, var(--sd-primary) 35%, var(--sd-panel)) !important;
+    stroke: color-mix(in srgb, var(--sd-primary) 70%, var(--sd-text)) !important;
+  }
+  .tournament-bracket-tree-node rect.tournament-bracket-tree-win {
+    fill: var(--sd-tour-win-bg) !important;
+    stroke: var(--sd-tour-win) !important;
+  }
+  .tournament-bracket-tree-node rect.tournament-bracket-tree-loss,
+  .tournament-bracket-tree-node rect.tournament-bracket-tree-draw {
+    fill: var(--sd-subtle) !important;
+    stroke: var(--sd-border) !important;
+  }
+  .tournament-bracket-tree-team-loss,
+  .tournament-bracket-tree-team-draw,
+  .tournament-bracket-tree-score {
+    font-weight: 400 !important;
+  }
+  .tournament-bracket-tree-node .tournament-bracket-tree-team-loss {
+    fill: var(--sd-text-2) !important;
+  }
+
+  /* The "Tournaments in progress" list from /tour viewall. */
+  .tournaments-info > ul > li {
+    padding: 3px 0 !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.sd-launcher-shell .ps-room .tournament-title,
+  html.sd-launcher-shell .ps-room .tournament-toggle::after {
+    transition: none !important;
+  }
+}
