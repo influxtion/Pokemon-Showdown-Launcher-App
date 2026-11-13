@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Stats · Showdown Desktop</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="app">
+  <nav class="rail" aria-label="Main">
+    <div class="rail-brand">Showdown Desktop</div>
+    <div class="rail-nav">
+      <a class="nav-item" href="index.html">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M2.5 7.5 8 3l5.5 4.5V13H10V9.5H6V13H2.5z"/></svg>
+        Home
+      </a>
+      <div class="rail-rooms" data-nav="rooms"></div>
+      <a class="nav-item" href="stats.html" aria-current="page">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 13V9M8 13V3M13 13V6"/></svg>
+        Stats
+      </a>
+      <div class="rail-section"><span>Tools</span></div>
+      <a class="nav-item" href="replays.html">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M4 2.5h8v11l-4-3-4 3z"/></svg>
+        Replay notes
+      </a>
+      <a class="nav-item" href="practice.html">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="5.5"/><circle cx="8" cy="8" r="2"/></svg>
+        Practice
+      </a>
+      <a class="nav-item" href="settings.html">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2.5 4.5h3M8.5 4.5h5M2.5 11.5h7M12.5 11.5h1"/><circle cx="7" cy="4.5" r="1.5"/><circle cx="11" cy="11.5" r="1.5"/></svg>
+        Settings
+      </a>
+    </div>
+    <div class="rail-foot">
+      <div class="rail-user" data-nav="account" hidden><strong data-nav="me"></strong><a href="play.html" data-nav="sign-in" hidden>Sign in</a></div>
+      <span>v0.2.0-dev</span>
+    </div>
+  </nav>
+
+  <div class="main">
+    <header class="topbar">
+      <h1>Stats</h1>
+      <div class="topbar-actions">
+        <button class="btn" type="button" id="open-ladder">Open the ladder</button>
+      </div>
+    </header>
+
+    <main class="content content--flush">
+      <div class="stats-page">
+        <section class="stats-head" id="stats-head" aria-label="Summary" hidden></section>
+
+        <section class="window" aria-labelledby="formats-title">
+          <div class="window-head">
+            <h2 id="formats-title">Formats</h2>
+            <input class="input" id="stats-filter" type="search" placeholder="Filter formats" aria-label="Filter formats" autocomplete="off" disabled>
+          </div>
+          <div id="stats-body"><div class="empty">Connecting to Showdown…</div></div>
+        </section>
+      </div>
+    </main>
+  </div>
+</div>
+<script src="nav.js"></script>
+<script src="stats.js"></script>
+</body>
+</html>

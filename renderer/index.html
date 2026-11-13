@@ -17,6 +17,10 @@
         Home
       </a>
       <div class="rail-rooms" data-nav="rooms"></div>
+      <a class="nav-item" href="stats.html">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 13V9M8 13V3M13 13V6"/></svg>
+        Stats
+      </a>
       <div class="rail-section"><span>Tools</span></div>
       <a class="nav-item" href="replays.html">
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M4 2.5h8v11l-4-3-4 3z"/></svg>
@@ -47,18 +51,22 @@
 
     <main class="content content--flush">
       <div class="hub">
-        <div class="hub-main">
 
-          <div class="banner banner--live" id="live-battle" hidden>
-            <span id="live-battle-text"></span>
-            <button class="btn btn-primary" type="button" id="live-battle-return">Return to battle</button>
-          </div>
+        <div class="banner banner--live" id="live-battle" hidden>
+          <span id="live-battle-text"></span>
+          <button class="btn btn-primary" type="button" id="live-battle-return">Return to battle</button>
+        </div>
 
-          <section class="hero" aria-label="Start a battle">
-            <div class="hero-body">
-              <span class="hero-kicker" id="hero-kicker">Ready to battle</span>
-              <h2 class="hero-title" id="hero-format">Pokémon Showdown</h2>
-              <p class="hero-sub" id="hero-sub">Loading formats and teams…</p>
+        <div class="hub-grid">
+
+          <div class="hub-col hub-menu">
+            <section class="hero hero--menu" aria-label="Start a battle">
+              <div class="hero-top">
+                <span class="hero-kicker" id="hero-kicker">Ready to battle</span>
+                <h2 class="hero-title" id="hero-format">Pokémon Showdown</h2>
+                <p class="hero-sub" id="hero-sub">Loading formats and teams…</p>
+                <div class="hero-record num" id="hero-record" hidden></div>
+              </div>
 
               <div class="hero-pickers">
                 <div class="field">
@@ -71,84 +79,100 @@
                 </div>
               </div>
 
+              <div class="hero-team">
+                <div class="hero-team-grid" id="team-grid"></div>
+                <div class="hero-team-name"><span id="team-name"></span><a href="#" id="edit-team">Edit teams</a></div>
+              </div>
+
               <div class="hero-actions">
                 <button class="btn btn-primary btn-battle" type="button" id="battle" disabled>
                   <span class="search-spinner" aria-hidden="true"></span>
                   <span class="battle-label">Battle!</span>
                   <span class="search-time num" aria-hidden="true"></span>
                 </button>
-                <button class="btn" type="button" id="cancel-search" hidden>Cancel</button>
+                <button class="btn" type="button" id="cancel-search" hidden>Cancel search</button>
                 <button class="btn btn-quiet" type="button" id="challenge-toggle" disabled>Challenge a user</button>
                 <form class="hero-challenge" id="challenge-form" hidden>
                   <input class="input" id="challenge-user" maxlength="18" placeholder="Username" aria-label="Username to challenge" autocomplete="off">
                   <button class="btn" type="submit">Challenge</button>
                   <button class="btn btn-quiet" type="button" id="challenge-cancel">Cancel</button>
                 </form>
-                <div class="hero-stats" id="hero-stats"></div>
               </div>
-            </div>
+              <div class="hero-stats num" id="hero-stats"></div>
+            </section>
 
-            <div class="hero-team">
-              <div class="hero-team-grid" id="team-grid"></div>
-              <div class="hero-team-name"><span id="team-name"></span><a href="#" id="edit-team">Edit teams</a></div>
-            </div>
-          </section>
+            <nav class="menu-list" aria-label="Quick links">
+          <a class="menu-row" href="#" data-room="teambuilder">
+            <span class="menu-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"><path d="M10.5 2.5l3 3-7.5 7.5H3v-3z"/><path d="M9 4l3 3"/></svg></span>
+            <span class="menu-text"><span class="menu-title">Teambuilder</span><span class="menu-sub" id="tile-teams">Build and import teams</span></span>
+          </a>
+          <a class="menu-row" href="#" data-room="ladder">
+            <span class="menu-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"><path d="M3 13h10M4.5 13V8M8 13V3M11.5 13V6"/></svg></span>
+            <span class="menu-text"><span class="menu-title">Ladder</span><span class="menu-sub">Rankings by format</span></span>
+          </a>
+          <a class="menu-row" href="#" data-room="battles">
+            <span class="menu-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"><path d="M1.5 8S4 3.5 8 3.5 14.5 8 14.5 8 12 12.5 8 12.5 1.5 8 1.5 8z"/><circle cx="8" cy="8" r="2"/></svg></span>
+            <span class="menu-text"><span class="menu-title">Watch a battle</span><span class="menu-sub" id="tile-battles">Live battles</span></span>
+          </a>
+          <a class="menu-row" href="stats.html">
+            <span class="menu-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"><path d="M3 13V9M8 13V3M13 13V6"/></svg></span>
+            <span class="menu-text"><span class="menu-title">Your stats</span><span class="menu-sub">Ratings and win rates</span></span>
+          </a>
+            </nav>
+          </div>
 
-          <section aria-label="Quick links">
-            <div class="tiles">
-              <a class="tile" href="#" data-room="teambuilder">
-                <span class="tile-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M10.5 2.5l3 3-7.5 7.5H3v-3z"/><path d="M9 4l3 3"/></svg></span>
-                <div><div class="tile-title">Teambuilder</div><div class="tile-sub" id="tile-teams">Build and import teams</div></div>
-              </a>
-              <a class="tile" href="#" data-room="ladder">
-                <span class="tile-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 13V9M8 13V3M13 13V6"/></svg></span>
-                <div><div class="tile-title">Ladder</div><div class="tile-sub">Rankings by format</div></div>
-              </a>
-              <a class="tile" href="#" data-room="battles">
-                <span class="tile-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M1.5 8S4 3.5 8 3.5 14.5 8 14.5 8 12 12.5 8 12.5 1.5 8 1.5 8z"/><circle cx="8" cy="8" r="2"/></svg></span>
-                <div><div class="tile-title">Watch a battle</div><div class="tile-sub" id="tile-battles">Live battles</div></div>
-              </a>
-            </div>
-          </section>
+          <div class="hub-col">
+            <section class="window" aria-labelledby="news-title">
+              <div class="window-head">
+                <h2 id="news-title">Latest news</h2>
+                <span class="window-space"></span>
+                <a href="https://pokemonshowdown.com/news">All news</a>
+                <button class="window-toggle" type="button" data-window="news" aria-expanded="true" aria-label="Minimize Latest news" title="Minimize"></button>
+              </div>
+              <div class="posts" id="news"><div class="empty">Loading news…</div></div>
+            </section>
 
-          <section aria-label="Recent replay notes" id="recent-replays-section" hidden>
-            <div class="section-head">
-              <h2>Recent replay notes</h2>
-              <a href="replays.html">All notes</a>
-            </div>
-            <div class="panel" id="recent-replays"></div>
-          </section>
+            <section class="window" aria-labelledby="notes-title">
+              <div class="window-head">
+                <h2 id="notes-title">Replay notes</h2>
+                <span class="window-count num" id="count-notes" hidden></span>
+                <span class="window-space"></span>
+                <a href="replays.html">All notes</a>
+                <button class="window-toggle" type="button" data-window="notes" aria-expanded="true" aria-label="Minimize Replay notes" title="Minimize"></button>
+              </div>
+              <div class="empty" id="recent-replays-empty">No replay notes yet. Save one after a battle, or add one in Replay notes.</div>
+              <div id="recent-replays-section" hidden>
+                <div id="recent-replays"></div>
+              </div>
+            </section>
+          </div>
 
-          <section aria-label="News">
-            <div class="section-head">
-              <h2>News</h2>
-              <a href="https://pokemonshowdown.com/news">All news</a>
-            </div>
-            <div class="news" id="news">
-              <div class="empty">Loading news…</div>
-            </div>
-          </section>
+          <div class="hub-col hub-side">
+            <section class="window" aria-labelledby="friends-title">
+              <div class="window-head" id="friends-head">
+                <h2 id="friends-title">Friends</h2>
+                <span class="window-count window-count--live num" id="count-friends" hidden></span>
+                <span class="window-space"></span>
+                <button class="window-toggle" type="button" data-window="friends" aria-expanded="true" aria-label="Minimize Friends" title="Minimize"></button>
+              </div>
+              <div class="friends-body" id="friends"></div>
+            </section>
 
-          <section aria-label="Chat rooms">
-            <div class="section-head">
-              <h2>Chat rooms</h2>
-              <a href="#" data-room="rooms">All rooms</a>
-            </div>
-            <div class="rooms" id="rooms">
-              <div class="empty">Loading rooms…</div>
-            </div>
-          </section>
+            <section class="window" aria-labelledby="rooms-title">
+              <div class="window-head">
+                <h2 id="rooms-title">Chat rooms</h2>
+                <span class="window-space"></span>
+                <a href="#" data-room="rooms">All rooms</a>
+                <button class="window-toggle" type="button" data-window="rooms" aria-expanded="true" aria-label="Minimize Chat rooms" title="Minimize"></button>
+              </div>
+              <div class="room-list" id="rooms"><div class="empty">Loading rooms…</div></div>
+            </section>
+          </div>
 
         </div>
-
-        <aside class="friends" aria-label="Friends">
-          <div class="friends-head">
-            <h2>Friends</h2>
-          </div>
-          <div class="friends-body" id="friends"></div>
-        </aside>
       </div>
     </main>
+
   </div>
 </div>
 <script src="home.js"></script>

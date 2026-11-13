@@ -509,6 +509,7 @@ class ShowdownBridge {
         state.connected ? this.fetchFriends(userid) : Promise.resolve({ available: false, items: [] }),
       ]);
       state.ratings = ratings;
+      state.stats = (this.ratings.get(userid) || {}).stats || {};
       state.friends = friends;
     }
     return state;
@@ -557,17 +558,26 @@ class ShowdownBridge {
     const cached = this.ratings.get(userid);
     if (cached && Date.now() - cached.at < RATINGS_TTL) return cached.value;
     const value = {};
+    const stats = {};
     try {
       const res = await net.fetch(`https://pokemonshowdown.com/users/${userid}.json`, { credentials: 'omit' });
       if (res.ok) {
         const data = await res.json();
         for (const [format, r] of Object.entries((data && data.ratings) || {})) {
           const elo = count(r && r.elo);
-          if (isId(format) && elo !== null) value[format] = Math.round(elo);
+          if (!isId(format) || elo === null) continue;
+          value[format] = Math.round(elo);
+          const gxe = Number(r.gxe);
+          stats[format] = {
+            elo: Math.round(elo),
+            gxe: Number.isFinite(gxe) && gxe >= 0 && gxe <= 100 ? Math.round(gxe * 10) / 10 : null,
+            wins: count(r.w) || 0,
+            losses: count(r.l) || 0,
+          };
         }
       }
     } catch {}
-    this.ratings.set(userid, { at: Date.now(), value });
+    this.ratings.set(userid, { at: Date.now(), value, stats });
     return value;
   }
 
