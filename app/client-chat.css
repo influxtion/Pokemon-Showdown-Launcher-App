@@ -1,0 +1,138 @@
+/* Chat rooms and battle rooms: type, surfaces and controls only.
+
+   Like client-shell.css, this applies only while the bridge sets sd-launcher-shell. The
+   battle scene, the chat log and the user list are positioned by the client, so nothing
+   here changes sizes or positions. Usernames keep the colours the client gives them, and
+   room-authored HTML (welcome banners, polls) is left alone. */
+html.sd-launcher-shell .ps-room {
+  .chat-log,
+  .battle-log,
+  .chat-log-add,
+  .battle-log-add,
+  .userlist,
+  .battle-controls {
+    font-family: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif !important;
+  }
+
+  /* ----- Messages ----- */
+
+  .message-log > .chat {
+    padding-top: 2px !important;
+    padding-bottom: 2px !important;
+    font-size: 13px !important;
+    line-height: 1.45 !important;
+  }
+  .message-log > .chat strong {
+    font-weight: 600 !important;
+  }
+  .message-log > .chat small {
+    color: var(--sd-text-2) !important;
+  }
+  .message-log > .notice,
+  .message-log .infobox,
+  .message-log .broadcast-blue,
+  .message-log .message-error {
+    border-radius: 4px !important;
+    font-size: 13px !important;
+  }
+  .message-log > .notice {
+    border-color: var(--sd-border) !important;
+  }
+
+  /* ----- Message box ----- */
+
+  .chat-log-add,
+  .battle-log-add {
+    border-top: 1px solid var(--sd-border) !important;
+    background: var(--sd-panel) !important;
+  }
+  .chatbox label {
+    font-family: inherit !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    text-shadow: none !important;
+  }
+  .chatbox textarea.textbox {
+    border: 1px solid var(--sd-border-strong) !important;
+    border-radius: 3px !important;
+    background: var(--sd-input) !important;
+    color: var(--sd-text) !important;
+    font-family: inherit !important;
+    font-size: 13px !important;
+    box-shadow: none !important;
+  }
+  .chatbox textarea.textbox:focus {
+    border-color: var(--sd-accent) !important;
+    outline: 2px solid color-mix(in srgb, var(--sd-accent) 35%, transparent) !important;
+    outline-offset: 0 !important;
+  }
+
+  /* ----- User list ----- */
+
+  .userlist {
+    border-color: var(--sd-border) !important;
+    background: var(--sd-panel) !important;
+  }
+  .userlist li,
+  .userlist .userbutton,
+  .userlist .userbutton * {
+    font-family: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif !important;
+    font-size: 13px !important;
+  }
+  .userlist .userlist-count {
+    border-bottom: 1px solid var(--sd-border) !important;
+    background: color-mix(in srgb, var(--sd-accent) 14%, var(--sd-panel)) !important;
+    color: var(--sd-text) !important;
+    font-weight: 600 !important;
+  }
+  .userlist .userlist-count small {
+    font-size: 12px !important;
+  }
+  .userlist .userbutton {
+    cursor: pointer !important;
+  }
+  .userlist .userbutton:hover {
+    background: var(--sd-hover) !important;
+  }
+  .userlist .userbutton em.group {
+    color: var(--sd-text-2) !important;
+    font-style: normal !important;
+  }
+
+  /* ----- Battle log and controls ----- */
+
+  .battle-log .inner {
+    font-size: 13px !important;
+    line-height: 1.45 !important;
+  }
+  .battle-log h2.battle-history {
+    margin: 10px 0 6px !important;
+    padding: 6px 12px !important;
+    border: 0 !important;
+    border-top: 1px solid var(--sd-border) !important;
+    border-bottom: 1px solid var(--sd-border) !important;
+    background: color-mix(in srgb, var(--sd-accent) 14%, var(--sd-panel)) !important;
+    color: var(--sd-text) !important;
+    font-family: inherit !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+  }
+  .battle-log .battle-history strong {
+    font-weight: 600 !important;
+  }
+  .battle-log .rated {
+    font-family: inherit !important;
+  }
+  .battle-options .button,
+  .battle-controls .button {
+    font-family: inherit !important;
+    font-size: 12px !important;
+  }
+  .battle-controls p {
+    font-size: 13px !important;
+  }
+  .battle-controls em {
+    color: var(--sd-text-2) !important;
+    font-style: normal !important;
+  }
+}
