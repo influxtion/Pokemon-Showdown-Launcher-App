@@ -63,7 +63,7 @@ html.sd-launcher-shell:not(.sd-menu-community) {
     max-width: none !important;
     margin: 0 !important;
     padding: 18px !important;
-    border-radius: 14px !important;
+    border-radius: 4px !important;
     box-shadow: none !important;
     text-align: left !important;
   }
@@ -168,7 +168,7 @@ html.sd-launcher-shell:not(.sd-menu-community) {
     justify-self: start;
     width: 48px;
     margin-left: 20px;
-    border-radius: 12px;
+    border-radius: 4px;
     background: color-mix(in srgb, var(--sd-accent) 16%, transparent);
     color: var(--sd-accent);
     font: 22px/48px FontAwesome;
@@ -207,13 +207,15 @@ html.sd-launcher-shell:not(.sd-menu-community) {
     margin: 0 !important;
     padding: 0 16px !important;
     border: 1px solid var(--sd-border) !important;
-    border-radius: 999px !important;
+    border-radius: 3px !important;
     color: var(--sd-text-2) !important;
     font-family: inherit !important;
     cursor: pointer !important;
     transition: border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease !important;
   }
+  /* The client darkens these on hover; use the launcher hover tint instead. */
   .battleform .checkbox:hover {
+    background: var(--sd-hover) !important;
     border-color: var(--sd-border-strong) !important;
     color: var(--sd-text) !important;
   }
@@ -264,21 +266,14 @@ html.sd-launcher-shell:not(.sd-menu-community) {
     width: auto !important;
     min-width: 190px !important;
     height: 50px !important;
-    margin-bottom: 4px !important;
+    margin-bottom: 0 !important;
     padding: 0 30px !important;
-    border-radius: 6px !important;
+    border-radius: 4px !important;
     font-family: inherit !important;
     font-size: 18px !important;
     letter-spacing: 0.02em !important;
-    transition: background-color 0.12s ease, transform 0.08s ease, box-shadow 0.08s ease !important;
-  }
-  /* A hard bottom edge that the button presses down into. */
-  .menugroup .button.big:not(.disabled) {
-    box-shadow: 0 4px 0 color-mix(in srgb, var(--sd-primary) 62%, black) !important;
-  }
-  .menugroup .button.big:not(.disabled):active {
-    transform: translateY(3px) !important;
-    box-shadow: 0 1px 0 color-mix(in srgb, var(--sd-primary) 62%, black) !important;
+    box-shadow: none !important;
+    transition: background-color 0.12s ease !important;
   }
   .menugroup .button.big br,
   .menugroup .button.big small {
@@ -315,7 +310,7 @@ html.sd-launcher-shell:not(.sd-menu-community) {
     height: 52px !important;
     padding: 0 24px !important;
     border-color: var(--sd-border-strong) !important;
-    border-radius: 12px !important;
+    border-radius: 4px !important;
     background: transparent !important;
     color: var(--sd-text) !important;
     font-family: inherit !important;
@@ -337,12 +332,12 @@ html.sd-launcher-shell:not(.sd-menu-community) {
     width: 100% !important;
     margin: 0 0 8px !important;
     padding: 14px !important;
-    border-radius: 10px !important;
+    border-radius: 4px !important;
     font-size: 14px !important;
     font-weight: 600 !important;
   }
   .battleform:not([data-search]) .buttonbar .button {
-    border-radius: 8px !important;
+    border-radius: 4px !important;
     font-family: inherit !important;
     font-size: 13px !important;
   }
@@ -367,21 +362,20 @@ html.sd-launcher-shell:not(.sd-menu-community) {
     height: 76px !important;
     padding: 0 14px !important;
     border: 1px solid var(--sd-border) !important;
-    border-radius: 14px !important;
+    border-radius: 4px !important;
     background: var(--sd-panel) !important;
     color: var(--sd-text) !important;
     font-family: inherit !important;
     font-size: 14px !important;
     font-weight: 600 !important;
     text-align: left !important;
-    transition: border-color 0.15s ease, background-color 0.15s ease, transform 0.15s ease !important;
+    transition: border-color 0.15s ease, background-color 0.15s ease !important;
   }
   .mainmenu button[value="ladder"]:not(.disabled):hover,
   .mainmenu button[value="/smogtours"]:not(.disabled):hover,
   .mainmenu button[value="battles"]:not(.disabled):hover {
     border-color: var(--sd-accent) !important;
     background: var(--sd-hover) !important;
-    transform: translateY(-1px) !important;
   }
   .mainmenu button[value="battles"].disabled {
     opacity: 0.55 !important;
@@ -392,7 +386,7 @@ html.sd-launcher-shell:not(.sd-menu-community) {
     grid-row: 1 / 3;
     align-self: center;
     width: 38px;
-    border-radius: 10px;
+    border-radius: 4px;
     background: color-mix(in srgb, var(--sd-accent) 16%, transparent);
     color: var(--sd-accent);
     font: 18px/38px FontAwesome;
@@ -520,7 +514,7 @@ html.sd-launcher-shell {
     padding: 0 !important;
     overflow: hidden !important;
     border: 1px solid var(--sd-border-strong) !important;
-    border-radius: 18px !important;
+    border-radius: 6px !important;
     background: var(--sd-panel) !important;
     box-shadow: 0 24px 64px rgb(0 0 0 / 0.45), 0 2px 8px rgb(0 0 0 / 0.2) !important;
     color: var(--sd-text) !important;
@@ -552,7 +546,7 @@ html.sd-launcher-shell {
     height: 36px;
     padding: 0;
     border: 0;
-    border-radius: 10px;
+    border-radius: 4px;
     background: transparent;
     color: var(--sd-text-2);
     cursor: pointer;
@@ -599,7 +593,7 @@ html.sd-launcher-shell {
     margin: 0 !important;
     padding: 0 16px 0 44px !important;
     border: 1px solid var(--sd-border-strong) !important;
-    border-radius: 12px !important;
+    border-radius: 4px !important;
     background: var(--sd-input) !important;
     color: var(--sd-text) !important;
     font-family: inherit !important;
@@ -646,7 +640,7 @@ html.sd-launcher-shell {
     gap: 8px !important;
     margin: 0 !important;
     padding: 10px 10px 6px !important;
-    border-radius: 8px !important;
+    border-radius: 4px !important;
     list-style: none !important;
     cursor: pointer !important;
   }
@@ -690,7 +684,7 @@ html.sd-launcher-shell {
     margin: 1px 0 !important;
     padding: 6px 10px 6px 28px !important;
     border: 1px solid transparent !important;
-    border-radius: 8px !important;
+    border-radius: 4px !important;
     background: transparent !important;
     box-shadow: none !important;
     color: var(--sd-text) !important;
