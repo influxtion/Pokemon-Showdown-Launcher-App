@@ -1,0 +1,260 @@
+/* Ladder room: the client's own markup, restyled in place. Its buttons, search and refresh
+   keep working because nothing is moved or replaced.
+
+   Like client-shell.css, this applies only while the bridge sets sd-launcher-shell. The
+   room has two views with no class to tell them apart: the format list (the only one with
+   <ul> children) and a format's rankings (the only one with a <table>). */
+html.sd-launcher-shell #room-ladder {
+  background: var(--sd-app) !important;
+
+  .ladder {
+    box-sizing: border-box !important;
+    max-width: 1080px !important;
+    margin: 0 auto !important;
+    padding: 28px 32px 56px !important;
+    color: var(--sd-text) !important;
+    font: 13px/1.5 "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif !important;
+  }
+  .ladder p {
+    margin: 0 0 10px !important;
+    color: var(--sd-text-2) !important;
+  }
+  .ladder .button,
+  .ladder button {
+    font-family: inherit !important;
+    font-size: 13px !important;
+    cursor: pointer !important;
+  }
+  .ladder p > .button,
+  .ladder form.search button {
+    height: 30px !important;
+    padding: 0 12px !important;
+    line-height: 28px !important;
+  }
+
+  /* ----- Format list ----- */
+
+  .ladder:has(> ul)::before {
+    content: "Ladder";
+    display: block;
+    margin-bottom: 2px;
+    font-size: 24px;
+    font-weight: 600;
+    line-height: 1.2;
+  }
+  .ladder:has(> ul)::after {
+    content: "Pick a format to see its top 500 players.";
+    display: block;
+    order: -1;
+    color: var(--sd-text-2);
+  }
+  /* The client's "these screens aren't done yet" aside. */
+  .ladder:has(> ul) > p:nth-of-type(2) {
+    display: none !important;
+  }
+  .ladder:has(> ul) {
+    display: flex !important;
+    flex-direction: column !important;
+  }
+  .ladder:has(> ul)::before { order: -3; }
+  .ladder:has(> ul)::after { order: -2; margin-bottom: 14px; }
+  .ladder:has(> ul) > p:nth-of-type(1),
+  .ladder:has(> ul) > p:nth-of-type(3) {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    margin: 0 0 8px !important;
+  }
+  .ladder > ul:empty {
+    display: none !important;
+  }
+
+  /* Each group is a titled window, like the ones on Home. */
+  .ladder > h3 {
+    margin: 16px 0 0 !important;
+    padding: 9px 16px !important;
+    border: 1px solid var(--sd-border) !important;
+    border-bottom: 0 !important;
+    border-radius: 4px 4px 0 0 !important;
+    background: color-mix(in srgb, var(--sd-accent) 14%, var(--sd-panel)) !important;
+    color: var(--sd-text) !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+  }
+  .ladder > h3 + ul {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)) !important;
+    gap: 2px 8px !important;
+    margin: 0 !important;
+    padding: 8px !important;
+    border: 1px solid var(--sd-border) !important;
+    border-radius: 0 0 4px 4px !important;
+    background: var(--sd-panel) !important;
+  }
+  .ladder > ul > li {
+    margin: 0 !important;
+    min-width: 0 !important;
+  }
+  .ladder > ul > li > button {
+    display: flex !important;
+    align-items: center !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+    height: 34px !important;
+    padding: 0 10px !important;
+    overflow: hidden !important;
+    border-color: transparent !important;
+    background: transparent !important;
+    color: var(--sd-text) !important;
+    font: 600 13px/1 "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif !important;
+    text-align: left !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+  .ladder > ul > li > button::after {
+    content: "\f054";
+    margin-left: auto;
+    padding-left: 8px;
+    color: var(--sd-accent);
+    font: 10px/1 FontAwesome;
+    opacity: 0;
+  }
+  .ladder > ul > li > button:hover {
+    border-color: var(--sd-border) !important;
+    background: var(--sd-hover) !important;
+    color: var(--sd-accent) !important;
+  }
+  .ladder > ul > li > button:hover::after {
+    opacity: 1;
+  }
+
+  /* ----- A format's rankings ----- */
+
+  /* "Format List" back link: the one button without the .button class. */
+  .ladder.pad > p > button[name="selectFormat"]:not(.button) {
+    appearance: none !important;
+    height: 28px !important;
+    padding: 0 10px 0 6px !important;
+    border: 1px solid transparent !important;
+    box-shadow: none !important;
+    border-radius: 3px !important;
+    background: transparent !important;
+    color: var(--sd-accent) !important;
+    font-weight: 600 !important;
+  }
+  .ladder.pad > p > button[name="selectFormat"]:not(.button):hover {
+    background: var(--sd-hover) !important;
+    border-color: var(--sd-border) !important;
+  }
+  .ladder:has(> table) > h3 {
+    margin: 4px 0 12px !important;
+    padding: 0 !important;
+    border: 0 !important;
+    background: none !important;
+    font-size: 24px !important;
+    line-height: 1.2 !important;
+  }
+  .ladder form.search {
+    display: flex !important;
+    gap: 8px !important;
+    margin: 0 0 16px !important;
+  }
+  .ladder form.search .textbox {
+    box-sizing: border-box !important;
+    width: 280px !important;
+    height: 30px !important;
+    padding: 0 10px !important;
+    border: 1px solid var(--sd-border-strong) !important;
+    border-radius: 3px !important;
+    background: var(--sd-input) !important;
+    color: var(--sd-text) !important;
+    font: inherit !important;
+    box-shadow: none !important;
+  }
+  .ladder form.search button {
+    appearance: none !important;
+    border: 1px solid var(--sd-border-strong) !important;
+    border-radius: 3px !important;
+    background: var(--sd-panel) !important;
+    color: var(--sd-text) !important;
+  }
+  .ladder form.search button:hover {
+    background: var(--sd-hover) !important;
+  }
+  .ladder form.search .textbox:focus {
+    outline: 2px solid var(--sd-accent) !important;
+    outline-offset: 1px !important;
+  }
+
+  .ladder table {
+    width: 100% !important;
+    border: 1px solid var(--sd-border) !important;
+    border-radius: 4px !important;
+    border-spacing: 0 !important;
+    border-collapse: separate !important;
+    background: var(--sd-panel) !important;
+    font-variant-numeric: tabular-nums !important;
+  }
+  .ladder table th {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 1 !important;
+    height: 34px !important;
+    padding: 0 14px !important;
+    border: 0 !important;
+    border-bottom: 1px solid var(--sd-border) !important;
+    background: color-mix(in srgb, var(--sd-accent) 14%, var(--sd-panel)) !important;
+    color: var(--sd-text) !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    text-align: right !important;
+    white-space: nowrap !important;
+  }
+  .ladder table th abbr {
+    text-decoration: none !important;
+    cursor: help !important;
+  }
+  .ladder table td {
+    height: 38px !important;
+    padding: 0 14px !important;
+    border: 0 !important;
+    border-bottom: 1px solid var(--sd-border) !important;
+    color: var(--sd-text) !important;
+    text-align: right !important;
+    white-space: nowrap !important;
+  }
+  .ladder table tr:last-child td {
+    border-bottom: 0 !important;
+  }
+  .ladder table tr:nth-child(odd) td {
+    background: var(--sd-subtle) !important;
+  }
+  .ladder table tr:hover td {
+    background: var(--sd-hover) !important;
+  }
+  /* Rank, then name: the only left-aligned column, and it takes the spare width. */
+  .ladder table th:first-child,
+  .ladder table td:first-child {
+    width: 56px !important;
+    color: var(--sd-text-2) !important;
+  }
+  .ladder table th:nth-child(2),
+  .ladder table td:nth-child(2) {
+    width: 100% !important;
+    font-weight: 600 !important;
+    text-align: left !important;
+  }
+  .ladder table td strong {
+    color: var(--sd-accent) !important;
+    font-size: 15px !important;
+    font-weight: 700 !important;
+  }
+  .ladder table td em {
+    color: var(--sd-text-2) !important;
+    font-style: normal !important;
+  }
+  .ladder table td small {
+    color: var(--sd-text-2) !important;
+    font-size: 11px !important;
+  }
+}
