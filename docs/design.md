@@ -222,6 +222,15 @@ No suite verifies a signed-in account. Those checks are manual and owner-only (s
 
 ## 8. Build, packaging and release
 
+**Run from source** (Node.js 24):
+
+```sh
+npm install
+npm start
+```
+
+For Showdex, run `npm run build:showdex`, then enable it in Settings and reload the client.
+
 **Packaging** (`electron-builder` 26.18.0, always `--publish never`):
 
 ```sh
