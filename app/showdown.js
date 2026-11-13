@@ -108,6 +108,7 @@ function readSession() {
       me,
       named: Boolean(app.user.get('named')),
       menuUnread: Boolean(menu && menu.notifications),
+      menuTab: root && root.classList && root.classList.contains('sd-menu-community') ? 'community' : 'battle',
       rooms,
       current: app.curRoom ? app.curRoom.id : '',
       connected: !app.isDisconnected,
@@ -197,6 +198,13 @@ function join(roomid) {
   return true;
 }
 
+// Battle and Community are two views of the one main menu room; client-shell.css filters it.
+function showMenu(tab) {
+  document.documentElement.classList.toggle('sd-menu-community', tab === 'community');
+  app.focusRoom('');
+  return true;
+}
+
 function focusRoom(roomid) {
   if (!app.rooms[roomid]) return false;
   app.focusRoom(roomid);
@@ -266,6 +274,60 @@ function loadShowdex(entry) {
     }, 60000);
   };
   start();
+  return true;
+}
+
+// Turns the client's format picker into a centered modal (styled in client-battle.css).
+// The popup itself stays the client's own, so search, stars and selection keep working;
+// this only adds a header and a backdrop that closes it, so a click beside the modal
+// cannot also press whatever sits behind it, such as the Battle button.
+function installFormatModal() {
+  if (window.__SD_FORMAT_MODAL || !document.body) return true;
+  window.__SD_FORMAT_MODAL = true;
+  const enhance = (popup) => {
+    if (popup.classList.contains('sd-format-modal') || !popup.querySelector('span[name="formats"]')) return;
+    if (!document.documentElement.classList.contains('sd-launcher-shell')) return;
+    popup.classList.add('sd-format-modal');
+    popup.setAttribute('role', 'dialog');
+    popup.setAttribute('aria-modal', 'true');
+    popup.setAttribute('aria-label', 'Choose a format');
+    const head = document.createElement('div');
+    head.className = 'sd-modal-head';
+    const title = document.createElement('h2');
+    title.textContent = 'Choose a format';
+    const close = document.createElement('button');
+    close.type = 'button';
+    close.name = 'close'; // the popup's own button dispatch calls its close()
+    close.className = 'sd-modal-close';
+    close.setAttribute('aria-label', 'Close');
+    head.append(title, close);
+    popup.prepend(head);
+    // The client re-renders only span[name=formats] (found with find()), so wrapping it is safe.
+    const formats = popup.querySelector('span[name="formats"]');
+    const body = document.createElement('div');
+    body.className = 'sd-modal-body';
+    formats.before(body);
+    body.append(formats);
+    const backdrop = document.createElement('div');
+    backdrop.className = 'sd-modal-backdrop';
+    backdrop.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (window.app && typeof app.closePopup === 'function') app.closePopup();
+    });
+    popup.before(backdrop);
+    popup.__sdBackdrop = backdrop;
+  };
+  new MutationObserver((records) => {
+    for (const record of records) {
+      for (const node of record.addedNodes) {
+        if (node.nodeType === 1 && node.classList.contains('ps-popup')) enhance(node);
+      }
+      for (const node of record.removedNodes) {
+        if (node.__sdBackdrop) node.__sdBackdrop.remove();
+      }
+    }
+  }).observe(document.body, { childList: true });
   return true;
 }
 
@@ -346,6 +408,7 @@ function sanitizeSession(raw) {
     me: str(raw.me, 40),
     named: Boolean(raw.named),
     menuUnread: Boolean(raw.menuUnread),
+    menuTab: raw.menuTab === 'community' ? 'community' : 'battle',
     shell: Boolean(raw.shell),
     connected: Boolean(raw.connected),
     current: typeof raw.current === 'string' && ROOM_ID.test(raw.current) ? raw.current : '',
@@ -408,6 +471,14 @@ class ShowdownBridge {
     if (!contents) return false;
     try {
       return await contents.executeJavaScript(call(loadShowdex, 'showdex://assets/main.js')) === true;
+    } catch { return false; }
+  }
+
+  async installFormatModal() {
+    const contents = this.getContents();
+    if (!contents) return false;
+    try {
+      return await contents.executeJavaScript(call(installFormatModal)) === true;
     } catch { return false; }
   }
 
@@ -529,6 +600,10 @@ class ShowdownBridge {
       case 'focus-room':
         if (!(args.room === '' || (typeof args.room === 'string' && ROOM_ID.test(args.room)))) return false;
         code = call(focusRoom, args.room);
+        break;
+      case 'show-menu':
+        if (args.tab !== 'battle' && args.tab !== 'community') return false;
+        code = call(showMenu, args.tab);
         break;
       case 'leave-room':
         if (!(typeof args.room === 'string' && ROOM_ID.test(args.room)) || args.room === 'rooms') return false;

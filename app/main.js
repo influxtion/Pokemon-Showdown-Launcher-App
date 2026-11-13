@@ -26,7 +26,7 @@ let showdexApplied = false;
 let showdexLoadFailed = false;
 
 const RENDERER_DIR = path.join(__dirname, '..', 'renderer');
-const CLIENT_CSS = ['client-theme.css', 'client-shell.css', 'showdex-theme.css']
+const CLIENT_CSS = ['client-theme.css', 'client-shell.css', 'client-battle.css', 'showdex-theme.css']
   .map((file) => fs.readFileSync(path.join(__dirname, file), 'utf8')).join('\n');
 const REPLAY_CSS = ['client-theme.css', 'replay-theme.css']
   .map((file) => fs.readFileSync(path.join(__dirname, file), 'utf8')).join('\n');
@@ -131,6 +131,7 @@ function ensureClient() {
   // Re-applied on every load; the stylesheet follows prefers-color-scheme, which tracks nativeTheme.
   contents.on('dom-ready', () => {
     contents.insertCSS(CLIENT_CSS, { cssOrigin: 'user' }).catch(() => {});
+    bridge.installFormatModal();
     showdexApplied = Boolean(showdexBundle.installed && settings.get('showdexEnabled'));
     showdexLoadFailed = false;
     if (showdexApplied) bridge.loadShowdex().then((loaded) => {

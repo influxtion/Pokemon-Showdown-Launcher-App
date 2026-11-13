@@ -67,6 +67,22 @@ app.whenReady().then(async () => {
   assert.equal(await roomTop(), 0, 'room fills the view');
   assert.equal(await js("Dex.prefs('onepanel') ? 1 : 0"), 0, 'saved layout preference untouched');
 
+  // The main menu is split across the Battle and Community tabs by these client selectors.
+  const shown = (selector) => js(`(() => { const n = document.querySelector(${JSON.stringify(selector)}); return Boolean(n && n.getClientRects().length); })()`);
+  const menuView = async () => ({
+    form: await shown('.mainmenu .battleform'), ladder: await shown('.mainmenu button[value="ladder"]'),
+    watch: await shown('.mainmenu button[value="battles"]'), teambuilder: await shown('.mainmenu button[value="teambuilder"]'),
+    finduser: await shown('.mainmenu button[name="finduser"]'), friends: await shown('.mainmenu button[value="/friends"]'),
+    resources: await shown('.mainmenu button[value="resources"]'), chat: await shown('.rightmenu button[value="rooms"]'),
+  });
+  assert.equal(await page("window.desktop.showdown('show-menu', { tab: 'community' })"), true);
+  assert.equal((await session()).menuTab, 'community');
+  assert.deepEqual(await menuView(), { form: false, ladder: false, watch: false, teambuilder: false, finduser: true, friends: true, resources: true, chat: true });
+  assert.equal(await page("window.desktop.showdown('show-menu', { tab: 'battle' })"), true);
+  assert.equal((await session()).menuTab, 'battle');
+  assert.deepEqual(await menuView(), { form: true, ladder: true, watch: true, teambuilder: false, finduser: false, friends: false, resources: false, chat: false });
+  assert.equal(await js("document.querySelector('.mainmenu button[name=format]').offsetParent.className"), 'mainmenuwrapper', 'team picker still finds the main menu');
+
   // Rooms appear in the rail and can be switched and closed from it.
   assert.equal(await page("window.desktop.showdown('join', { room: 'lobby' })"), true);
   assert.equal(await page("window.desktop.showdown('join', { room: 'battles' })"), true);

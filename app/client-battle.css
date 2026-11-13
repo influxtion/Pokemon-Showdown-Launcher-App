@@ -1,0 +1,763 @@
+/* Modern layout for the Battle tab: the client's own main menu, restyled in place so its
+   format and team pickers, search and login prompts keep working.
+
+   Like client-shell.css, this applies only while the bridge sets sd-launcher-shell. Do not
+   give .leftmenu, .mainmenu, .menugroup, .battleform or their <p> rows a position or
+   lasting transform: the client's team picker expects the select's offsetParent to be
+   .mainmenuwrapper. The entrance animation below only moves them while it plays. */
+html.sd-launcher-shell:not(.sd-menu-community) {
+  .mainmenuwrapper {
+    background: radial-gradient(ellipse 900px 420px at 50% -80px,
+      color-mix(in srgb, var(--sd-accent) 20%, transparent), transparent) !important;
+  }
+  .leftmenu {
+    width: auto !important;
+    padding: clamp(40px, 9vh, 104px) 32px 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Private messages and challenges sit beside the form, and only when there are any. */
+  .activitymenu {
+    left: auto !important;
+    right: 24px !important;
+    width: 300px !important;
+  }
+  .activitymenu:not(:has(.pm-window:not(.news-embed))) {
+    display: none !important;
+  }
+  .pmbox {
+    width: auto !important;
+  }
+  .pm-window {
+    margin: 0 0 12px !important;
+  }
+  @media (min-width: 1000px) {
+    .leftmenu:has(.pm-window:not(.news-embed)) {
+      padding-right: 348px !important;
+    }
+  }
+  @media (max-width: 999px) {
+    .activitymenu {
+      position: static !important;
+      width: auto !important;
+      max-width: 680px !important;
+      margin: 0 auto 16px !important;
+    }
+  }
+
+  .mainmenu {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 14px !important;
+    max-width: 800px !important;
+    margin: 0 auto !important;
+    padding: 0 0 72px !important;
+    font-family: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif !important;
+  }
+  .mainmenu > * {
+    grid-column: 1 / -1 !important;
+  }
+
+  /* Battle card: flat rows that match the tiles below it. */
+  .mainmenu > .menugroup {
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 18px !important;
+    border-radius: 14px !important;
+    box-shadow: none !important;
+    text-align: left !important;
+  }
+  .mainmenu > .menugroup:has(.battleform[data-search]) {
+    padding: 0 !important;
+    overflow: hidden !important;
+  }
+  .battleform {
+    width: auto !important;
+  }
+  .battleform[data-search] {
+    display: grid !important;
+    grid-template-columns: auto auto minmax(0, 1fr) auto !important;
+    align-items: center !important;
+    column-gap: 10px !important;
+    padding: 0 20px 18px !important;
+  }
+  .battleform[data-search]::before {
+    content: "Start Battle";
+    grid-column: 1 / -1;
+    margin: 0 -20px;
+    padding: 20px;
+    border-bottom: 1px solid var(--sd-border);
+    color: var(--sd-text);
+    font-size: 22px;
+    font-weight: 700;
+    line-height: 1.2;
+  }
+  .battleform p {
+    margin: 0 !important;
+  }
+  .battleform[data-search] > p {
+    margin-top: 18px !important;
+  }
+  .battleform[data-search] > p:has(> .select) {
+    display: grid !important;
+    grid-column: 1 / -1 !important;
+    margin: 0 -20px !important;
+    border-bottom: 1px solid var(--sd-border) !important;
+  }
+  .battleform p:has(> label[name="partner"]) {
+    grid-column: 1 / -1 !important;
+  }
+  .battleform p:has(> label[name="partner"][style*="none"]) {
+    display: none !important;
+  }
+
+  /* Format and team rows. The label is laid over the button's lower line. */
+  .battleform p:has(> .select) > * {
+    grid-area: 1 / 1 !important;
+  }
+  .battleform p:has(> .select) > .label {
+    z-index: 1 !important;
+    align-self: end !important;
+    margin: 0 0 18px 84px !important;
+    font-size: 0 !important;
+    pointer-events: none !important;
+  }
+  .battleform p:has(> .select) > .label::after {
+    color: var(--sd-text-2);
+    font-size: 13px;
+    font-weight: 400;
+  }
+  .battleform p:has(> .formatselect) > .label::after { content: "Format"; }
+  .battleform p:has(> .teamselect) > .label::after { content: "Team"; }
+  .battleform .select {
+    position: relative !important;
+    /* Without this Chromium paints a gray native button under user-origin styles. */
+    appearance: none !important;
+    width: 100% !important;
+    height: 84px !important;
+    min-height: 0 !important;
+    padding: 0 44px 22px 84px !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: var(--sd-input) !important;
+    box-shadow: none !important;
+    color: var(--sd-text) !important;
+    font-family: inherit !important;
+    font-size: 17px !important;
+    font-weight: 600 !important;
+    text-align: left !important;
+    transition: background-color 0.15s ease !important;
+  }
+  .battleform .select:not(:disabled):hover {
+    background: var(--sd-hover) !important;
+  }
+  .battleform .select:focus-visible,
+  .mainmenu .button:focus-visible {
+    outline: 2px solid var(--sd-accent) !important;
+    outline-offset: -2px !important;
+  }
+  .battleform .select:disabled {
+    opacity: 1 !important;
+  }
+  /* The icon is drawn by the row, over the button, and lets clicks through. */
+  .battleform p:has(> .select)::before {
+    grid-area: 1 / 1;
+    z-index: 1;
+    align-self: center;
+    pointer-events: none;
+    justify-self: start;
+    width: 48px;
+    margin-left: 20px;
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--sd-accent) 16%, transparent);
+    color: var(--sd-accent);
+    font: 22px/48px FontAwesome;
+    text-align: center;
+  }
+  .battleform p:has(> .formatselect)::before { content: "\f11b"; }
+  .battleform p:has(> .teamselect)::before { content: "\f1b0"; }
+  .battleform .teamselect strong {
+    display: block !important;
+    max-width: calc(100% - 270px) !important;
+    height: auto !important;
+    overflow: hidden !important;
+    line-height: 22px !important;
+    color: var(--sd-text) !important;
+    font-size: 17px !important;
+    font-weight: 600 !important;
+    text-align: left !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+  .battleform .teamselect small {
+    position: absolute !important;
+    top: 50% !important;
+    right: 40px !important;
+    transform: translateY(-50%) !important;
+    zoom: 1.25 !important;
+    white-space: nowrap !important;
+  }
+
+  /* Options as icon toggles */
+  .battleform .checkbox {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    height: 38px !important;
+    margin: 0 !important;
+    padding: 0 16px !important;
+    border: 1px solid var(--sd-border) !important;
+    border-radius: 999px !important;
+    color: var(--sd-text-2) !important;
+    font-family: inherit !important;
+    cursor: pointer !important;
+    transition: border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease !important;
+  }
+  .battleform .checkbox:hover {
+    border-color: var(--sd-border-strong) !important;
+    color: var(--sd-text) !important;
+  }
+  .battleform .checkbox:has(input:checked) {
+    border-color: var(--sd-accent) !important;
+    background: color-mix(in srgb, var(--sd-accent) 16%, transparent) !important;
+    color: var(--sd-text) !important;
+  }
+  .battleform .checkbox:has(input:focus-visible) {
+    outline: 2px solid var(--sd-accent) !important;
+    outline-offset: 2px !important;
+  }
+  .battleform .checkbox input {
+    position: absolute !important;
+    appearance: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    margin: 0 !important;
+    opacity: 0 !important;
+  }
+  .battleform .checkbox::before {
+    font: 16px/1 FontAwesome;
+  }
+  .battleform .checkbox:has(input[name="private"])::before { content: "\f070"; }
+  .battleform .checkbox:has(input[name="allowbots"])::before { content: "\f17b"; }
+  .battleform .checkbox abbr {
+    font-size: 0 !important;
+    text-decoration: none !important;
+  }
+  .battleform .checkbox abbr::after {
+    font-size: 14px;
+    font-weight: 500;
+  }
+  .battleform .checkbox:has(input[name="private"]) abbr::after { content: "No spectators"; }
+  .battleform .checkbox:has(input[name="allowbots"]) abbr::after { content: "Allow bots"; }
+
+  /* Battle! */
+  .battleform p:has(> button.big) {
+    justify-self: end !important;
+  }
+  @media (min-width: 641px) {
+    .battleform[data-search] > p:has(> button.big):not(:has(~ p.cancel)) {
+      grid-column: 3 / -1 !important;
+    }
+  }
+  .menugroup .button.big {
+    display: block !important;
+    width: auto !important;
+    min-width: 190px !important;
+    height: 50px !important;
+    margin-bottom: 4px !important;
+    padding: 0 30px !important;
+    border-radius: 6px !important;
+    font-family: inherit !important;
+    font-size: 18px !important;
+    letter-spacing: 0.02em !important;
+    transition: background-color 0.12s ease, transform 0.08s ease, box-shadow 0.08s ease !important;
+  }
+  /* A hard bottom edge that the button presses down into. */
+  .menugroup .button.big:not(.disabled) {
+    box-shadow: 0 4px 0 color-mix(in srgb, var(--sd-primary) 62%, black) !important;
+  }
+  .menugroup .button.big:not(.disabled):active {
+    transform: translateY(3px) !important;
+    box-shadow: 0 1px 0 color-mix(in srgb, var(--sd-primary) 62%, black) !important;
+  }
+  .menugroup .button.big br,
+  .menugroup .button.big small {
+    display: none !important;
+  }
+  /* The client's label is "Battle!"; this replaces it while idle. */
+  .menugroup .button.big:not(.disabled) strong {
+    font-size: 0 !important;
+    letter-spacing: 0 !important;
+  }
+  .menugroup .button.big:not(.disabled) strong::before {
+    content: "Battle";
+    font-size: 18px;
+    letter-spacing: 0.02em;
+  }
+  .menugroup .button.big:not(.disabled) strong::after {
+    content: "\f061";
+    display: inline-block;
+    margin-left: 10px;
+    font: 16px/1 FontAwesome;
+  }
+  .menugroup .button.big:not(.disabled):hover strong::after {
+    animation: sd-nudge 0.7s ease-in-out infinite !important;
+  }
+  .menugroup .button.big.disabled {
+    border-color: var(--sd-accent) !important;
+    background: transparent !important;
+    color: var(--sd-text) !important;
+    opacity: 1 !important;
+    animation: sd-pulse 1.4s ease-in-out infinite !important;
+  }
+  .battleform p.cancel .button {
+    width: auto !important;
+    height: 52px !important;
+    padding: 0 24px !important;
+    border-color: var(--sd-border-strong) !important;
+    border-radius: 12px !important;
+    background: transparent !important;
+    color: var(--sd-text) !important;
+    font-family: inherit !important;
+    font-size: 15px !important;
+  }
+  .battleform p.cancel .button:hover {
+    background: var(--sd-hover) !important;
+  }
+
+  /* Games in progress */
+  .battleform:not([data-search]) .roomlist {
+    width: auto !important;
+    max-width: none !important;
+    margin: 8px 0 !important;
+  }
+  .battleform:not([data-search]) .blocklink {
+    display: block !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+    margin: 0 0 8px !important;
+    padding: 14px !important;
+    border-radius: 10px !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+  }
+  .battleform:not([data-search]) .buttonbar .button {
+    border-radius: 8px !important;
+    font-family: inherit !important;
+    font-size: 13px !important;
+  }
+
+  /* Ladder, Tournaments and Watch a battle become a row of tiles. */
+  .mainmenu > .menugroup:has(button[value="ladder"], button[value="battles"]) {
+    display: contents !important;
+  }
+  .mainmenu > .menugroup:has(button[value="ladder"], button[value="battles"]) p {
+    grid-column: span 1 !important;
+    margin: 0 !important;
+  }
+  .mainmenu button[value="ladder"],
+  .mainmenu button[value="/smogtours"],
+  .mainmenu button[value="battles"] {
+    display: grid !important;
+    grid-template-columns: 38px minmax(0, 1fr) !important;
+    grid-template-rows: auto auto !important;
+    column-gap: 12px !important;
+    align-content: center !important;
+    width: 100% !important;
+    height: 76px !important;
+    padding: 0 14px !important;
+    border: 1px solid var(--sd-border) !important;
+    border-radius: 14px !important;
+    background: var(--sd-panel) !important;
+    color: var(--sd-text) !important;
+    font-family: inherit !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    text-align: left !important;
+    transition: border-color 0.15s ease, background-color 0.15s ease, transform 0.15s ease !important;
+  }
+  .mainmenu button[value="ladder"]:not(.disabled):hover,
+  .mainmenu button[value="/smogtours"]:not(.disabled):hover,
+  .mainmenu button[value="battles"]:not(.disabled):hover {
+    border-color: var(--sd-accent) !important;
+    background: var(--sd-hover) !important;
+    transform: translateY(-1px) !important;
+  }
+  .mainmenu button[value="battles"].disabled {
+    opacity: 0.55 !important;
+  }
+  .mainmenu button[value="ladder"]::before,
+  .mainmenu button[value="/smogtours"]::before,
+  .mainmenu button[value="battles"]::before {
+    grid-row: 1 / 3;
+    align-self: center;
+    width: 38px;
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--sd-accent) 16%, transparent);
+    color: var(--sd-accent);
+    font: 18px/38px FontAwesome;
+    text-align: center;
+  }
+  .mainmenu button[value="ladder"]::before { content: "\f201"; }
+  .mainmenu button[value="/smogtours"]::before { content: "\f091"; }
+  .mainmenu button[value="battles"]::before { content: "\f06e"; }
+  .mainmenu button[value="ladder"]::after,
+  .mainmenu button[value="/smogtours"]::after,
+  .mainmenu button[value="battles"]::after {
+    grid-column: 2;
+    color: var(--sd-text-2);
+    font-size: 12px;
+    font-weight: 400;
+  }
+  .mainmenu button[value="ladder"]::after { content: "Rankings by format"; }
+  .mainmenu button[value="/smogtours"]::after { content: "Official events"; }
+  .mainmenu button[value="battles"]::after { content: "Spectate live"; }
+
+  @media (max-width: 640px) {
+    .mainmenu {
+      grid-template-columns: minmax(0, 1fr) !important;
+    }
+    .battleform[data-search] {
+      grid-template-columns: auto minmax(0, 1fr) !important;
+    }
+    .battleform p:has(> button.big) {
+      grid-column: 1 / -1 !important;
+      justify-self: stretch !important;
+    }
+    .menugroup .button.big {
+      width: 100% !important;
+    }
+  }
+  /* Motion: the page rises in each time the tab opens, and controls answer the pointer. */
+  .mainmenu > .menugroup:has(.battleform) {
+    animation: sd-rise 0.32s cubic-bezier(0.2, 0.8, 0.3, 1) backwards !important;
+  }
+  .mainmenu button[value="ladder"],
+  .mainmenu button[value="/smogtours"],
+  .mainmenu button[value="battles"] {
+    animation: sd-rise 0.32s cubic-bezier(0.2, 0.8, 0.3, 1) backwards !important;
+  }
+  .mainmenu button[value="ladder"] { animation-delay: 0.07s !important; }
+  .mainmenu button[value="/smogtours"] { animation-delay: 0.12s !important; }
+  .mainmenu button[value="battles"] { animation-delay: 0.17s !important; }
+  .battleform p:has(> .select)::before,
+  .mainmenu button[value="ladder"]::before,
+  .mainmenu button[value="/smogtours"]::before,
+  .mainmenu button[value="battles"]::before {
+    transition: transform 0.16s cubic-bezier(0.3, 1.6, 0.5, 1);
+  }
+  .battleform p:has(> .select:not(:disabled):hover)::before,
+  .mainmenu button[value="ladder"]:not(.disabled):hover::before,
+  .mainmenu button[value="/smogtours"]:not(.disabled):hover::before,
+  .mainmenu button[value="battles"]:not(.disabled):hover::before {
+    transform: scale(1.1) rotate(-5deg);
+  }
+  .battleform .checkbox:active {
+    transform: scale(0.95) !important;
+  }
+  /* Team sprites hop in sequence. */
+  .battleform .teamselect:not(:disabled):hover .picon {
+    animation: sd-hop 0.42s ease-out !important;
+  }
+  .battleform .teamselect .picon:nth-child(2) { animation-delay: 0.05s !important; }
+  .battleform .teamselect .picon:nth-child(3) { animation-delay: 0.1s !important; }
+  .battleform .teamselect .picon:nth-child(4) { animation-delay: 0.15s !important; }
+  .battleform .teamselect .picon:nth-child(5) { animation-delay: 0.2s !important; }
+  .battleform .teamselect .picon:nth-child(6) { animation-delay: 0.25s !important; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .mainmenu *,
+    .mainmenu *::before,
+    .mainmenu *::after {
+      animation: none !important;
+      transition: none !important;
+    }
+  }
+}
+
+@keyframes sd-rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes sd-nudge {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(4px); }
+}
+@keyframes sd-pulse {
+  0%, 100% { border-color: var(--sd-accent); }
+  50% { border-color: var(--sd-border-strong); }
+}
+@keyframes sd-hop {
+  0%, 100% { transform: translateY(0); }
+  40% { transform: translateY(-5px); }
+}
+
+/* Format picker as a centered modal. showdown.js (installFormatModal) tags the client's own
+   FormatPopup with .sd-format-modal and adds the header and backdrop; everything inside is
+   still the client's markup: a search <ul>, then span[name=formats] holding one <ul> per
+   column with <details> sections of button.option rows. The client positions the popup
+   with inline styles, which user-origin !important rules override. */
+html.sd-launcher-shell {
+  .sd-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    background: rgb(6 10 22 / 0.55);
+    backdrop-filter: blur(4px);
+    animation: sd-fade 0.18s ease-out both;
+  }
+  .ps-popup.sd-format-modal {
+    position: fixed !important;
+    inset: 50% auto auto 50% !important;
+    z-index: 1001 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    box-sizing: border-box !important;
+    width: min(1040px, calc(100vw - 48px)) !important;
+    max-width: none !important;
+    height: min(760px, calc(100vh - 48px)) !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    border: 1px solid var(--sd-border-strong) !important;
+    border-radius: 18px !important;
+    background: var(--sd-panel) !important;
+    box-shadow: 0 24px 64px rgb(0 0 0 / 0.45), 0 2px 8px rgb(0 0 0 / 0.2) !important;
+    color: var(--sd-text) !important;
+    font-family: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif !important;
+    transform: translate(-50%, -50%);
+    animation: sd-modal-in 0.22s cubic-bezier(0.2, 0.8, 0.3, 1) both;
+  }
+  .sd-format-modal > p,
+  .sd-format-modal > div[style*="clear"] {
+    display: none !important;
+  }
+
+  .sd-format-modal .sd-modal-head {
+    display: flex;
+    flex: none;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 20px 0 24px;
+  }
+  .sd-format-modal .sd-modal-head h2 {
+    margin: 0;
+    color: var(--sd-text);
+    font-size: 20px;
+    font-weight: 700;
+  }
+  .sd-format-modal .sd-modal-close {
+    appearance: none;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--sd-text-2);
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease;
+  }
+  .sd-format-modal .sd-modal-close::before {
+    content: "\f00d";
+    font: 18px/36px FontAwesome;
+  }
+  .sd-format-modal .sd-modal-close:hover {
+    background: var(--sd-hover);
+    color: var(--sd-text);
+  }
+  .sd-format-modal .sd-modal-close:focus-visible {
+    outline: 2px solid var(--sd-accent);
+    outline-offset: -2px;
+  }
+
+  /* Search */
+  .sd-format-modal > ul.popupmenu {
+    flex: none !important;
+    margin: 0 !important;
+    padding: 16px 24px !important;
+    border-bottom: 1px solid var(--sd-border) !important;
+  }
+  .sd-format-modal > ul.popupmenu li {
+    position: relative !important;
+  }
+  .sd-format-modal > ul.popupmenu li::before {
+    content: "\f002";
+    position: absolute;
+    top: 50%;
+    left: 16px;
+    transform: translateY(-50%);
+    color: var(--sd-text-2);
+    font: 15px/1 FontAwesome;
+    pointer-events: none;
+  }
+  .sd-format-modal input[name="search"] {
+    display: block !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+    height: 46px !important;
+    margin: 0 !important;
+    padding: 0 16px 0 44px !important;
+    border: 1px solid var(--sd-border-strong) !important;
+    border-radius: 12px !important;
+    background: var(--sd-input) !important;
+    color: var(--sd-text) !important;
+    font-family: inherit !important;
+    font-size: 15px !important;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
+  }
+  .sd-format-modal input[name="search"]:focus {
+    border-color: var(--sd-accent) !important;
+    outline: none !important;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--sd-accent) 28%, transparent) !important;
+  }
+
+  /* Sections flow into balanced columns. The columns sit in an unbounded block inside the
+     scrolling body; on a fixed-height element they would spill sideways instead. */
+  .sd-format-modal .sd-modal-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 12px 16px 20px;
+    scrollbar-color: var(--sd-border-strong) transparent;
+    scrollbar-width: thin;
+  }
+  .sd-format-modal span[name="formats"] {
+    display: block !important;
+    columns: 3 240px !important;
+    column-gap: 16px !important;
+  }
+  .sd-format-modal span[name="formats"] ul.popupmenu {
+    display: contents !important;
+  }
+  .sd-format-modal span[name="formats"] p:empty {
+    display: none !important;
+  }
+  .sd-format-modal details,
+  .sd-format-modal span[name="formats"] > ul > li {
+    break-inside: avoid !important;
+  }
+  .sd-format-modal details {
+    margin: 0 0 8px !important;
+  }
+  .sd-format-modal summary {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    margin: 0 !important;
+    padding: 10px 10px 6px !important;
+    border-radius: 8px !important;
+    list-style: none !important;
+    cursor: pointer !important;
+  }
+  .sd-format-modal summary::-webkit-details-marker {
+    display: none !important;
+  }
+  .sd-format-modal summary::before {
+    content: "\f054";
+    width: 10px;
+    color: var(--sd-text-2);
+    font: 10px/1 FontAwesome;
+    transition: transform 0.15s ease;
+  }
+  .sd-format-modal details[open] > summary::before {
+    transform: rotate(90deg);
+  }
+  .sd-format-modal summary strong {
+    color: var(--sd-text-2) !important;
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.06em !important;
+    text-transform: uppercase !important;
+  }
+  .sd-format-modal summary:hover strong {
+    color: var(--sd-text) !important;
+  }
+
+  .sd-format-modal span[name="formats"] li {
+    margin: 0 !important;
+    list-style: none !important;
+  }
+  .sd-format-modal button.option {
+    appearance: none !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 8px !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+    min-height: 36px !important;
+    margin: 1px 0 !important;
+    padding: 6px 10px 6px 28px !important;
+    border: 1px solid transparent !important;
+    border-radius: 8px !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    color: var(--sd-text) !important;
+    font-family: inherit !important;
+    font-size: 14px !important;
+    line-height: 1.3 !important;
+    text-align: left !important;
+    text-shadow: none !important;
+    cursor: pointer !important;
+    transition: background-color 0.12s ease !important;
+  }
+  .sd-format-modal span[name="formats"] > ul > li button.option {
+    padding-left: 10px !important;
+  }
+  .sd-format-modal button.option:hover {
+    background: var(--sd-hover) !important;
+  }
+  .sd-format-modal button.option:focus-visible {
+    outline: 2px solid var(--sd-accent) !important;
+    outline-offset: -2px !important;
+  }
+  .sd-format-modal button.option.cur {
+    border-color: color-mix(in srgb, var(--sd-accent) 55%, transparent) !important;
+    background: color-mix(in srgb, var(--sd-accent) 18%, transparent) !important;
+    font-weight: 600 !important;
+  }
+  .sd-format-modal button.option i.fa-star {
+    flex: none !important;
+    float: none !important;
+    width: auto !important;
+    color: var(--sd-primary) !important;
+    text-shadow: none !important;
+    font-size: 13px !important;
+  }
+  .sd-format-modal button.option i.fa-star.subtle {
+    color: var(--sd-text-2) !important;
+    opacity: 0 !important;
+    transition: opacity 0.12s ease !important;
+  }
+  .sd-format-modal button.option:hover i.fa-star.subtle {
+    opacity: 0.6 !important;
+  }
+  .sd-format-modal button.option i.fa-star.subtle:hover {
+    color: var(--sd-primary) !important;
+    opacity: 1 !important;
+  }
+  .sd-format-modal span[name="formats"] em {
+    display: block;
+    padding: 40px 0;
+    color: var(--sd-text-2);
+    font-size: 15px;
+    text-align: center;
+    column-span: all;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .sd-modal-backdrop,
+    .ps-popup.sd-format-modal {
+      animation: none !important;
+    }
+  }
+}
+
+@keyframes sd-fade {
+  from { opacity: 0; }
+}
+@keyframes sd-modal-in {
+  from { opacity: 0; transform: translate(-50%, -48%) scale(0.97); }
+  to { opacity: 1; transform: translate(-50%, -50%); }
+}

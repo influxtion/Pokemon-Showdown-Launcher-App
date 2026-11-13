@@ -15,7 +15,8 @@
     battle: svg('<path d="M5 3.5v9l7-4.5z"/>', round),
     chat: svg('<path d="M2.5 3.5h11v7h-6l-3 2.5v-2.5h-2z"/>', round),
     teambuilder: svg('<path d="M3 13l.5-3L10.5 3l2.5 2.5L6 12.5z"/>', round),
-    menu: svg('<path d="M2.5 7.5 8 3l5.5 4.5V13H10V9.5H6V13H2.5z"/>', round),
+    community: svg('<circle cx="6" cy="6" r="2.5"/><path d="M1.5 13c0-2.2 2-3.5 4.5-3.5s4.5 1.3 4.5 3.5M10.5 3.8a2.5 2.5 0 0 1 0 4.4M12.5 9.9c1.2.6 2 1.6 2 3.1"/>', ' stroke-linecap="round"'),
+    plus: svg('<path d="M8 3v10M3 8h10"/>', ' stroke-linecap="round"'),
     other: svg('<rect x="3" y="3" width="10" height="10" rx="1.5"/>'),
     x: svg('<path d="M4 4l8 8M12 4l-8 8"/>', ' stroke-linecap="round"'),
   };
@@ -77,8 +78,31 @@
     return result;
   }
 
-  function row({ title, sub, kind, live, unread, current, id, closable }) {
-    const node = make('div', `nav-item nav-room${live ? ' nav-item--live' : ''}`);
+  // Fixed rail tabs. Each one says how to reach its view in the client.
+  const TABS = {
+    battle: { title: 'Battle', kind: 'battle', action: 'show-menu', args: { tab: 'battle' } },
+    teambuilder: { title: 'Teambuilder', kind: 'teambuilder', action: 'join', args: { room: 'teambuilder' } },
+    community: { title: 'Community', kind: 'community', action: 'show-menu', args: { tab: 'community' } },
+  };
+
+  // Rooms reached from the Battle tab's links nest under it; the rest are Community's.
+  const BATTLE_ROOMS = new Set(['ladder', 'battles', 'tournaments', 'smogtours']);
+  const inBattle = (room) => room.battle || BATTLE_ROOMS.has(room.id);
+
+  async function joinRooms() {
+    await act('join', { room: 'rooms' });
+    if (onPlay) pollNow();
+    else go('play.html');
+  }
+
+  async function openTab(name) {
+    await act(TABS[name].action, TABS[name].args);
+    if (onPlay) pollNow();
+    else go('play.html');
+  }
+
+  function row({ title, sub, kind, live, unread, current, id, closable, tab }) {
+    const node = make('div', `nav-item ${tab ? 'nav-tab' : 'nav-room'}${live ? ' nav-item--live' : ''}`);
     node.title = sub ? `${title} · ${sub}` : title;
     if (current) node.setAttribute('aria-current', 'page');
     const main = make('button', 'nav-room-main');
@@ -93,7 +117,7 @@
       dot.title = 'New activity';
       main.append(dot);
     }
-    main.addEventListener('click', () => focusRoom(id));
+    main.addEventListener('click', () => (tab ? openTab(tab) : focusRoom(id)));
     node.append(main);
     if (closable) {
       const close = make('button', 'rail-icon-btn nav-close');
@@ -107,6 +131,15 @@
       });
       node.append(close);
     }
+    if (tab === 'community') {
+      const join = make('button', 'rail-icon-btn');
+      join.type = 'button';
+      join.setAttribute('aria-label', 'Join a room');
+      join.title = 'Join a room';
+      join.append(icon(ICONS.plus));
+      join.addEventListener('click', joinRooms);
+      node.append(join);
+    }
     return node;
   }
 
@@ -116,22 +149,23 @@
     const rooms = session.rooms;
     const current = typeof session.current === 'string' ? session.current : '';
     const me = session.me || '';
-    const menuCurrent = current === '' || current === 'rooms';
-    const matched = rooms.some((r) => r.id === current);
-    const rows = [];
-    if ((onPlay && menuCurrent) || session.menuUnread) {
-      rows.push({
-        title: 'Main menu', kind: 'menu', unread: !!session.menuUnread, id: '', closable: false,
-        current: onPlay && menuCurrent && !matched,
-      });
-    }
-    for (const r of rooms) {
-      rows.push({
-        title: r.battle ? matchup(r, me) : r.title, sub: roomSub(r), kind: r.battle ? 'battle' : r.kind,
-        live: !!r.battle && !r.ended, unread: !!r.unread, id: r.id, closable: true,
-        current: onPlay && r.id === current,
-      });
-    }
+    const community = session.menuTab === 'community';
+    const tabRow = (tab, isCurrent, unread) => ({
+      title: TABS[tab].title, kind: TABS[tab].kind, tab, unread, current: onPlay && isCurrent,
+    });
+    const roomRow = (r) => ({
+      title: r.battle ? matchup(r, me) : r.title, sub: roomSub(r), kind: r.battle ? 'battle' : r.kind,
+      live: !!r.battle && !r.ended, unread: !!r.unread, id: r.id, closable: true,
+      current: onPlay && r.id === current,
+    });
+    // The Teambuilder tab stands in for its room, so it never gets a row of its own.
+    const rows = [
+      tabRow('battle', current === '' && !community, !!session.menuUnread),
+      ...rooms.filter(inBattle).map(roomRow),
+      tabRow('teambuilder', current === 'teambuilder', rooms.some((r) => r.id === 'teambuilder' && r.unread)),
+      tabRow('community', (current === '' && community) || current === 'rooms', false),
+      ...rooms.filter((r) => !inBattle(r) && r.id !== 'teambuilder').map(roomRow),
+    ];
     // Rebuild only on change so hover and focus survive each poll.
     const key = JSON.stringify([rows, !!session.ready, me, !!session.named]);
     if (key === lastKey) return;
@@ -145,15 +179,6 @@
     }
   }
 
-  $('showdown').addEventListener('click', (event) => {
-    event.preventDefault();
-    focusRoom('');
-  });
-  $('join').addEventListener('click', async () => {
-    await act('join', { room: 'rooms' });
-    if (onPlay) pollNow();
-    else go('play.html');
-  });
   $('sign-in').addEventListener('click', async (event) => {
     event.preventDefault();
     await act('login', {});

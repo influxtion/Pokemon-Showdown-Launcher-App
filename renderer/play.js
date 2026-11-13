@@ -33,7 +33,9 @@ function renderRoom(session) {
   let title = 'Showdown';
   let format = '';
   let status = '';
-  if (current === 'rooms') {
+  if (session.ready && current === '') {
+    title = session.menuTab === 'community' ? 'Community' : 'Battle';
+  } else if (current === 'rooms') {
     title = 'Rooms';
   } else if (room && room.battle) {
     title = window.showdownNav ? window.showdownNav.matchup(room, me) : room.title;
