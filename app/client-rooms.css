@@ -1,0 +1,313 @@
+/* Chat room list and live battle list: the client's own markup, restyled in place.
+
+   Like client-shell.css, this applies only while the bridge sets sd-launcher-shell.
+   Both rooms share the .roomlist and .blocklink markup, so they share most rules. */
+html.sd-launcher-shell #room-rooms,
+html.sd-launcher-shell #room-battles {
+  background: var(--sd-app) !important;
+  color: var(--sd-text) !important;
+  font-family: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif !important;
+
+  > .pad {
+    position: relative !important;
+    box-sizing: border-box !important;
+    max-width: 1080px !important;
+    margin: 0 auto !important;
+    padding: 28px 32px 56px !important;
+    font-size: 13px !important;
+    line-height: 1.5 !important;
+  }
+  .button,
+  button,
+  select,
+  input {
+    font-family: inherit !important;
+    font-size: 13px !important;
+  }
+  .pad > .button,
+  .pad p > .button,
+  form.search .button {
+    height: 30px !important;
+    padding: 0 12px !important;
+    line-height: 28px !important;
+  }
+  select.button {
+    height: 30px !important;
+    padding: 0 8px !important;
+  }
+
+  .roomlist {
+    float: none !important;
+    width: auto !important;
+    max-width: none !important;
+    margin: 0 !important;
+  }
+
+  /* A room or a battle: a white card that lights up on hover. */
+  .blocklink {
+    display: block !important;
+    box-sizing: border-box !important;
+    height: 100% !important;
+    margin: 0 !important;
+    padding: 10px 14px !important;
+    border: 1px solid var(--sd-border) !important;
+    border-radius: 4px !important;
+    background: var(--sd-panel) !important;
+    color: var(--sd-text) !important;
+    box-shadow: none !important;
+    text-decoration: none !important;
+    transition: border-color 0.15s ease, background-color 0.15s ease !important;
+  }
+  .blocklink:hover {
+    border-color: var(--sd-accent) !important;
+    background: var(--sd-hover) !important;
+  }
+  .blocklink strong {
+    color: var(--sd-text) !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+  }
+  .blocklink strong i {
+    margin-right: 4px !important;
+    color: var(--sd-accent) !important;
+  }
+  .blocklink small {
+    color: var(--sd-text-2) !important;
+    font-size: 12px !important;
+  }
+}
+
+/* ----- Chat rooms ----- */
+
+html.sd-launcher-shell #room-rooms {
+  > .pad::before {
+    content: "Chat rooms";
+    display: block;
+    margin-bottom: 14px;
+    font-size: 24px;
+    font-weight: 600;
+    line-height: 1.2;
+  }
+  button[name="closeHide"] {
+    position: absolute !important;
+    top: 28px !important;
+    right: 32px !important;
+    float: none !important;
+    margin: 0 !important;
+  }
+
+  /* Users online and active battles: two flat stat buttons, without the mascot sprites. */
+  .roomlisttop {
+    margin: 0 0 12px !important;
+    padding: 0 !important;
+  }
+  .roomcounters {
+    display: flex !important;
+    gap: 10px !important;
+    margin: 0 !important;
+    text-align: left !important;
+  }
+  .roomcounters .button {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    width: 180px !important;
+    height: 60px !important;
+    margin: 0 !important;
+    padding: 0 16px !important;
+    border-color: var(--sd-border) !important;
+    border-radius: 4px !important;
+    color: var(--sd-text-2) !important;
+    font-size: 12px !important;
+    line-height: 1.3 !important;
+    text-align: left !important;
+  }
+  .roomcounters .button:hover {
+    border-color: var(--sd-accent) !important;
+  }
+  .roomcounters .button strong {
+    display: block !important;
+    color: var(--sd-text) !important;
+    font-size: 22px !important;
+    font-weight: 600 !important;
+    font-variant-numeric: tabular-nums !important;
+  }
+  .roomcounters .usercount,
+  .roomcounters .battlecount {
+    display: none !important;
+  }
+  .pad > p {
+    margin: 0 0 4px !important;
+  }
+
+  /* Each list is a grid; a heading starts a new full-width band. */
+  .roomlist {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)) !important;
+    gap: 8px !important;
+    align-items: stretch !important;
+    margin-bottom: 8px !important;
+  }
+  .roomlist > h2 {
+    grid-column: 1 / -1 !important;
+    margin: 16px 0 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    color: var(--sd-text) !important;
+    font-size: 15px !important;
+    font-weight: 600 !important;
+  }
+  .roomlist > div {
+    display: flex !important;
+    flex-direction: column !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+  }
+  .roomlist > div > .blocklink {
+    flex: 1 !important;
+  }
+  .roomlist > div > .blocklink > small:last-child {
+    display: block !important;
+    margin-top: 2px !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+  .subrooms {
+    margin: 4px 0 0 !important;
+    padding: 0 2px !important;
+    color: var(--sd-text-2) !important;
+    font-size: 12px !important;
+  }
+  .subrooms .blocklink {
+    display: inline-block !important;
+    height: auto !important;
+    margin: 2px 0 0 2px !important;
+    padding: 1px 8px !important;
+    border-radius: 3px !important;
+  }
+  .subrooms .blocklink strong {
+    font-size: 12px !important;
+  }
+  .pad > p:has(> button[name="toggleMoreRooms"]),
+  .pad > p:has(> button[name="joinRoomPopup"]) {
+    display: inline-block !important;
+    margin: 12px 8px 0 0 !important;
+  }
+}
+
+/* ----- Live battles ----- */
+
+html.sd-launcher-shell #room-battles {
+  > .pad::before {
+    content: "Watch a battle";
+    display: block;
+    margin-bottom: 14px;
+    font-size: 24px;
+    font-weight: 600;
+    line-height: 1.2;
+  }
+  button[name="close"] {
+    position: absolute !important;
+    top: 28px !important;
+    right: 32px !important;
+    float: none !important;
+    margin: 0 !important;
+  }
+
+  /* Filters on one row. */
+  .roomlist {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    gap: 10px 14px !important;
+  }
+  .roomlist > p {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    margin: 0 !important;
+  }
+  .roomlist > p:empty {
+    display: none !important;
+  }
+  .roomlist .picon {
+    display: none !important;
+  }
+  .roomlist .label,
+  .roomlist > label {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    margin: 0 !important;
+    color: var(--sd-text-2) !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    text-shadow: none !important;
+  }
+  .roomlist .formatselect {
+    appearance: none !important;
+    box-sizing: border-box !important;
+    width: 220px !important;
+    height: 30px !important;
+    padding: 0 10px !important;
+    border: 1px solid var(--sd-border-strong) !important;
+    border-radius: 3px !important;
+    background: var(--sd-panel) !important;
+    background-image: none !important;
+    color: var(--sd-text) !important;
+    box-shadow: none !important;
+    text-align: left !important;
+    text-shadow: none !important;
+    cursor: pointer !important;
+  }
+  .roomlist .formatselect:hover {
+    border-color: var(--sd-accent) !important;
+  }
+  form.search {
+    display: flex !important;
+    gap: 8px !important;
+    margin: 0 !important;
+  }
+  form.search .textbox {
+    box-sizing: border-box !important;
+    width: 220px !important;
+    height: 30px !important;
+    padding: 0 10px !important;
+    box-shadow: none !important;
+  }
+
+  /* The battles themselves: a grid of cards under the count. */
+  .list {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)) !important;
+    gap: 8px !important;
+    width: 100% !important;
+    margin-top: 6px !important;
+  }
+  .list > p {
+    grid-column: 1 / -1 !important;
+    margin: 0 !important;
+    color: var(--sd-text-2) !important;
+    font-size: 12px !important;
+  }
+  .list > div {
+    min-width: 0 !important;
+    margin: 0 !important;
+  }
+  .list .blocklink {
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+  .list .blocklink em {
+    color: var(--sd-text) !important;
+    font-size: 14px !important;
+    font-style: normal !important;
+    font-weight: 600 !important;
+  }
+  .list .blocklink small[style] {
+    color: var(--sd-accent) !important;
+    font-variant-numeric: tabular-nums !important;
+  }
+}

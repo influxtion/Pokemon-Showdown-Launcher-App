@@ -1,0 +1,531 @@
+/* Teambuilder room: the client's own markup, recoloured and retyped in place.
+
+   Like client-shell.css, this applies only while the bridge sets sd-launcher-shell. The
+   set editor is laid out by the client with fixed sizes and absolute positions, and it
+   draws each sprite as the .setchart background image. So this file changes surfaces,
+   type and controls only: no sizes or positions inside .setchart, and never the
+   `background` shorthand on it. */
+html.sd-launcher-shell #room-teambuilder {
+  background: var(--sd-app) !important;
+  color: var(--sd-text) !important;
+  font-family: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif !important;
+
+  button,
+  input,
+  select,
+  textarea,
+  .textbox,
+  .button {
+    font-family: inherit !important;
+  }
+  .textbox {
+    border: 1px solid var(--sd-border-strong) !important;
+    border-radius: 3px !important;
+    background-color: var(--sd-input) !important;
+    color: var(--sd-text) !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+  .textbox:focus,
+  .textbox:hover {
+    border-color: var(--sd-accent) !important;
+  }
+  .textbox:focus {
+    outline: 2px solid color-mix(in srgb, var(--sd-accent) 35%, transparent) !important;
+    outline-offset: 0 !important;
+  }
+
+  /* ----- Team list: folders ----- */
+
+  /* Wider than the client's 160px so the labels fit; the team pane moves over to match. */
+  .folderpane {
+    box-sizing: border-box !important;
+    width: 216px !important;
+    border: 0 !important;
+    border-right: 1px solid var(--sd-border) !important;
+    background: var(--sd-panel) !important;
+  }
+  .teampane {
+    left: 216px !important;
+  }
+  /* The client lays the list out as a full-height table; stack it instead. */
+  .folderlist {
+    display: block !important;
+    width: auto !important;
+    height: auto !important;
+    padding-top: 12px !important;
+  }
+  .folder,
+  .foldersep {
+    display: block !important;
+    height: auto !important;
+  }
+  .foldersep::before {
+    display: none !important;
+  }
+  .folderlistbefore,
+  .folderlistafter,
+  .folderhack1,
+  .folderhack2 {
+    display: none !important;
+  }
+  .folder,
+  .folderhack3 {
+    width: auto !important;
+    margin: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+  .folder h3 {
+    border: 0 !important;
+    background: transparent !important;
+    margin: 14px 0 2px !important;
+    padding: 0 16px !important;
+    color: var(--sd-text-2) !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+  }
+  .selectFolder {
+    box-sizing: border-box !important;
+    width: 100% !important;
+    max-width: none !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    height: 32px !important;
+    margin: 0 !important;
+    padding: 0 16px 0 13px !important;
+    border: 0 !important;
+    border-left: 3px solid transparent !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    color: var(--sd-text) !important;
+    font-size: 13px !important;
+    line-height: 32px !important;
+    white-space: nowrap !important;
+    cursor: pointer !important;
+  }
+  .selectFolder em {
+    font-style: normal !important;
+  }
+  .selectFolder i {
+    position: static !important;
+    width: 14px !important;
+    margin: 0 !important;
+    color: var(--sd-text-2) !important;
+    text-align: center !important;
+  }
+  /* Friendlier labels than "(all)" and "(add folder)". */
+  .selectFolder[data-value="all"] em,
+  .selectFolder[data-value="+"] em,
+  .selectFolder[data-value="++"] em {
+    font-size: 0 !important;
+  }
+  .selectFolder[data-value="all"] em::after,
+  .selectFolder[data-value="+"] em::after,
+  .selectFolder[data-value="++"] em::after {
+    font-size: 13px;
+  }
+  .selectFolder[data-value="all"] em::after { content: "All teams"; }
+  .selectFolder[data-value="+"] em::after { content: "New format folder"; }
+  .selectFolder[data-value="++"] em::after { content: "New folder"; }
+  /* The two add rows read as actions, not folders. */
+  .selectFolder[data-value="+"],
+  .selectFolder[data-value="++"],
+  .selectFolder[data-value="+"] i,
+  .selectFolder[data-value="++"] i {
+    color: var(--sd-accent) !important;
+  }
+  .folder:has(> .selectFolder[data-value="+"]) + .foldersep {
+    display: none !important;
+  }
+  .selectFolder:hover {
+    background: var(--sd-hover) !important;
+  }
+  .folder.cur .selectFolder {
+    border-left-color: var(--sd-primary) !important;
+    background: color-mix(in srgb, var(--sd-accent) 14%, var(--sd-panel)) !important;
+    font-weight: 600 !important;
+  }
+  .foldersep {
+    height: 1px !important;
+    margin: 8px 16px !important;
+    border: 0 !important;
+    background: var(--sd-border) !important;
+  }
+
+  /* ----- Team list: teams ----- */
+
+  .teampane {
+    padding: 24px 32px 48px !important;
+    font-size: 13px !important;
+    line-height: 1.5 !important;
+  }
+  /* The client's "Hi, did you have a good day?" survey. */
+  .teampane > h2:has(+ p + p > button[name="greeting"]),
+  .teampane > p:has(+ p > button[name="greeting"]),
+  .teampane > p:has(> button[name="greeting"]) {
+    display: none !important;
+  }
+  .teampane > h2 {
+    margin: 0 0 14px !important;
+    font-size: 24px !important;
+    font-weight: 600 !important;
+    line-height: 1.2 !important;
+  }
+  .teampane > h2 small {
+    color: var(--sd-text-2) !important;
+    font-size: 15px !important;
+    font-weight: 400 !important;
+  }
+  .teampane > p {
+    margin: 0 0 12px !important;
+    color: var(--sd-text-2) !important;
+  }
+  .teampane > p strong {
+    color: var(--sd-text) !important;
+    font-weight: 600 !important;
+  }
+  .teampane code {
+    padding: 1px 4px !important;
+    border: 1px solid var(--sd-border) !important;
+    border-radius: 3px !important;
+    background: var(--sd-subtle) !important;
+    font-size: 12px !important;
+  }
+  .teampane .button {
+    height: 30px !important;
+    padding: 0 12px !important;
+    font-size: 13px !important;
+    line-height: 28px !important;
+  }
+  .teampane .button.big {
+    height: 36px !important;
+    padding: 0 16px !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    line-height: 34px !important;
+  }
+  /* One primary action per screen. */
+  .teampane button[name="newTop"][value="team"] {
+    border-color: var(--sd-primary) !important;
+    background: var(--sd-primary) !important;
+    color: var(--sd-on-primary) !important;
+  }
+  .teampane button[name="newTop"][value="team"]:hover {
+    border-color: var(--sd-primary-hover) !important;
+    background: var(--sd-primary-hover) !important;
+  }
+  .teampane #teamSearchBar {
+    box-sizing: border-box !important;
+    width: 260px !important;
+    height: 36px !important;
+    margin-left: 4px !important;
+    padding: 0 10px !important;
+    font-size: 13px !important;
+    vertical-align: top !important;
+  }
+
+  .teamlist {
+    margin: 4px 0 16px !important;
+    padding: 0 !important;
+  }
+  .teamlist li {
+    margin: 0 0 6px !important;
+  }
+  .teamlist li p em {
+    color: var(--sd-text-2) !important;
+    font-style: normal !important;
+  }
+  .teamlist .team {
+    border: 1px solid var(--sd-border) !important;
+    border-radius: 4px !important;
+    background: var(--sd-panel) !important;
+    color: var(--sd-text) !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+    cursor: pointer !important;
+  }
+  .teamlist .team:hover {
+    border-color: var(--sd-accent) !important;
+    background: var(--sd-hover) !important;
+  }
+  .teamlist .team strong {
+    font-weight: 600 !important;
+  }
+  .teamlist .team strong span {
+    color: var(--sd-text-2) !important;
+    font-weight: 400 !important;
+  }
+  .teamlist li > button {
+    appearance: none !important;
+    height: 30px !important;
+    min-width: 30px !important;
+    margin-left: 2px !important;
+    padding: 0 8px !important;
+    border: 1px solid transparent !important;
+    border-radius: 3px !important;
+    background: transparent !important;
+    color: var(--sd-text-2) !important;
+    font-size: 13px !important;
+    box-shadow: none !important;
+    cursor: pointer !important;
+  }
+  .teamlist li > button:hover {
+    border-color: var(--sd-border) !important;
+    background: var(--sd-hover) !important;
+    color: var(--sd-text) !important;
+  }
+
+  /* ----- Team editor ----- */
+
+  .teamwrapper > .pad {
+    font-size: 13px !important;
+  }
+  .teamwrapper > .pad > .button {
+    height: 30px !important;
+    padding: 0 12px !important;
+    font-size: 13px !important;
+    line-height: 28px !important;
+  }
+  .teamnameedit {
+    height: 30px !important;
+    box-sizing: border-box !important;
+    padding: 0 10px !important;
+    font-size: 15px !important;
+    font-weight: 600 !important;
+  }
+  .teamchartbox {
+    border-top: 1px solid var(--sd-border) !important;
+    background: var(--sd-app) !important;
+  }
+  .teamchart label[name="editMessage"] {
+    color: var(--sd-text-2) !important;
+    font-size: 12px !important;
+    font-weight: 400 !important;
+  }
+  .teamchart .format-select .label {
+    color: var(--sd-text-2) !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    text-shadow: none !important;
+  }
+  .teamchart button.select.teambuilderformatselect {
+    appearance: none !important;
+    background-image: none !important;
+    border: 1px solid var(--sd-border-strong) !important;
+    border-radius: 3px !important;
+    background: var(--sd-panel) !important;
+    color: var(--sd-text) !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+    font-size: 13px !important;
+  }
+  .teamchart .teambuilderformatselect em {
+    font-style: normal !important;
+  }
+  .teamchart .button {
+    font-size: 13px !important;
+  }
+  .teamchart .button.big {
+    height: 38px !important;
+    padding: 0 16px !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+  }
+  .teamchart li > em {
+    color: var(--sd-text-2) !important;
+    font-size: 13px !important;
+    font-style: normal !important;
+  }
+  .exportbutton {
+    height: 30px !important;
+    font-size: 13px !important;
+  }
+
+  /* A set: white card, quiet labels. Sizes and positions stay the client's. */
+  .setchart {
+    border: 1px solid var(--sd-border) !important;
+    border-radius: 4px !important;
+    background-color: var(--sd-panel) !important;
+    box-shadow: none !important;
+  }
+  .setchart-nickname {
+    border: 1px solid var(--sd-border) !important;
+    border-radius: 4px !important;
+    background: var(--sd-panel) !important;
+    box-shadow: none !important;
+  }
+  .setchart label,
+  .setchart-nickname label {
+    color: var(--sd-text-2) !important;
+    font-family: inherit !important;
+    font-weight: 600 !important;
+    text-shadow: none !important;
+  }
+  .setchart input.textbox,
+  .setchart-nickname input.textbox {
+    font-size: 13px !important;
+  }
+  .setchart button.textbox {
+    background-color: var(--sd-subtle) !important;
+    cursor: pointer !important;
+  }
+  .setchart .detailcell {
+    border-color: var(--sd-border) !important;
+    color: var(--sd-text) !important;
+  }
+  .setchart .detailcell label {
+    font-weight: 400 !important;
+  }
+  .setchart .statrow label,
+  .setchart .statrow em,
+  .setchart .statrow small {
+    color: var(--sd-text) !important;
+    font-style: normal !important;
+    font-weight: 400 !important;
+  }
+  .setchart .statrow-head em {
+    color: var(--sd-text-2) !important;
+  }
+  .setmenu button {
+    appearance: none !important;
+    padding: 2px 6px !important;
+    border: 1px solid transparent !important;
+    border-radius: 3px !important;
+    background: transparent !important;
+    color: var(--sd-text-2) !important;
+    font-size: 12px !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+    cursor: pointer !important;
+  }
+  .setmenu button i {
+    margin-right: 4px !important;
+  }
+  .setmenu button:hover {
+    border-color: var(--sd-border) !important;
+    background: var(--sd-hover) !important;
+    color: var(--sd-accent) !important;
+  }
+  .setmenu button[name="deleteSet"]:hover {
+    color: #c93434 !important;
+  }
+
+  /* Pokémon tabs above a single set. The open one is the disabled button. */
+  .teambar button {
+    appearance: none !important;
+    border: 0 !important;
+    border-bottom: 2px solid transparent !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    color: var(--sd-text-2) !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+    font-size: 12px !important;
+    cursor: pointer !important;
+  }
+  .teambar button:hover {
+    background: var(--sd-hover) !important;
+    color: var(--sd-text) !important;
+  }
+  .teambar button:disabled,
+  .teambar button.cur {
+    border-bottom-color: var(--sd-primary) !important;
+    background: var(--sd-panel) !important;
+    color: var(--sd-text) !important;
+    font-weight: 600 !important;
+    opacity: 1 !important;
+    cursor: default !important;
+  }
+  .teambar button:disabled * {
+    opacity: 1 !important;
+  }
+
+  /* ----- Search results and the stats, details and import panes ----- */
+
+  .teambuilder-results {
+    border-top: 1px solid var(--sd-border) !important;
+    background: var(--sd-panel) !important;
+    color: var(--sd-text) !important;
+    font-size: 13px !important;
+  }
+  .teambuilder-results h3,
+  .teambuilder-results .resultheader h3 {
+    margin: 0 !important;
+    padding: 7px 16px !important;
+    border: 0 !important;
+    border-bottom: 1px solid var(--sd-border) !important;
+    border-radius: 0 !important;
+    background: color-mix(in srgb, var(--sd-accent) 14%, var(--sd-panel)) !important;
+    color: var(--sd-text) !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+  /* Column headings above search results. */
+  .teambuilder-results .sortrow {
+    border-bottom: 1px solid var(--sd-border) !important;
+    background: var(--sd-subtle) !important;
+    color: var(--sd-text-2) !important;
+  }
+  .teambuilder-results .sortrow button {
+    color: var(--sd-text) !important;
+    font-family: inherit !important;
+  }
+  .teambuilder-results .result a {
+    border-radius: 3px !important;
+    color: var(--sd-text) !important;
+  }
+  .teambuilder-results .result a:hover,
+  .teambuilder-results .result a.hover {
+    border-color: var(--sd-border) !important;
+    background: var(--sd-hover) !important;
+  }
+  .teambuilder-results .result a.cur {
+    border-color: var(--sd-accent) !important;
+    background: color-mix(in srgb, var(--sd-accent) 14%, var(--sd-panel)) !important;
+  }
+  .teambuilder-results em {
+    font-style: normal !important;
+  }
+  .teambuilder-results .statform label,
+  .teambuilder-results .statform b {
+    font-weight: 600 !important;
+  }
+  .teambuilder-results input.numform {
+    appearance: none !important;
+    -moz-appearance: textfield !important;
+    font-size: 13px !important;
+  }
+  .teambuilder-results input.numform::-webkit-inner-spin-button {
+    appearance: none !important;
+  }
+  .teambuilder-results select {
+    height: 28px !important;
+    border: 1px solid var(--sd-border-strong) !important;
+    border-radius: 3px !important;
+    background: var(--sd-input) !important;
+    color: var(--sd-text) !important;
+    font-size: 13px !important;
+  }
+  .teambuilder-results kbd {
+    border: 1px solid var(--sd-border-strong) !important;
+    border-radius: 3px !important;
+    background: var(--sd-subtle) !important;
+    box-shadow: none !important;
+  }
+  .teamedit textarea,
+  textarea.teamedit {
+    border: 1px solid var(--sd-border-strong) !important;
+    border-radius: 3px !important;
+    background: var(--sd-input) !important;
+    color: var(--sd-text) !important;
+    font-family: "Cascadia Mono", Consolas, monospace !important;
+    font-size: 13px !important;
+    box-shadow: none !important;
+  }
+}

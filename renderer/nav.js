@@ -16,6 +16,8 @@
     chat: svg('<path d="M2.5 3.5h11v7h-6l-3 2.5v-2.5h-2z"/>', round),
     teambuilder: svg('<path d="M3 13l.5-3L10.5 3l2.5 2.5L6 12.5z"/>', round),
     community: svg('<circle cx="6" cy="6" r="2.5"/><path d="M1.5 13c0-2.2 2-3.5 4.5-3.5s4.5 1.3 4.5 3.5M10.5 3.8a2.5 2.5 0 0 1 0 4.4M12.5 9.9c1.2.6 2 1.6 2 3.1"/>', ' stroke-linecap="round"'),
+    ladder: svg('<path d="M3 13V9M8 13V3M13 13V6"/>', ' stroke-linecap="round"'),
+    battles: svg('<path d="M1.5 8S4 3.5 8 3.5 14.5 8 14.5 8 12 12.5 8 12.5 1.5 8 1.5 8z"/><circle cx="8" cy="8" r="2"/>', round),
     plus: svg('<path d="M8 3v10M3 8h10"/>', ' stroke-linecap="round"'),
     other: svg('<rect x="3" y="3" width="10" height="10" rx="1.5"/>'),
     x: svg('<path d="M4 4l8 8M12 4l-8 8"/>', ' stroke-linecap="round"'),

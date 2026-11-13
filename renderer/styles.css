@@ -270,6 +270,9 @@ a:hover { text-decoration: underline; }
   border-bottom: 1px solid var(--border);
 }
 .panel-head .panel-link { margin-left: auto; font-size: var(--fs-sm); }
+/* Same tinted title bar as the Home windows. */
+.panel-head { background: var(--bg-selected); font-weight: 600; }
+.panel-head h2 { font-size: var(--fs-md); font-weight: 600; }
 .panel-body { padding: var(--space-4); }
 .panel-foot {
   display: flex;
@@ -919,6 +922,7 @@ a.list-row:hover { background: var(--bg-hover); text-decoration: none; }
 .practice-content { display: flex; flex-direction: column; min-height: 0; }
 .practice-setup { margin: 24px; max-width: 760px; flex-shrink: 0; }
 .practice-setup .field { margin: 16px 0; max-width: 500px; }
+.practice-setup .btn-primary { margin-top: var(--space-3); height: 34px; padding: 0 var(--space-4); font-weight: 600; }
 .practice-area { flex: 1; min-height: 0; }
 
 /* ---------- Rail rooms, room title and result bar ---------- */

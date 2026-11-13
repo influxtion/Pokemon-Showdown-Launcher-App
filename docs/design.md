@@ -125,6 +125,7 @@ Launcher pages ask main for a snapshot. Main runs `readClient()` inside the clie
 - **Home hero record:** the selected format's rating, win rate, win–loss record and GXE, from the public profile endpoint (cached 2 minutes), with user and battle counts and **Edit teams** (opens the selected team).
 - **Home layout:** modelled on Showdown's main menu. The hero is a launcher column on the left with Teambuilder, Ladder, Watch a battle and Your stats rows beneath it. Beside it sit titled windows: **Latest news** and **Replay notes** in the middle, **Friends** and **Chat rooms** on the right.
 - **Stats page:** a rail page with ladder totals (battles, win rate, highest rating, most played) and a sortable, filterable per-format table of rating, win rate, wins, losses, battles and GXE. **Play** on a row preselects that format on Home; it never starts a search.
+- **Restyled client rooms:** the Ladder, Teambuilder, Community view, chat room list and live battle list are the client's own pages restyled in place by `app/client-ladder.css`, `client-teambuilder.css`, `client-community.css` and `client-rooms.css`. They change surfaces, type and layout only; the client's markup and controls are untouched, and every rule is scoped to `sd-launcher-shell` so the client's own look returns if the bridge stops driving it.
 - **Friends panel:** structured presence (online, idle, busy, offline as reported), refreshed at most every 30 s. **Open friends list** is the fallback. No battle state or avatars are inferred.
 
 ### Showdown client
