@@ -10,7 +10,10 @@
 <body>
 <div class="app">
   <nav class="rail" aria-label="Main">
-    <div class="rail-brand">Showdown Desktop</div>
+    <div class="rail-brand">
+      <span class="rail-logo" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="8" r="5.5"/><path d="M2.5 8h3.5M10 8h3.5"/><circle cx="8" cy="8" r="2"/></svg></span>
+      <span class="rail-brand-text"><strong>Showdown</strong><span>Desktop</span></span>
+    </div>
     <div class="rail-nav">
       <a class="nav-item" href="index.html">
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M2.5 7.5 8 3l5.5 4.5V13H10V9.5H6V13H2.5z"/></svg>
@@ -36,8 +39,12 @@
       </a>
     </div>
     <div class="rail-foot">
-      <div class="rail-user" data-nav="account" hidden><strong data-nav="me"></strong><a href="play.html" data-nav="sign-in" hidden>Sign in</a></div>
-      <span>v0.2.0-dev</span>
+      <div class="rail-user" data-nav="account" hidden>
+        <span class="rail-avatar" data-nav="avatar" aria-hidden="true"></span>
+        <span class="rail-user-text"><strong data-nav="me"></strong><span>v0.2.0-dev</span></span>
+        <a href="play.html" data-nav="sign-in" hidden>Sign in</a>
+      </div>
+      <span class="rail-version">v0.2.0-dev</span>
     </div>
   </nav>
 

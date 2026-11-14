@@ -177,6 +177,8 @@
     if (box) {
       box.hidden = !session.ready || !me;
       $('me').textContent = me;
+      const avatar = $('avatar');
+      if (avatar) avatar.textContent = (/[a-z0-9]/i.exec(me) || ['?'])[0].toUpperCase();
       $('sign-in').hidden = !!session.named;
     }
   }
