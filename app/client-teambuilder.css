@@ -640,14 +640,8 @@ html.sd-launcher-shell #room-teambuilder {
     border: 0 !important;
     background: transparent !important;
   }
-  .teamwrapper[data-sd-mode="set"] .teambuilder-results {
-    position: static !important;
-    flex: 1 1 auto !important;
-    min-height: 120px !important;
-    min-width: 0 !important;
-    margin: 0 32px 24px !important;
-    border: 1px solid var(--sd-border) !important;
-    border-radius: 12px !important;
+  .teamwrapper[data-sd-mode="set"]:not(.sd-te-modal-open) .teambuilder-results {
+    display: none !important;
   }
   .teamwrapper[data-sd-mode="set"] .teambuilder-pokemon-import:not([style*="block"]) {
     display: none !important;
@@ -1662,6 +1656,145 @@ html.sd-launcher-shell #room-teambuilder {
   .sd-paste-label,
   .sd-paste-at {
     color: var(--sd-text-2) !important;
+  }
+
+  /* ----- Field picker modal -----
+     In the set view the client's results pane (search results, or the stats and details
+     forms) sits inside .sd-te-modal: the frame draws the header and the pane is placed
+     over the frame's body, since the client renders into the pane and scrolls it. */
+
+  .sd-te-backdrop,
+  .sd-te-modal {
+    display: none !important;
+  }
+  .teamwrapper.sd-te-modal-open {
+    --m-w: min(880px, calc(100vw - 48px));
+    --m-h: min(680px, calc(100vh - 48px));
+    --m-head: 126px;
+  }
+  .teamwrapper.sd-te-modal-open.sd-te-modal-form {
+    --m-head: 64px;
+  }
+  .teamwrapper.sd-te-modal-open > .sd-te-backdrop {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 50 !important;
+    display: block !important;
+    background: rgb(6 10 22 / 0.55) !important;
+    backdrop-filter: blur(4px) !important;
+    animation: sd-fade 0.18s ease-out both !important;
+  }
+  .teamwrapper.sd-te-modal-open > .sd-te-modal {
+    position: fixed !important;
+    top: calc(50% - var(--m-h) / 2) !important;
+    left: calc(50% - var(--m-w) / 2) !important;
+    z-index: 51 !important;
+    display: block !important;
+    box-sizing: border-box !important;
+    width: var(--m-w) !important;
+    height: var(--m-h) !important;
+    border: 1px solid var(--sd-border-strong) !important;
+    border-radius: 18px !important;
+    background: var(--sd-panel) !important;
+    box-shadow: 0 24px 64px rgb(0 0 0 / 0.45), 0 2px 8px rgb(0 0 0 / 0.2) !important;
+    animation: sd-fade 0.18s ease-out both !important;
+  }
+  .teamwrapper.sd-te-modal-open .teambuilder-results {
+    position: fixed !important;
+    top: calc(50% - var(--m-h) / 2 + var(--m-head)) !important;
+    left: calc(50% - var(--m-w) / 2 + 1px) !important;
+    z-index: 52 !important;
+    box-sizing: border-box !important;
+    width: calc(var(--m-w) - 2px) !important;
+    min-width: 0 !important;
+    height: calc(var(--m-h) - var(--m-head) - 1px) !important;
+    margin: 0 !important;
+    border: 0 !important;
+    border-top: 1px solid var(--sd-border) !important;
+    border-radius: 0 0 17px 17px !important;
+    background: transparent !important;
+    scrollbar-width: thin !important;
+    animation: sd-fade 0.18s ease-out both !important;
+  }
+  .sd-te-modal-head {
+    position: relative !important;
+    padding: 18px 20px 16px !important;
+  }
+  .sd-te-modal-head h2 {
+    margin: 0 !important;
+    padding-right: 44px !important;
+    overflow: hidden !important;
+    color: var(--sd-text) !important;
+    font-size: 19px !important;
+    font-weight: 700 !important;
+    line-height: 30px !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+  .sd-te-modal-close {
+    appearance: none !important;
+    position: absolute !important;
+    top: 16px !important;
+    right: 16px !important;
+    width: 36px !important;
+    height: 36px !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 10px !important;
+    background: transparent !important;
+    color: var(--sd-text-2) !important;
+    cursor: pointer !important;
+  }
+  .sd-te-modal-close::before {
+    content: "\f00d" !important;
+    font: 18px/36px FontAwesome !important;
+  }
+  .sd-te-modal-close:hover {
+    background: var(--sd-hover) !important;
+    color: var(--sd-text) !important;
+  }
+  .sd-te-modal-search {
+    position: relative !important;
+    display: block !important;
+    margin-top: 12px !important;
+  }
+  .sd-te-modal-form .sd-te-modal-search {
+    display: none !important;
+  }
+  .sd-te-modal-search::before {
+    content: "\f002" !important;
+    position: absolute !important;
+    top: 50% !important;
+    left: 16px !important;
+    transform: translateY(-50%) !important;
+    color: var(--sd-text-2) !important;
+    font: 15px/1 FontAwesome !important;
+    pointer-events: none !important;
+  }
+  .sd-te-modal-search input {
+    box-sizing: border-box !important;
+    width: 100% !important;
+    height: 46px !important;
+    margin: 0 !important;
+    padding: 0 16px 0 44px !important;
+    border: 1px solid var(--sd-border-strong) !important;
+    border-radius: 12px !important;
+    background: var(--sd-input) !important;
+    color: var(--sd-text) !important;
+    font-family: inherit !important;
+    font-size: 15px !important;
+  }
+  .sd-te-modal-search input:focus {
+    border-color: var(--sd-accent) !important;
+    outline: none !important;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--sd-accent) 28%, transparent) !important;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .teamwrapper.sd-te-modal-open > .sd-te-backdrop,
+    .teamwrapper.sd-te-modal-open > .sd-te-modal,
+    .teamwrapper.sd-te-modal-open .teambuilder-results {
+      animation: none !important;
+    }
   }
 
   /* ----- Search results and the stats, details and import panes ----- */

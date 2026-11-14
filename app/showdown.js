@@ -842,6 +842,109 @@ function installTeamEditor() {
     box.append(aside);
   }
 
+  // Set view: the client's results pane (search results, or the stats and details forms)
+  // shown as a centered modal. The client's own field stays behind it; the modal's search
+  // box mirrors it and passes keys through, so choosing a result moves on to the next field
+  // as before and the modal follows. Closing returns to the team view.
+  const MODAL_TITLES = {
+    pokemon: 'Choose a Pokémon', item: 'Choose an item', ability: 'Choose an ability',
+    stats: 'EVs, IVs and nature', details: 'Details',
+  };
+  const searching = (room) => ['pokemon', 'item', 'ability', 'move'].includes(room.curChartType);
+  const chartInput = (wrapper, room) => wrapper.querySelector(`.teamchart input[name="${room.curChartName}"]`);
+
+  function closeModal(wrapper, room) {
+    const real = searching(room) && chartInput(wrapper, room);
+    if (real) {
+      try { room.chartChange({ currentTarget: real }); } catch (e) {}
+    }
+    room.back();
+  }
+
+  function buildModal(wrapper, room) {
+    let frame = wrapper.querySelector(':scope > .sd-te-modal');
+    if (!frame) {
+      const backdrop = el('div', 'sd-te-backdrop');
+      backdrop.addEventListener('mousedown', (event) => {
+        event.preventDefault();
+        closeModal(wrapper, room);
+      });
+      frame = el('div', 'sd-te-modal');
+      frame.setAttribute('role', 'dialog');
+      frame.setAttribute('aria-modal', 'true');
+      const head = el('div', 'sd-te-modal-head');
+      const title = el('h2');
+      const close = el('button', 'sd-te-modal-close');
+      close.type = 'button';
+      close.setAttribute('aria-label', 'Close');
+      close.title = 'Close';
+      close.addEventListener('click', () => closeModal(wrapper, room));
+      const search = el('label', 'sd-te-modal-search');
+      const proxy = el('input');
+      proxy.type = 'text';
+      proxy.autocomplete = 'off';
+      proxy.spellcheck = false;
+      proxy.addEventListener('input', () => {
+        const real = chartInput(wrapper, room);
+        if (!real) return;
+        real.value = proxy.value;
+        room.updateChart();
+      });
+      proxy.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+          event.preventDefault();
+          event.stopPropagation();
+          closeModal(wrapper, room);
+          return;
+        }
+        const real = chartInput(wrapper, room);
+        if (!real) return;
+        real.value = proxy.value;
+        room.chartKeydown({
+          keyCode: event.keyCode, shiftKey: event.shiftKey, ctrlKey: event.ctrlKey,
+          altKey: event.altKey, metaKey: event.metaKey, currentTarget: real,
+          preventDefault: () => event.preventDefault(), stopPropagation: () => event.stopPropagation(),
+        });
+        if (proxy.value !== real.value) proxy.value = real.value;
+      });
+      search.append(proxy);
+      head.append(title, close, search);
+      frame.append(head);
+      wrapper.append(backdrop, frame);
+    }
+    // After a choice the client focuses the next field; follow it even if no focus event
+    // fired (an unfocused window still moves the active element).
+    const active = document.activeElement;
+    if (active && active.classList.contains('chartinput') && wrapper.contains(active) &&
+        active.name !== room.curChartName) {
+      room.chartFocus({ currentTarget: active });
+    }
+    const importing = wrapper.querySelector('.teambuilder-pokemon-import[style*="block"]');
+    const open = Boolean(room.curChartType) && !importing;
+    wrapper.classList.toggle('sd-te-modal-open', open);
+    if (!open) return;
+    const isSearch = searching(room);
+    wrapper.classList.toggle('sd-te-modal-form', !isSearch);
+    const move = /^move(\d)$/.exec(room.curChartName || '');
+    const title = move ? `Choose move ${move[1]}` : MODAL_TITLES[room.curChartType] || 'Edit';
+    const species = room.curSet && room.curSet.species;
+    setText(frame.querySelector('h2'), species ? `${title} · ${species}` : title);
+    const proxy = frame.querySelector('input');
+    const real = isSearch && chartInput(wrapper, room);
+    if (!real) return;
+    if (proxy.dataset.for !== room.curChartName) {
+      proxy.dataset.for = room.curChartName;
+      proxy.value = real.value;
+      proxy.placeholder = `Search ${room.curChartType === 'pokemon' ? 'Pokémon' : `${room.curChartType}s`}`;
+    }
+    // The client focuses its own field (on open, and after each choice); take the focus.
+    if (document.activeElement === real) {
+      proxy.value = real.value;
+      proxy.focus();
+      proxy.select();
+    }
+  }
+
   function natureText(set) {
     const nature = set.nature || 'Serious';
     const data = window.BattleNatures && BattleNatures[nature];
@@ -873,9 +976,10 @@ function installTeamEditor() {
       if (stats) {
         stats.append(el('span', 'sd-te-evleft'));
         if (usesEVs) {
+          // Not name="stats": the client rewrites every such button with the stat graph.
           const nature = el('button', 'sd-te-nature');
           nature.type = 'button';
-          nature.name = 'stats'; // opens the client's stat form, like the stats panel
+          nature.addEventListener('click', () => room.stats(undefined, nature));
           stats.append(nature);
         }
       }
@@ -960,11 +1064,24 @@ function installTeamEditor() {
         buildAside(wrapper, room);
         showTab(wrapper, room);
       }
-      if (mode === 'set') decorateTeambar(wrapper, room);
+      if (mode === 'set') {
+        decorateTeambar(wrapper, room);
+        buildModal(wrapper, room);
+      }
       for (const li of wrapper.querySelectorAll('.teamchart > li[value]')) decorateSet(li, room);
     } catch (e) {} // the client's own editor stays usable if this ever fails
   };
   new MutationObserver(update).observe(document.body, { childList: true, subtree: true });
+  // Esc closes the modal; the client's own Esc handler only closes its popups.
+  window.addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape' || (window.app && app.popups && app.popups.length)) return;
+    const wrapper = document.querySelector('#room-teambuilder > .teamwrapper.sd-te-modal-open');
+    const room = getRoom();
+    if (!wrapper || !room) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    closeModal(wrapper, room);
+  }, true);
   update();
   return true;
 }
