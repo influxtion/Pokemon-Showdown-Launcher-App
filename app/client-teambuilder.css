@@ -653,6 +653,7 @@ html.sd-launcher-shell #room-teambuilder {
     display: none !important;
   }
   .teamwrapper[data-sd-mode="export"] > .teamedit {
+    position: static !important;
     flex: 1 1 auto !important;
     min-height: 0 !important;
     padding: 0 32px 24px !important;
