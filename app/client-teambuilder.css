@@ -825,8 +825,12 @@ html.sd-launcher-shell #room-teambuilder {
     display: block !important;
     padding: 24px 0 !important;
     color: var(--sd-text-2) !important;
-    font-size: 13px !important;
+    font-size: 0 !important;
     font-style: normal !important;
+  }
+  .teamchart > li > em::after {
+    content: "No Pokémon yet. Add one, or import a team from text or a URL." !important;
+    font-size: 13px !important;
   }
   .teamchart > li > .button,
   .teambuilder-pokemon-import .button {
@@ -1577,6 +1581,86 @@ html.sd-launcher-shell #room-teambuilder {
       grid-row: auto !important;
       margin-bottom: 24px !important;
     }
+  }
+
+  /* ----- Full Team: the team as a PokePaste ----- */
+
+  .sd-te-paste {
+    grid-column: 1 !important;
+    grid-row: 2 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 4px !important;
+    padding: 8px 8px 12px !important;
+    border: 1px solid var(--sd-border) !important;
+    border-radius: 14px !important;
+    background: var(--sd-panel) !important;
+  }
+  .sd-te-paste[hidden] {
+    display: none !important;
+  }
+  .sd-paste-head {
+    display: flex !important;
+    align-items: baseline !important;
+    gap: 12px !important;
+    padding: 10px 14px 6px !important;
+  }
+  .sd-paste-head h3 {
+    margin: 0 !important;
+    color: var(--sd-text) !important;
+    font-size: 17px !important;
+    font-weight: 700 !important;
+  }
+  .sd-paste-head span {
+    color: var(--sd-text-2) !important;
+    font-size: 12px !important;
+  }
+  .sd-paste-set {
+    display: grid !important;
+    grid-template-columns: 150px minmax(0, 1fr) !important;
+    align-items: center !important;
+    gap: 16px !important;
+    padding: 10px 14px !important;
+    border-radius: 10px !important;
+    cursor: pointer !important;
+  }
+  .sd-paste-set:hover {
+    background: var(--sd-hover) !important;
+  }
+  .sd-paste-art {
+    position: relative !important;
+    width: 120px !important;
+    height: 120px !important;
+    margin: 0 auto !important;
+  }
+  .sd-paste-sprite {
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+    background-position: center !important;
+    background-repeat: no-repeat !important;
+  }
+  .sd-paste-item {
+    position: absolute !important;
+    right: -6px !important;
+    bottom: 4px !important;
+    width: 24px !important;
+    height: 24px !important;
+    zoom: 1.4 !important;
+  }
+  .sd-paste-text {
+    margin: 0 !important;
+    color: var(--sd-text) !important;
+    font: 14px/1.75 "Cascadia Mono", "Ubuntu Mono", Consolas, "SF Mono", monospace !important;
+    white-space: pre-wrap !important;
+    overflow-wrap: anywhere !important;
+  }
+  .sd-paste-text [class^="sd-t-"] {
+    color: color-mix(in srgb, var(--t) 85%, var(--sd-text)) !important;
+  }
+  .sd-paste-label,
+  .sd-paste-at {
+    color: var(--sd-text-2) !important;
   }
 
   /* ----- Search results and the stats, details and import panes ----- */

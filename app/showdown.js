@@ -609,7 +609,7 @@ function installTeamEditor() {
     pad.prepend(head);
   }
 
-  // Which tab the team view shows, per team: a set index (or "full", added later).
+  // Which tab the team view shows, per team: a set index or "full" for the whole team.
   const tabs = new WeakMap();
   const speciesName = (room, set) => set.name || room.curTeam.dex.species.get(set.species).baseSpecies || set.species;
 
@@ -626,7 +626,7 @@ function installTeamEditor() {
   function selectedTab(room) {
     const count = room.curSetList.filter((set) => set.species).length;
     let tab = tabs.has(room.curTeam) ? tabs.get(room.curTeam) : 0;
-    if (typeof tab === 'number' && tab >= count) tab = count ? count - 1 : 0;
+    if (typeof tab === 'number' && tab >= count) tab = count ? count - 1 : 'full';
     return tab;
   }
 
@@ -640,6 +640,81 @@ function installTeamEditor() {
     for (const li of wrapper.querySelectorAll('.teamchart > li[value]')) {
       li.classList.toggle('sd-te-cur', li.getAttribute('value') === String(tab));
     }
+    const paste = wrapper.querySelector('.sd-te-paste');
+    if (paste) paste.hidden = tab !== 'full';
+  }
+
+  function fullTabBody(room) {
+    const box = el('span', 'sd-te-tab-icon');
+    box.append(icon('fa-users'));
+    const text = el('span', 'sd-te-tab-text');
+    const count = room.curSetList.filter((set) => set.species).length;
+    text.append(el('strong', '', 'Full Team'), el('small', '', `${count} Pokémon`));
+    return [box, text];
+  }
+
+  // The whole team as text, like a PokePaste: the client's own export of each set, with the
+  // species, Tera type and move dashes coloured by type. Built as text nodes, never HTML.
+  function buildPaste(wrapper, room) {
+    const box = wrapper.querySelector('.teamchartbox');
+    if (!box || box.querySelector(':scope > .sd-te-paste')) return;
+    if (!room.curSetList.some((set) => set.species)) return;
+    const team = room.curTeam;
+    const paste = el('section', 'sd-te-paste');
+    const head = el('div', 'sd-paste-head');
+    head.append(el('h3', '', team.name || 'Untitled'), el('span', '', `Format: ${team.format || 'gen9'}`));
+    paste.append(head);
+    const typeOf = (kind, name) => {
+      try {
+        const data = team.dex[kind].get(name);
+        return (data.types ? data.types[0] : data.type) || '';
+      } catch (e) {
+        return '';
+      }
+    };
+    const colored = (text, type) => el('span', type ? `sd-t-${type}` : '', text);
+    room.curSetList.forEach((set, index) => {
+      if (!set.species) return;
+      const entry = el('article', 'sd-paste-set');
+      entry.title = 'Edit this Pokémon';
+      entry.addEventListener('click', () => {
+        tabs.set(team, index);
+        showTab(wrapper, room);
+      });
+      const art = el('div', 'sd-paste-art');
+      const sprite = el('span', 'sd-paste-sprite');
+      sprite.setAttribute('style', Dex.getTeambuilderSprite(set, team.dex));
+      art.append(sprite);
+      if (set.item) {
+        const item = el('span', 'sd-paste-item');
+        item.setAttribute('style', Dex.getItemIcon(set.item));
+        art.append(item);
+      }
+      const text = el('pre', 'sd-paste-text');
+      const lines = Storage.exportTeam([set]).replace(/\s+$/, '').split('\n');
+      lines.forEach((line, i) => {
+        const row = el('span', 'sd-paste-line');
+        let m;
+        if (i === 0) {
+          const at = line.lastIndexOf(' @ ');
+          const name = at >= 0 ? line.slice(0, at) : line;
+          row.append(colored(name, typeOf('species', set.species)));
+          if (at >= 0) row.append(el('span', 'sd-paste-at', ' @ '), document.createTextNode(line.slice(at + 3)));
+        } else if ((m = /^- (.*)$/.exec(line))) {
+          row.append(colored('- ', typeOf('moves', m[1])), document.createTextNode(m[1]));
+        } else if ((m = /^(Tera Type): (.*)$/.exec(line))) {
+          row.append(el('span', 'sd-paste-label', `${m[1]}: `), colored(m[2], m[2]));
+        } else if ((m = /^([A-Za-z ]+): (.*)$/.exec(line))) {
+          row.append(el('span', 'sd-paste-label', `${m[1]}: `), document.createTextNode(m[2]));
+        } else {
+          row.textContent = line;
+        }
+        text.append(row, document.createTextNode('\n'));
+      });
+      entry.append(art, text);
+      paste.append(entry);
+    });
+    box.append(paste);
   }
 
   // Team view: a tab per set above one card; the add tab is the client's addPokemon action.
@@ -649,6 +724,16 @@ function installTeamEditor() {
     if (!head || pad.querySelector(':scope > .sd-te-tabs')) return;
     const strip = el('div', 'sd-te-tabs');
     strip.setAttribute('role', 'tablist');
+    const full = el('button', 'sd-te-tab sd-te-full');
+    full.type = 'button';
+    full.dataset.tab = 'full';
+    full.setAttribute('role', 'tab');
+    full.append(...fullTabBody(room));
+    full.addEventListener('click', () => {
+      tabs.set(room.curTeam, 'full');
+      showTab(wrapper, room);
+    });
+    strip.append(full);
     room.curSetList.forEach((set, index) => {
       if (!set.species) return;
       const button = el('button', 'sd-te-tab');
@@ -675,6 +760,21 @@ function installTeamEditor() {
   // Set view: the client's own Pokémon bar, given the same look and each set's item.
   function decorateTeambar(wrapper, room) {
     tabs.set(room.curTeam, room.curSetLoc);
+    const bar = wrapper.querySelector(':scope > .teambar');
+    if (bar && !bar.querySelector(':scope > .sd-te-full')) {
+      // Back to the team view, opened on its Full Team tab.
+      const full = el('button', 'sd-te-tab sd-te-full');
+      full.type = 'button';
+      full.dataset.sd = '1';
+      full.append(...fullTabBody(room));
+      full.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        room.back();
+        tabs.set(room.curTeam, 'full');
+      });
+      bar.prepend(full);
+    }
     for (const button of wrapper.querySelectorAll('.teambar > button.pokemon:not([data-sd])')) {
       button.dataset.sd = '1';
       const picon = button.querySelector('.picon');
@@ -856,8 +956,9 @@ function installTeamEditor() {
       buildHead(wrapper, room, mode);
       if (mode === 'team') {
         buildTabs(wrapper, room);
-        showTab(wrapper, room);
+        buildPaste(wrapper, room);
         buildAside(wrapper, room);
+        showTab(wrapper, room);
       }
       if (mode === 'set') decorateTeambar(wrapper, room);
       for (const li of wrapper.querySelectorAll('.teamchart > li[value]')) decorateSet(li, room);
