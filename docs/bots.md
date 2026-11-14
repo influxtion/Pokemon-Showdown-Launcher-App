@@ -1,14 +1,6 @@
 # Practice bots: how Foul Play and Laplace work
 
-| | |
-| --- | --- |
-| **Status** | Living document. Describes v0.2.0. |
-| **Owner** | Jayden |
-| **Last reviewed** | 2026-11-12 |
-| **Scope** | The two practice opponents, the engine they share, every protocol layer between the player and a bot's decision, performance, and how to run, test and host them. |
-| **Related** | [Design document](design.md) · [Runtime sources](../vendor/laplace/SOURCE.md) |
-
-This is the single reference for how the bots work. Other documents link here instead of repeating it.
+This is the single reference for how the bots work.
 
 ## Contents
 

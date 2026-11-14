@@ -76,7 +76,8 @@ function restrictListener(server, token) {
 async function start({ root, port, token }) {
   // Incoming sockets are accepted by Node; only outgoing TCP and fetch use these methods.
   const outboundDisabled = () => new Error('Outbound connections are disabled in practice.');
-  Socket.prototype.connect = () => { throw outboundDisabled(); };
+  // Fail the socket the normal way (an async 'error' event) so a stray probe cannot crash the server.
+  Socket.prototype.connect = function () { return this.destroy(outboundDisabled()); };
   globalThis.fetch = async () => { throw outboundDisabled(); };
 
   // Use the staged config placeholder as a module key. The file is never executed or changed.
@@ -87,6 +88,8 @@ async function start({ root, port, token }) {
 
   // The upstream version probe spawns git and touches an index in the server log directory.
   fromServer('monitor.js').Monitor.version = async () => undefined;
+  // Every player is on loopback. Skip reverse DNS and the port-80 proxy probe it can trigger.
+  fromServer('ip-tools.js').IPTools.getHost = async () => 'localhost';
   const { LoginServer } = fromServer('loginserver.js');
   LoginServer.disabled = true;
   LoginServer.instantRequest = async () => [null, outboundDisabled()];
