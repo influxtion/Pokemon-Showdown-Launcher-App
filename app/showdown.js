@@ -692,6 +692,56 @@ function installTeamEditor() {
     }
   }
 
+  // Team view side panel: the client's upload form, and its tier resource links (loaded
+  // from Smogon after the first render, which re-renders the editor).
+  function buildAside(wrapper, room) {
+    const box = wrapper.querySelector('.teamchartbox');
+    if (!box || box.querySelector(':scope > .sd-te-aside')) return;
+    const aside = el('aside', 'sd-te-aside');
+    const form = box.querySelector('#pokepasteForm');
+    if (form) {
+      const card = el('section', 'sd-te-card');
+      card.append(el('h3', '', 'Save & share'));
+      const label = (button, faIcon, title, note) => {
+        const text = el('span', 'sd-te-btext');
+        text.append(el('strong', '', title));
+        if (note) text.append(el('small', '', note));
+        button.replaceChildren(icon(faIcon), text);
+      };
+      for (const button of form.querySelectorAll('button')) {
+        if (button.name === 'psExport') label(button, 'fa-cloud-upload', 'Upload to Showdown', 'Saves across devices');
+        else if (button.value === 'openteamsheet') label(button, 'fa-link', 'Upload to PokePaste', 'Open Team Sheet');
+        else label(button, 'fa-link', 'Upload to PokePaste');
+      }
+      card.append(form);
+      aside.append(card);
+    }
+    const links = [...box.querySelectorAll(':scope > ul a[href]')];
+    if (links.length) {
+      const card = el('section', 'sd-te-card sd-te-resources');
+      const format = window.BattleFormats && BattleFormats[room.curTeam.format];
+      const tier = format ? format.name.replace(/^\[Gen \d+\]\s*/, '') : 'Tier';
+      card.append(el('h3', '', `${tier} resources`));
+      const list = el('ul');
+      for (const link of links) {
+        const copy = link.cloneNode(true);
+        copy.append(icon('fa-external-link'));
+        const item = el('li');
+        item.append(copy);
+        list.append(item);
+      }
+      card.append(list);
+      const dex = box.querySelector(':scope > div > a[href*="smogon.com"]');
+      if (dex) {
+        const more = el('p', 'sd-te-more', 'More for this tier on ');
+        more.append(dex.cloneNode(true));
+        card.append(more);
+      }
+      aside.append(card);
+    }
+    box.append(aside);
+  }
+
   function natureText(set) {
     const nature = set.nature || 'Serious';
     const data = window.BattleNatures && BattleNatures[nature];
@@ -807,6 +857,7 @@ function installTeamEditor() {
       if (mode === 'team') {
         buildTabs(wrapper, room);
         showTab(wrapper, room);
+        buildAside(wrapper, room);
       }
       if (mode === 'set') decorateTeambar(wrapper, room);
       for (const li of wrapper.querySelectorAll('.teamchart > li[value]')) decorateSet(li, room);

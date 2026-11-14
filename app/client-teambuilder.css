@@ -1438,6 +1438,147 @@ html.sd-launcher-shell #room-teambuilder {
     display: none !important;
   }
 
+  /* ----- Side panel ----- */
+
+  .teamwrapper[data-sd-mode="team"] .teamchartbox {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) 280px !important;
+    align-items: start !important;
+    align-content: start !important;
+    column-gap: 20px !important;
+  }
+  .teamwrapper[data-sd-mode="team"] .teamchart {
+    grid-column: 1 !important;
+    grid-row: 1 !important;
+  }
+  /* The client's resource list and upload form are shown in the panel instead. */
+  .teamwrapper[data-sd-mode="team"] .teamchartbox > :not(.teamchart):not(.sd-te-aside):not(.sd-te-paste) {
+    display: none !important;
+  }
+  .sd-te-aside {
+    grid-column: 2 !important;
+    grid-row: 1 / span 2 !important;
+    position: sticky !important;
+    top: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 16px !important;
+  }
+  .sd-te-card {
+    padding: 16px !important;
+    border: 1px solid var(--sd-border) !important;
+    border-radius: 14px !important;
+    background: var(--sd-panel) !important;
+  }
+  .sd-te-card h3 {
+    margin: 0 0 12px !important;
+    color: var(--sd-text) !important;
+    font-size: 13px !important;
+    font-weight: 700 !important;
+  }
+  .sd-te-card form {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+  .sd-te-card form p {
+    margin: 0 !important;
+  }
+  .sd-te-card form button {
+    appearance: none !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 42px !important;
+    margin: 0 !important;
+    padding: 8px 12px !important;
+    border: 1px solid var(--sd-border-strong) !important;
+    border-radius: 10px !important;
+    background: var(--sd-subtle) !important;
+    box-shadow: none !important;
+    color: var(--sd-text) !important;
+    text-align: left !important;
+    text-shadow: none !important;
+    cursor: pointer !important;
+  }
+  .sd-te-card form button:hover {
+    border-color: var(--sd-accent) !important;
+    background: var(--sd-hover) !important;
+  }
+  .sd-te-card form button.disabled {
+    opacity: 0.55 !important;
+    pointer-events: none !important;
+  }
+  .sd-te-card form button > i {
+    width: 16px !important;
+    color: var(--sd-text-2) !important;
+    font-size: 14px !important;
+    text-align: center !important;
+  }
+  .sd-te-btext {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 1px !important;
+  }
+  .sd-te-btext strong {
+    font-size: 13px !important;
+    font-weight: 600 !important;
+  }
+  .sd-te-btext small {
+    color: var(--sd-text-2) !important;
+    font-size: 11.5px !important;
+  }
+  .sd-te-resources ul {
+    margin: 0 -8px !important;
+    padding: 0 !important;
+    list-style: none !important;
+  }
+  .sd-te-resources li {
+    margin: 0 !important;
+  }
+  .sd-te-resources li a {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 8px !important;
+    padding: 7px 8px !important;
+    border-radius: 8px !important;
+    color: var(--sd-text) !important;
+    font-size: 12.5px !important;
+    text-decoration: none !important;
+  }
+  .sd-te-resources li a:hover {
+    background: var(--sd-hover) !important;
+  }
+  .sd-te-resources li a i {
+    color: var(--sd-text-2) !important;
+    font-size: 11px !important;
+  }
+  .sd-te-more {
+    margin: 10px 0 0 !important;
+    padding-top: 10px !important;
+    border-top: 1px solid var(--sd-border) !important;
+    color: var(--sd-text-2) !important;
+    font-size: 12px !important;
+  }
+  .sd-te-more a {
+    color: var(--tb-gold) !important;
+  }
+  @media (max-width: 980px) {
+    .teamwrapper[data-sd-mode="team"] .teamchartbox {
+      grid-template-columns: minmax(0, 1fr) !important;
+    }
+    .sd-te-aside {
+      position: static !important;
+      grid-column: 1 !important;
+      grid-row: auto !important;
+      margin-bottom: 24px !important;
+    }
+  }
+
   /* ----- Search results and the stats, details and import panes ----- */
 
   .teambuilder-results {
