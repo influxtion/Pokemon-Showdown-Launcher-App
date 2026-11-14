@@ -35,158 +35,240 @@ html.sd-launcher-shell #room-teambuilder {
     outline-offset: 0 !important;
   }
 
-  /* ----- Team list: folders ----- */
+  /* ----- Team list -----
+     installTeamsView() in showdown.js adds .sd-tb-head (title, actions, search), folder
+     counts, .sd-tb-groups (cards by format) and .sd-tb-banner around the client's markup.
+     The head and the folder chips sit above the scrolling team pane. */
+  --tb-pad: 32px;
+  --tb-head: 96px;
+  --tb-top: 152px;
+  /* Yellow text for badges and links; darkened on light surfaces so it stays readable. */
+  --tb-gold: var(--sd-primary);
+  @media (prefers-color-scheme: light) {
+    --tb-gold: color-mix(in srgb, var(--sd-primary) 45%, var(--sd-text));
+  }
 
-  /* Wider than the client's 160px so the labels fit; the team pane moves over to match. */
-  .folderpane {
+  .sd-tb-head {
+    position: absolute !important;
+    inset: 0 0 auto 0 !important;
+    z-index: 2 !important;
     box-sizing: border-box !important;
-    width: 216px !important;
-    border: 0 !important;
-    border-right: 1px solid var(--sd-border) !important;
-    background: var(--sd-panel) !important;
+    height: var(--tb-top) !important;
+    padding: 28px var(--tb-pad) 0 !important;
+    background: var(--sd-app) !important;
   }
-  .teampane {
-    left: 216px !important;
-  }
-  /* The client lays the list out as a full-height table; stack it instead. */
-  .folderlist {
-    display: block !important;
-    width: auto !important;
-    height: auto !important;
-    padding-top: 12px !important;
-  }
-  .folder,
-  .foldersep {
-    display: block !important;
-    height: auto !important;
-  }
-  .foldersep::before {
-    display: none !important;
-  }
-  .folderlistbefore,
-  .folderlistafter,
-  .folderhack1,
-  .folderhack2 {
-    display: none !important;
-  }
-  .folder,
-  .folderhack3 {
-    width: auto !important;
+  .sd-tb-titles h1 {
     margin: 0 !important;
-    border: 0 !important;
-    border-radius: 0 !important;
-    background: transparent !important;
-    box-shadow: none !important;
+    color: var(--sd-text) !important;
+    font-size: 26px !important;
+    font-weight: 700 !important;
+    line-height: 1.2 !important;
   }
-  .folder h3 {
-    border: 0 !important;
-    background: transparent !important;
-    margin: 14px 0 2px !important;
-    padding: 0 16px !important;
+  .sd-tb-titles p {
+    margin: 4px 0 0 !important;
     color: var(--sd-text-2) !important;
-    font-size: 11px !important;
-    font-weight: 600 !important;
+    font-size: 13px !important;
   }
-  .selectFolder {
+  .sd-tb-actions {
+    position: absolute !important;
+    top: 30px !important;
+    right: var(--tb-pad) !important;
+    display: flex !important;
+    gap: 8px !important;
+  }
+  .sd-tb-actions .button,
+  .sd-tb-banner .button {
+    appearance: none !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    height: 36px !important;
+    margin: 0 !important;
+    padding: 0 14px !important;
+    border: 1px solid var(--sd-border-strong) !important;
+    border-radius: 8px !important;
+    background: var(--sd-panel) !important;
+    box-shadow: none !important;
+    color: var(--sd-text) !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    text-shadow: none !important;
+    cursor: pointer !important;
+  }
+  .sd-tb-actions .button:hover,
+  .sd-tb-banner .button:hover {
+    border-color: var(--sd-accent) !important;
+    background: var(--sd-hover) !important;
+  }
+  /* One primary action per screen. */
+  .sd-tb-actions button[name="newTop"][value="team"] {
+    border-color: var(--sd-primary) !important;
+    background: var(--sd-primary) !important;
+    color: var(--sd-on-primary) !important;
+  }
+  .sd-tb-actions button[name="newTop"][value="team"]:hover {
+    border-color: var(--sd-primary-hover) !important;
+    background: var(--sd-primary-hover) !important;
+  }
+  .sd-tb-search {
+    position: absolute !important;
+    top: var(--tb-head) !important;
+    right: var(--tb-pad) !important;
+    display: flex !important;
+    align-items: center !important;
+    width: 300px !important;
+  }
+  .sd-tb-search::before {
+    content: "\f002" !important;
+    position: absolute !important;
+    left: 12px !important;
+    color: var(--sd-text-2) !important;
+    font: 13px/1 FontAwesome !important;
+    pointer-events: none !important;
+  }
+  .sd-tb-search #teamSearchBar {
     box-sizing: border-box !important;
     width: 100% !important;
-    max-width: none !important;
+    height: 36px !important;
+    margin: 0 !important;
+    padding: 0 64px 0 34px !important;
+    border-radius: 8px !important;
+    font-size: 13px !important;
+  }
+  .sd-tb-search kbd {
+    position: absolute !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    right: 8px !important;
+    padding: 2px 6px !important;
+    border: 1px solid var(--sd-border-strong) !important;
+    border-radius: 5px !important;
+    color: var(--sd-text-2) !important;
+    font-family: inherit !important;
+    font-size: 10.5px !important;
+    font-weight: 600 !important;
+    line-height: 1.3 !important;
+    pointer-events: none !important;
+  }
+
+  /* Folders become a row of chips beside the search. */
+  .folderpane {
+    position: absolute !important;
+    inset: var(--tb-head) calc(var(--tb-pad) + 316px) auto var(--tb-pad) !important;
+    z-index: 3 !important;
+    width: auto !important;
+    height: 40px !important;
+    overflow: auto hidden !important;
+    border: 0 !important;
+    background: transparent !important;
+    scrollbar-width: none !important;
+  }
+  .folderlist {
     display: flex !important;
     align-items: center !important;
     gap: 8px !important;
-    height: 32px !important;
+    width: max-content !important;
+    height: 36px !important;
+    padding: 0 !important;
+  }
+  .folder,
+  .folderhack3 {
+    display: contents !important;
+  }
+  .folder h3,
+  .foldersep,
+  .folderlistbefore,
+  .folderlistafter,
+  .folderhack1,
+  .folderhack2,
+  .selectFolder i,
+  .selectFolder[data-value="+"] {
+    display: none !important;
+  }
+  .selectFolder {
+    appearance: none !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    width: auto !important;
+    max-width: none !important;
+    height: 30px !important;
     margin: 0 !important;
-    padding: 0 16px 0 13px !important;
-    border: 0 !important;
-    border-left: 3px solid transparent !important;
-    border-radius: 0 !important;
-    background: transparent !important;
+    padding: 0 6px 0 12px !important;
+    border: 1px solid var(--sd-border-strong) !important;
+    border-radius: 999px !important;
+    background: var(--sd-panel) !important;
     color: var(--sd-text) !important;
-    font-size: 13px !important;
-    line-height: 32px !important;
+    font-size: 12.5px !important;
+    font-weight: 600 !important;
+    line-height: 1 !important;
     white-space: nowrap !important;
     cursor: pointer !important;
+    transition: border-color 0.12s ease, background-color 0.12s ease !important;
+  }
+  .selectFolder:hover {
+    border-color: var(--sd-accent) !important;
+  }
+  .selectFolder.active {
+    border-color: var(--sd-accent) !important;
+    background: color-mix(in srgb, var(--sd-accent) 18%, var(--sd-panel)) !important;
+  }
+  .folder.cur .selectFolder {
+    border-color: var(--sd-primary) !important;
+    background: color-mix(in srgb, var(--sd-primary) 16%, var(--sd-panel)) !important;
   }
   .selectFolder em {
     font-style: normal !important;
   }
-  .selectFolder i {
-    position: static !important;
-    width: 14px !important;
-    margin: 0 !important;
-    color: var(--sd-text-2) !important;
-    text-align: center !important;
-  }
-  /* Friendlier labels than "(all)" and "(add folder)". */
   .selectFolder[data-value="all"] em,
-  .selectFolder[data-value="+"] em,
   .selectFolder[data-value="++"] em {
     font-size: 0 !important;
   }
-  .selectFolder[data-value="all"] em::after,
-  .selectFolder[data-value="+"] em::after,
-  .selectFolder[data-value="++"] em::after {
-    font-size: 13px;
+  .selectFolder[data-value="all"] em::after { content: "All teams"; font-size: 12.5px; }
+  .selectFolder[data-value="++"] em::after { content: "+ New folder"; font-size: 12.5px; }
+  .selectFolder[data-value="++"] {
+    padding-right: 12px !important;
+    border-style: dashed !important;
+    background: transparent !important;
+    color: var(--sd-text-2) !important;
   }
-  .selectFolder[data-value="all"] em::after { content: "All teams"; }
-  .selectFolder[data-value="+"] em::after { content: "New format folder"; }
-  .selectFolder[data-value="++"] em::after { content: "New folder"; }
-  /* The two add rows read as actions, not folders. */
-  .selectFolder[data-value="+"],
-  .selectFolder[data-value="++"],
-  .selectFolder[data-value="+"] i,
-  .selectFolder[data-value="++"] i {
-    color: var(--sd-accent) !important;
+  .selectFolder .plusonefolder {
+    order: 3 !important;
+    float: none !important;
+    margin: 0 !important;
   }
-  .folder:has(> .selectFolder[data-value="+"]) + .foldersep {
-    display: none !important;
-  }
-  .selectFolder:hover {
+  .sd-tb-count {
+    min-width: 18px !important;
+    height: 18px !important;
+    padding: 0 5px !important;
+    box-sizing: border-box !important;
+    border-radius: 9px !important;
     background: var(--sd-hover) !important;
+    color: var(--sd-text-2) !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    line-height: 18px !important;
+    text-align: center !important;
   }
-  .folder.cur .selectFolder {
-    border-left-color: var(--sd-primary) !important;
-    background: color-mix(in srgb, var(--sd-accent) 14%, var(--sd-panel)) !important;
-    font-weight: 600 !important;
-  }
-  .foldersep {
-    height: 1px !important;
-    margin: 8px 16px !important;
-    border: 0 !important;
-    background: var(--sd-border) !important;
+  .folder.cur .sd-tb-count {
+    background: var(--sd-primary) !important;
+    color: var(--sd-on-primary) !important;
   }
 
-  /* ----- Team list: teams ----- */
+  /* ----- Teams ----- */
 
   .teampane {
-    padding: 24px 32px 48px !important;
+    top: var(--tb-top) !important;
+    left: 0 !important;
+    padding: 4px var(--tb-pad) 48px !important;
     font-size: 13px !important;
     line-height: 1.5 !important;
   }
-  /* The client's "Hi, did you have a good day?" survey. */
-  .teampane > h2:has(+ p + p > button[name="greeting"]),
-  .teampane > p:has(+ p > button[name="greeting"]),
-  .teampane > p:has(> button[name="greeting"]) {
+  /* Replaced by the head and banner: the title, the "Hi" survey and the trailing text. */
+  .teampane > h2,
+  .teampane > p,
+  .teampane > button {
     display: none !important;
-  }
-  .teampane > h2 {
-    margin: 0 0 14px !important;
-    font-size: 24px !important;
-    font-weight: 600 !important;
-    line-height: 1.2 !important;
-  }
-  .teampane > h2 small {
-    color: var(--sd-text-2) !important;
-    font-size: 15px !important;
-    font-weight: 400 !important;
-  }
-  .teampane > p {
-    margin: 0 0 12px !important;
-    color: var(--sd-text-2) !important;
-  }
-  .teampane > p strong {
-    color: var(--sd-text) !important;
-    font-weight: 600 !important;
   }
   .teampane code {
     padding: 1px 4px !important;
@@ -195,88 +277,300 @@ html.sd-launcher-shell #room-teambuilder {
     background: var(--sd-subtle) !important;
     font-size: 12px !important;
   }
-  .teampane .button {
-    height: 30px !important;
-    padding: 0 12px !important;
-    font-size: 13px !important;
-    line-height: 28px !important;
+  .teampane > .teamlist:empty {
+    display: none !important;
   }
-  .teampane .button.big {
-    height: 36px !important;
-    padding: 0 16px !important;
-    font-size: 14px !important;
-    font-weight: 600 !important;
-    line-height: 34px !important;
-  }
-  /* One primary action per screen. */
-  .teampane button[name="newTop"][value="team"] {
-    border-color: var(--sd-primary) !important;
-    background: var(--sd-primary) !important;
-    color: var(--sd-on-primary) !important;
-  }
-  .teampane button[name="newTop"][value="team"]:hover {
-    border-color: var(--sd-primary-hover) !important;
-    background: var(--sd-primary-hover) !important;
-  }
-  .teampane #teamSearchBar {
-    box-sizing: border-box !important;
-    width: 260px !important;
-    height: 36px !important;
-    margin-left: 4px !important;
-    padding: 0 10px !important;
-    font-size: 13px !important;
-    vertical-align: top !important;
-  }
-
   .teamlist {
-    margin: 4px 0 16px !important;
+    margin: 0 0 16px !important;
     padding: 0 !important;
-  }
-  .teamlist li {
-    margin: 0 0 6px !important;
+    list-style: none !important;
   }
   .teamlist li p em {
     color: var(--sd-text-2) !important;
     font-style: normal !important;
   }
+  .sd-tb-group h3 {
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    margin: 12px 0 14px !important;
+    color: var(--sd-text-2) !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.08em !important;
+    text-transform: uppercase !important;
+  }
+  .sd-tb-group h3::after {
+    content: "" !important;
+    flex: 1 !important;
+    height: 1px !important;
+    background: var(--sd-border) !important;
+  }
+  .sd-tb-grid {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)) !important;
+    gap: 14px !important;
+    margin-bottom: 24px !important;
+  }
+  .sd-tb-grid > li {
+    position: relative !important;
+    margin: 0 !important;
+  }
+  .sd-tb-grid > li.dragging {
+    opacity: 0.4 !important;
+  }
+
+  /* A card: the client's clickable .team block with buttons laid over its corner. */
   .teamlist .team {
+    box-sizing: border-box !important;
+    text-align: left !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 14px 14px 12px !important;
     border: 1px solid var(--sd-border) !important;
-    border-radius: 4px !important;
+    border-radius: 12px !important;
     background: var(--sd-panel) !important;
     color: var(--sd-text) !important;
     box-shadow: none !important;
     text-shadow: none !important;
     cursor: pointer !important;
+    transition: border-color 0.12s ease, transform 0.12s ease !important;
   }
   .teamlist .team:hover {
     border-color: var(--sd-accent) !important;
-    background: var(--sd-hover) !important;
+    transform: translateY(-1px) !important;
+  }
+  .sd-tb-badge {
+    align-self: flex-start !important;
+    padding: 2px 7px !important;
+    border-radius: 5px !important;
+    background: color-mix(in srgb, var(--sd-primary) 18%, transparent) !important;
+    color: var(--tb-gold) !important;
+    font-size: 10.5px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.04em !important;
+    text-transform: uppercase !important;
   }
   .teamlist .team strong {
-    font-weight: 600 !important;
+    display: block !important;
+    width: auto !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding-left: 0 !important;
+    line-height: 1.3 !important;
+    text-indent: 0 !important;
+    text-align: left !important;
+    padding-right: 90px !important;
+    overflow: hidden !important;
+    color: var(--sd-text) !important;
+    font-size: 15px !important;
+    font-weight: 700 !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
   }
   .teamlist .team strong span {
-    color: var(--sd-text-2) !important;
-    font-weight: 400 !important;
+    display: none !important;
   }
-  .teamlist li > button {
-    appearance: none !important;
+  .teamlist .team small {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    width: auto !important;
+    height: auto !important;
+    padding: 0 !important;
+    gap: 6px !important;
+    margin: 4px 0 2px !important;
+  }
+  .teamlist .team small em {
+    display: none !important;
+  }
+  /* Icons keep the client's 40x30 sprite box, since the sheet offset is inline; the slot
+     frame is an outline so it adds no size. */
+  .teamlist .team .picon,
+  .sd-tb-slot {
+    box-sizing: content-box !important;
+    width: 40px !important;
     height: 30px !important;
-    min-width: 30px !important;
-    margin-left: 2px !important;
-    padding: 0 8px !important;
-    border: 1px solid transparent !important;
-    border-radius: 3px !important;
-    background: transparent !important;
+    margin: 0 !important;
+    border: 0 !important;
+    border-radius: 7px !important;
+    outline: 1px solid var(--sd-border) !important;
+    background-color: var(--sd-subtle) !important;
+  }
+  .sd-tb-slot {
+    display: inline-block !important;
+    position: relative !important;
+  }
+  .sd-tb-slot::after {
+    content: "" !important;
+    position: absolute !important;
+    inset: 0 !important;
+    margin: auto !important;
+    width: 12px !important;
+    height: 12px !important;
+    border: 1.5px solid var(--sd-border-strong) !important;
+    border-radius: 50% !important;
+  }
+  .sd-tb-foot {
+    display: flex !important;
+    justify-content: space-between !important;
+    margin-top: auto !important;
+    padding-top: 4px !important;
     color: var(--sd-text-2) !important;
-    font-size: 13px !important;
+    font-size: 11.5px !important;
+  }
+  .sd-tb-saved::before {
+    content: "\f108" !important;
+    margin-right: 6px !important;
+    font: 11px/1 FontAwesome !important;
+  }
+  .teamlist li > button:not(.sd-tb-new-btn) {
+    position: absolute !important;
+    top: 10px !important;
+    z-index: 1 !important;
+    appearance: none !important;
+    width: 28px !important;
+    height: 28px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 7px !important;
+    background: transparent !important;
     box-shadow: none !important;
+    color: var(--sd-text-2) !important;
+    font-size: 0 !important;
     cursor: pointer !important;
   }
-  .teamlist li > button:hover {
-    border-color: var(--sd-border) !important;
+  .teamlist li > button:not(.sd-tb-new-btn) i {
+    font-size: 13px !important;
+  }
+  .teamlist li > button:not(.sd-tb-new-btn):hover {
     background: var(--sd-hover) !important;
     color: var(--sd-text) !important;
+  }
+  .teamlist li > button[name="edit"] { right: 74px !important; }
+  .teamlist li > button[name="duplicate"] { right: 42px !important; }
+  .teamlist li > button[name="delete"] { right: 10px !important; }
+  .teamlist li > button[name="delete"]:hover { color: #e5534b !important; }
+  /* Undo delete stays a plain button in the list above the cards. */
+  .teampane > .teamlist li > button[name="undoDelete"] {
+    position: static !important;
+    width: auto !important;
+    padding: 0 12px !important;
+    border: 1px solid var(--sd-border-strong) !important;
+    font-size: 13px !important;
+  }
+
+  /* The dashed "New <format> team" card closing each group. */
+  .sd-tb-new-btn {
+    appearance: none !important;
+    box-sizing: border-box !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 10px !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 160px !important;
+    border: 1px dashed var(--sd-border-strong) !important;
+    border-radius: 12px !important;
+    background: transparent !important;
+    color: var(--sd-text-2) !important;
+    font-family: inherit !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    line-height: 1.3 !important;
+    cursor: pointer !important;
+    transition: border-color 0.12s ease, color 0.12s ease, background-color 0.12s ease !important;
+  }
+  .sd-tb-new-btn:hover {
+    border-color: var(--sd-accent) !important;
+    background: var(--sd-panel) !important;
+    color: var(--sd-text) !important;
+  }
+  .sd-tb-new-plus {
+    width: 30px !important;
+    height: 30px !important;
+    border-radius: 8px !important;
+    background: var(--sd-hover) !important;
+  }
+  .sd-tb-new-plus::before {
+    content: "\f067" !important;
+    font: 13px/30px FontAwesome !important;
+  }
+
+  /* Storage notice */
+  .sd-tb-banner {
+    display: flex !important;
+    align-items: center !important;
+    gap: 14px !important;
+    margin-top: 8px !important;
+    padding: 14px 16px !important;
+    border: 1px solid var(--sd-border) !important;
+    border-radius: 12px !important;
+    background: var(--sd-panel) !important;
+  }
+  .sd-tb-banner-icon {
+    flex: none !important;
+    width: 32px !important;
+    height: 32px !important;
+    border-radius: 8px !important;
+    background: color-mix(in srgb, var(--sd-primary) 18%, transparent) !important;
+    color: var(--tb-gold) !important;
+    text-align: center !important;
+  }
+  .sd-tb-banner-icon::before {
+    content: "\f05a" !important;
+    font: 15px/32px FontAwesome !important;
+  }
+  .sd-tb-banner-text {
+    flex: 1 !important;
+    min-width: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 2px !important;
+  }
+  .sd-tb-banner-text strong {
+    color: var(--sd-text) !important;
+    font-weight: 600 !important;
+  }
+  .sd-tb-banner-text span {
+    color: var(--sd-text-2) !important;
+    font-size: 12px !important;
+  }
+  .sd-tb-banner-actions {
+    display: flex !important;
+    align-items: center !important;
+    gap: 14px !important;
+    flex: none !important;
+  }
+  .sd-tb-link {
+    appearance: none !important;
+    padding: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+    color: var(--tb-gold) !important;
+    font-family: inherit !important;
+    font-size: 12.5px !important;
+    font-weight: 600 !important;
+    line-height: 1 !important;
+    cursor: pointer !important;
+  }
+  .sd-tb-link:hover {
+    text-decoration: underline !important;
+  }
+
+  @media (max-width: 860px) {
+    --tb-top: 196px;
+    .sd-tb-actions { top: 92px; left: var(--tb-pad); right: auto; }
+    .sd-tb-search { top: 140px; }
+    .folderpane { top: 140px !important; }
+    .sd-tb-banner { flex-wrap: wrap; }
   }
 
   /* ----- Team editor ----- */

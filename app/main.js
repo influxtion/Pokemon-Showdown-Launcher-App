@@ -132,6 +132,7 @@ function ensureClient() {
   contents.on('dom-ready', () => {
     contents.insertCSS(CLIENT_CSS, { cssOrigin: 'user' }).catch(() => {});
     bridge.installFormatModal();
+    bridge.installTeamsView();
     showdexApplied = Boolean(showdexBundle.installed && settings.get('showdexEnabled'));
     showdexLoadFailed = false;
     if (showdexApplied) bridge.loadShowdex().then((loaded) => {

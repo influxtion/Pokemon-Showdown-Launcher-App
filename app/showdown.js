@@ -331,6 +331,231 @@ function installFormatModal() {
   return true;
 }
 
+// Rebuilds the Teambuilder's team list into the launcher's layout (styled in
+// client-teambuilder.css): a header with the list's actions and search, folder chips, team
+// cards grouped by format, and a storage notice. It only moves, labels and adds elements
+// around the client's own markup after each render. Buttons keep their name and value, so
+// the client's click dispatch, drag and drop and search still drive everything.
+function installTeamsView() {
+  if (window.__SD_TEAMS_VIEW || !document.body) return true;
+  window.__SD_TEAMS_VIEW = true;
+  const el = (tag, className, text) => {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text !== undefined) node.textContent = text;
+    return node;
+  };
+  const icon = (name) => el('i', `fa ${name}`);
+  const relabel = (button, faIcon, text) => {
+    if (!button) return null;
+    button.replaceChildren(icon(faIcon), document.createTextNode(` ${text}`));
+    return button;
+  };
+  // "[Gen 9] OU" -> ["Gen 9", "OU"]; unknown IDs fall back to "gen9foo" -> ["Gen 9", "FOO"].
+  const formatParts = (id) => {
+    const name = (window.BattleFormats && BattleFormats[id] && BattleFormats[id].name) || '';
+    let m = /^\[Gen (\d+)\]\s*(.*)$/.exec(name);
+    if (m) return [`Gen ${m[1]}`, m[2]];
+    m = /^gen(\d+)(.*)$/.exec(id || '');
+    if (m) return [`Gen ${m[1]}`, m[2].toUpperCase()];
+    return [name || id || 'Other', ''];
+  };
+  const formatOf = (team) => (team && team.format) || 'gen9';
+  const teamCount = (value) => {
+    const teams = (window.Storage && Storage.teams) || [];
+    if (value === 'all') return teams.length;
+    if (value.endsWith('/')) return teams.filter((t) => (t.folder || '') === value.slice(0, -1)).length;
+    return teams.filter((t) => formatOf(t) === value).length;
+  };
+
+  function newTeamIn(format) {
+    const room = window.app && app.rooms && app.rooms.teambuilder;
+    if (!room || typeof room.newTop !== 'function') return;
+    const previous = room.curFolder;
+    room.curFolder = format; // createTeam reads the format from the current folder
+    try {
+      room.newTop('team');
+    } finally {
+      room.curFolder = previous;
+    }
+  }
+
+  function decorateCard(li, team) {
+    const card = li.querySelector(':scope > .team');
+    const parts = formatParts(formatOf(team));
+    card.prepend(el('span', 'sd-tb-badge', parts.filter(Boolean).join(' ')));
+    const capacity = (team && team.capacity) || 6;
+    const icons = card.querySelector(':scope > small');
+    if (icons && capacity <= 6) {
+      const have = icons.querySelectorAll(':scope > .picon').length;
+      for (let i = have; i < capacity; i++) icons.append(el('span', 'sd-tb-slot'));
+    }
+    const mons = team && team.team ? team.team.split(']').length : 0;
+    const foot = el('span', 'sd-tb-foot');
+    foot.append(el('span', 'sd-tb-saved', 'Saved locally'), el('span', 'sd-tb-size', `${mons} / ${capacity} Pokémon`));
+    card.append(foot);
+    const del = li.querySelector(':scope > button[name="delete"]');
+    if (del) {
+      del.title = 'Delete';
+      del.setAttribute('aria-label', 'Delete');
+    }
+  }
+
+  function buildHead(room, pane) {
+    const head = el('div', 'sd-tb-head');
+    const titles = el('div', 'sd-tb-titles');
+    const headings = pane.querySelectorAll(':scope > h2');
+    const h2 = headings[headings.length - 1];
+    let title = 'Your teams';
+    if (room.curFolder && h2) {
+      const copy = h2.cloneNode(true);
+      copy.querySelectorAll('button, small').forEach((n) => n.remove());
+      title = copy.textContent.trim();
+      if (!room.curFolder.endsWith('/')) title = formatParts(room.curFolder).filter(Boolean).join(' ');
+    }
+    titles.append(el('h1', '', title), el('p', '', 'Build, organize and back up teams for every format.'));
+    const actions = el('div', 'sd-tb-actions');
+    if (h2) h2.querySelectorAll('button').forEach((b) => actions.append(b));
+    if (!room.curFolder) {
+      const importButton = el('button', 'button');
+      importButton.name = 'import';
+      actions.append(relabel(importButton, 'fa-upload', 'Import'));
+    }
+    const box = relabel(pane.querySelector('button[name="newTop"][value="box"]'), 'fa-archive', 'New box');
+    const team = relabel(pane.querySelector('button[name="newTop"][value="team"]'), 'fa-plus', 'New team');
+    if (box) actions.append(box);
+    if (team) actions.append(team);
+    const search = el('label', 'sd-tb-search');
+    const input = pane.querySelector('#teamSearchBar');
+    if (input) {
+      input.placeholder = 'Search teams or Pokémon';
+      search.append(input, el('kbd', '', 'Ctrl K'));
+    }
+    head.append(titles, actions, search);
+    return head;
+  }
+
+  function buildBanner(room, pane) {
+    const banner = el('div', 'sd-tb-banner');
+    const text = el('div', 'sd-tb-banner-text');
+    text.append(el('strong', '', 'Your teams live in this app\'s local storage'),
+      el('span', '', 'Clearing cookies or localStorage deletes them. Back up first, or sign in to sync to the server.'));
+    const actions = el('div', 'sd-tb-banner-actions');
+    const uploaded = pane.querySelector('button[name="send"][value="/teams"]');
+    if (uploaded) {
+      uploaded.className = 'sd-tb-link';
+      uploaded.textContent = 'View uploaded teams';
+      actions.append(uploaded);
+    }
+    const backup = relabel(pane.querySelector('button[name="backup"]'), 'fa-download',
+      room.curFolder ? 'Back up this folder' : 'Backup / Restore');
+    if (backup) actions.append(backup);
+    banner.append(el('span', 'sd-tb-banner-icon'), text, actions);
+    return banner;
+  }
+
+  function renderList(root, pane) {
+    const list = pane.querySelector(':scope > ul.teamlist');
+    if (!list || list.dataset.sd) return;
+    list.dataset.sd = '1';
+    const room = window.app && app.rooms && app.rooms.teambuilder;
+    if (!room || !window.Storage) return;
+    // While searching, the old head still holds the focused search box. The client's
+    // re-render looks it up by ID and finds that one first, so take the focus from it.
+    const active = document.activeElement;
+    const typing = active && active.id === 'teamSearchBar' && !pane.contains(active);
+    const caret = typing ? active.selectionStart : 0;
+    root.querySelectorAll(':scope > .sd-tb-head').forEach((n) => n.remove());
+    root.prepend(buildHead(room, pane));
+    const input = root.querySelector(':scope > .sd-tb-head #teamSearchBar');
+    if (typing && input) {
+      input.focus();
+      input.setSelectionRange(caret, caret);
+    }
+
+    const groups = new Map();
+    for (const li of [...list.children]) {
+      const card = li.querySelector(':scope > .team');
+      if (!card) continue;
+      const team = Storage.teams[Number(card.dataset.value)];
+      const format = formatOf(team);
+      if (!groups.has(format)) {
+        const section = el('section', 'sd-tb-group');
+        section.append(el('h3', '', formatParts(format).filter(Boolean).join(' · ')));
+        const grid = el('ul', 'teamlist sd-tb-grid');
+        grid.dataset.sd = '1';
+        section.append(grid);
+        groups.set(format, { section, grid });
+      }
+      decorateCard(li, team);
+      groups.get(format).grid.append(li);
+    }
+    const wrap = el('div', 'sd-tb-groups');
+    for (const [format, { section, grid }] of groups) {
+      if (room.curFolder && room.curFolder !== format) {
+        wrap.append(section);
+        continue;
+      }
+      const li = el('li', 'sd-tb-new');
+      const add = el('button', 'sd-tb-new-btn');
+      add.type = 'button';
+      add.append(el('span', 'sd-tb-new-plus'), el('span', '', `New ${formatParts(format).filter(Boolean).join(' ')} team`));
+      add.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        newTeamIn(format);
+      });
+      li.append(add);
+      grid.append(li);
+      wrap.append(section);
+    }
+    list.after(wrap);
+    pane.append(buildBanner(room, pane));
+  }
+
+  function renderFolders(pane) {
+    const list = pane.querySelector('.folderlist');
+    if (!list || list.dataset.sd) return;
+    list.dataset.sd = '1';
+    for (const chip of list.querySelectorAll('.selectFolder')) {
+      const value = chip.dataset.value || '';
+      if (value === '+' || value === '++') continue;
+      if (value === '/') chip.replaceChildren(document.createTextNode('No folder'));
+      if (value !== 'all' && !value.endsWith('/')) {
+        // Format folders are labelled without their generation, which the hidden group
+        // headings used to give; spell it out on the chip.
+        chip.querySelectorAll(':scope > i').forEach((n) => n.remove());
+        chip.replaceChildren(document.createTextNode(formatParts(value).filter(Boolean).join(' ')));
+      }
+      chip.append(el('span', 'sd-tb-count', String(teamCount(value))));
+    }
+  }
+
+  const update = () => {
+    if (!document.documentElement.classList.contains('sd-launcher-shell')) return;
+    const root = document.getElementById('room-teambuilder');
+    if (!root) return;
+    const folders = root.querySelector(':scope > .folderpane');
+    const pane = root.querySelector(':scope > .teampane');
+    if (!folders || !pane) return;
+    try {
+      renderFolders(folders);
+      renderList(root, pane);
+    } catch (e) {} // the client's own list stays usable if this ever fails
+  };
+  new MutationObserver(update).observe(document.body, { childList: true, subtree: true });
+  document.addEventListener('keydown', (event) => {
+    if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== 'k') return;
+    const input = document.querySelector('#room-teambuilder .sd-tb-head #teamSearchBar');
+    if (!input || !input.offsetParent) return;
+    event.preventDefault();
+    input.focus();
+    input.select();
+  }, true);
+  update();
+  return true;
+}
+
 function readShowdex() {
   const state = window.__SHOWDOWN_DESKTOP_SHOWDEX;
   // The pinned bootstrap sets this only after render; closing its room does not unload it.
@@ -479,6 +704,14 @@ class ShowdownBridge {
     if (!contents) return false;
     try {
       return await contents.executeJavaScript(call(installFormatModal)) === true;
+    } catch { return false; }
+  }
+
+  async installTeamsView() {
+    const contents = this.getContents();
+    if (!contents) return false;
+    try {
+      return await contents.executeJavaScript(call(installTeamsView)) === true;
     } catch { return false; }
   }
 
