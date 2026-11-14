@@ -1320,33 +1320,122 @@ html.sd-launcher-shell #room-teambuilder {
     margin-left: auto !important;
   }
 
-  .teambar button {
+  /* ----- Pokémon tabs -----
+     .sd-te-tabs in the team view, and the client's own .teambar in the set view. */
+
+  .sd-te-tabs,
+  .teamwrapper[data-sd-mode="set"] .teambar {
+    display: flex !important;
+    gap: 10px !important;
+    flex: none !important;
+    min-width: 0 !important;
+    margin-bottom: 16px !important;
+    padding-bottom: 2px !important;
+    overflow-x: auto !important;
+    scrollbar-width: thin !important;
+  }
+  .sd-te-tab {
     appearance: none !important;
-    border: 0 !important;
-    border-bottom: 2px solid transparent !important;
-    border-radius: 0 !important;
-    background: transparent !important;
-    color: var(--sd-text-2) !important;
-    box-shadow: none !important;
-    text-shadow: none !important;
-    font-size: 12px !important;
-    cursor: pointer !important;
-  }
-  .teambar button:hover {
-    background: var(--sd-hover) !important;
-    color: var(--sd-text) !important;
-  }
-  .teambar button:disabled,
-  .teambar button.cur {
-    border-bottom-color: var(--sd-primary) !important;
+    flex: 1 1 0 !important;
+    min-width: 150px !important;
+    max-width: 230px !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    box-sizing: border-box !important;
+    height: 58px !important;
+    margin: 0 !important;
+    padding: 0 12px 0 8px !important;
+    border: 1px solid var(--sd-border) !important;
+    border-radius: 12px !important;
     background: var(--sd-panel) !important;
+    box-shadow: none !important;
     color: var(--sd-text) !important;
-    font-weight: 600 !important;
+    font-family: inherit !important;
+    text-align: left !important;
+    text-shadow: none !important;
     opacity: 1 !important;
+    cursor: pointer !important;
+    transition: border-color 0.12s ease, background-color 0.12s ease !important;
+  }
+  .sd-te-tab:hover {
+    border-color: var(--sd-border-strong) !important;
+    background: var(--sd-hover) !important;
+  }
+  .sd-te-tab.cur,
+  .sd-te-tab.cur:hover {
+    border-color: var(--sd-primary) !important;
+    background: color-mix(in srgb, var(--sd-primary) 10%, var(--sd-panel)) !important;
+    box-shadow: inset 0 0 0 1px var(--sd-primary) !important;
     cursor: default !important;
   }
-  .teambar button:disabled * {
-    opacity: 1 !important;
+  .sd-te-tab span {
+    margin: 0 !important;
+    white-space: nowrap !important;
+  }
+  .sd-te-tab {
+    float: none !important;
+    width: auto !important;
+    overflow: hidden !important;
+  }
+  .sd-te-tab-icon {
+    flex: none !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 40px !important;
+    height: 40px !important;
+    border-radius: 10px !important;
+    background: var(--sd-subtle) !important;
+  }
+  .sd-te-tab .picon {
+    display: block !important;
+    position: static !important;
+    width: 40px !important;
+    height: 30px !important;
+    margin: 0 !important;
+  }
+  .sd-te-tab-text {
+    min-width: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 2px !important;
+  }
+  .sd-te-tab-text strong,
+  .sd-te-tab-text small {
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+  .sd-te-tab-text strong {
+    font-size: 13px !important;
+    font-weight: 600 !important;
+  }
+  .sd-te-tab-text small {
+    color: var(--sd-text-2) !important;
+    font-size: 11.5px !important;
+  }
+  .sd-te-tab.sd-te-add {
+    flex: 0 0 auto !important;
+    min-width: 0 !important;
+    justify-content: center !important;
+    padding: 0 16px !important;
+    border-style: dashed !important;
+    background: transparent !important;
+    color: var(--sd-text-2) !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+  }
+  .sd-te-tab.sd-te-add:disabled {
+    border-color: var(--sd-primary) !important;
+    color: var(--sd-text) !important;
+  }
+
+  /* The team view shows the selected set only; the add tab replaces the client's button. */
+  .teamchart > li:has(> .teambuilder-clipboard-container[style*="none"]),
+  .teamwrapper[data-sd-mode="team"] .teamchart > li[value]:not(.sd-te-cur),
+  .teamwrapper[data-sd-mode="team"] .teamchart > li:has(> button[name="addPokemon"]) {
+    display: none !important;
   }
 
   /* ----- Search results and the stats, details and import panes ----- */

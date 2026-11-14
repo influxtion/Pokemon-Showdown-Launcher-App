@@ -609,6 +609,89 @@ function installTeamEditor() {
     pad.prepend(head);
   }
 
+  // Which tab the team view shows, per team: a set index (or "full", added later).
+  const tabs = new WeakMap();
+  const speciesName = (room, set) => set.name || room.curTeam.dex.species.get(set.species).baseSpecies || set.species;
+
+  function tabBody(room, set, index) {
+    const box = el('span', 'sd-te-tab-icon');
+    const picon = el('span', `picon pokemonicon-${index}`);
+    picon.setAttribute('style', Dex.getPokemonIcon(set));
+    box.append(picon);
+    const text = el('span', 'sd-te-tab-text');
+    text.append(el('strong', '', speciesName(room, set)), el('small', '', set.item || 'No item'));
+    return [box, text];
+  }
+
+  function selectedTab(room) {
+    const count = room.curSetList.filter((set) => set.species).length;
+    let tab = tabs.has(room.curTeam) ? tabs.get(room.curTeam) : 0;
+    if (typeof tab === 'number' && tab >= count) tab = count ? count - 1 : 0;
+    return tab;
+  }
+
+  function showTab(wrapper, room) {
+    const tab = selectedTab(room);
+    for (const button of wrapper.querySelectorAll('.sd-te-tabs > .sd-te-tab[data-tab]')) {
+      const on = button.dataset.tab === String(tab);
+      button.classList.toggle('cur', on);
+      button.setAttribute('aria-selected', String(on));
+    }
+    for (const li of wrapper.querySelectorAll('.teamchart > li[value]')) {
+      li.classList.toggle('sd-te-cur', li.getAttribute('value') === String(tab));
+    }
+  }
+
+  // Team view: a tab per set above one card; the add tab is the client's addPokemon action.
+  function buildTabs(wrapper, room) {
+    const pad = wrapper.querySelector(':scope > .pad');
+    const head = pad && pad.querySelector(':scope > .sd-te-head');
+    if (!head || pad.querySelector(':scope > .sd-te-tabs')) return;
+    const strip = el('div', 'sd-te-tabs');
+    strip.setAttribute('role', 'tablist');
+    room.curSetList.forEach((set, index) => {
+      if (!set.species) return;
+      const button = el('button', 'sd-te-tab');
+      button.type = 'button';
+      button.dataset.tab = String(index);
+      button.setAttribute('role', 'tab');
+      button.append(...tabBody(room, set, index));
+      button.addEventListener('click', () => {
+        tabs.set(room.curTeam, index);
+        showTab(wrapper, room);
+      });
+      strip.append(button);
+    });
+    if (wrapper.querySelector('.teamchart button[name="addPokemon"]')) {
+      const add = el('button', 'sd-te-tab sd-te-add');
+      add.type = 'button';
+      add.name = 'addPokemon';
+      add.append(icon('fa-plus'), el('span', '', 'Add Pokémon'));
+      strip.append(add);
+    }
+    head.after(strip);
+  }
+
+  // Set view: the client's own Pokémon bar, given the same look and each set's item.
+  function decorateTeambar(wrapper, room) {
+    tabs.set(room.curTeam, room.curSetLoc);
+    for (const button of wrapper.querySelectorAll('.teambar > button.pokemon:not([data-sd])')) {
+      button.dataset.sd = '1';
+      const picon = button.querySelector('.picon');
+      const index = picon && Number((/pokemonicon-(\d+)/.exec(picon.className) || [])[1]);
+      const set = room.curSetList[index];
+      if (!set) continue;
+      button.classList.add('sd-te-tab');
+      if (button.disabled) button.classList.add('cur');
+      button.replaceChildren(...tabBody(room, set, index));
+    }
+    for (const button of wrapper.querySelectorAll('.teambar > button:not(.pokemon):not([data-sd])')) {
+      button.dataset.sd = '1';
+      button.classList.add('sd-te-tab', 'sd-te-add');
+      button.append(el('span', '', 'Add Pokémon'));
+    }
+  }
+
   function natureText(set) {
     const nature = set.nature || 'Serious';
     const data = window.BattleNatures && BattleNatures[nature];
@@ -721,6 +804,11 @@ function installTeamEditor() {
     if (wrapper.dataset.sdMode !== mode) wrapper.dataset.sdMode = mode;
     try {
       buildHead(wrapper, room, mode);
+      if (mode === 'team') {
+        buildTabs(wrapper, room);
+        showTab(wrapper, room);
+      }
+      if (mode === 'set') decorateTeambar(wrapper, room);
       for (const li of wrapper.querySelectorAll('.teamchart > li[value]')) decorateSet(li, room);
     } catch (e) {} // the client's own editor stays usable if this ever fails
   };
