@@ -573,142 +573,753 @@ html.sd-launcher-shell #room-teambuilder {
     .sd-tb-banner { flex-wrap: wrap; }
   }
 
-  /* ----- Team editor ----- */
+  /* ----- Team editor -----
+     installTeamEditor() in showdown.js tags .teamwrapper with data-sd-mode (team, set or
+     export), adds .sd-te-head and decorates each set. The client positions the editor's
+     parts absolutely and scales the wrapper on narrow windows; here they are a column. */
 
+  --t: var(--sd-text-2);
+  .sd-t-Normal { --t: #a8a77a; }
+  .sd-t-Fire { --t: #ee8130; }
+  .sd-t-Water { --t: #6390f0; }
+  .sd-t-Electric { --t: #f7d02c; }
+  .sd-t-Grass { --t: #7ac74c; }
+  .sd-t-Ice { --t: #96d9d6; }
+  .sd-t-Fighting { --t: #c22e28; }
+  .sd-t-Poison { --t: #a33ea1; }
+  .sd-t-Ground { --t: #e2bf65; }
+  .sd-t-Flying { --t: #a98ff3; }
+  .sd-t-Psychic { --t: #f95587; }
+  .sd-t-Bug { --t: #a6b91a; }
+  .sd-t-Rock { --t: #b6a136; }
+  .sd-t-Ghost { --t: #735797; }
+  .sd-t-Dragon { --t: #6f35fc; }
+  .sd-t-Dark { --t: #705746; }
+  .sd-t-Steel { --t: #b7b7ce; }
+  .sd-t-Fairy { --t: #d685ad; }
+  .sd-t-Stellar { --t: #40b5a5; }
+
+  .teamwrapper {
+    position: absolute !important;
+    inset: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    width: auto !important;
+    height: auto !important;
+    transform: none !important;
+  }
   .teamwrapper > .pad {
-    font-size: 13px !important;
-  }
-  .teamwrapper > .pad > .button {
-    height: 30px !important;
-    padding: 0 12px !important;
-    font-size: 13px !important;
-    line-height: 28px !important;
-  }
-  .teamnameedit {
-    height: 30px !important;
+    flex: none !important;
     box-sizing: border-box !important;
-    padding: 0 10px !important;
-    font-size: 15px !important;
-    font-weight: 600 !important;
+    padding: 22px 32px 0 !important;
+    font-size: 13px !important;
   }
-  .teamchartbox {
-    border-top: 1px solid var(--sd-border) !important;
-    background: var(--sd-app) !important;
+  .teamwrapper[data-sd-mode="team"] > .pad {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+  .teamwrapper[data-sd-mode="team"] .teamchartbox {
+    position: static !important;
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    margin: 0 -32px !important;
+    padding: 0 32px 32px !important;
+    overflow: auto !important;
+    border: 0 !important;
+    background: transparent !important;
+  }
+  .teamwrapper[data-sd-mode="set"] .teambar,
+  .teamwrapper[data-sd-mode="set"] .teamchartbox.individual,
+  .teamwrapper[data-sd-mode="set"] .teambuilder-pokemon-import {
+    position: static !important;
+    flex: none !important;
+    min-width: 0 !important;
+    margin: 0 32px !important;
+    border: 0 !important;
+    background: transparent !important;
+  }
+  .teamwrapper[data-sd-mode="set"] .teambuilder-results {
+    position: static !important;
+    flex: 1 1 auto !important;
+    min-height: 120px !important;
+    min-width: 0 !important;
+    margin: 0 32px 24px !important;
+    border: 1px solid var(--sd-border) !important;
+    border-radius: 12px !important;
+  }
+  .teamwrapper[data-sd-mode="set"] .teambuilder-pokemon-import:not([style*="block"]) {
+    display: none !important;
+  }
+  .teamwrapper[data-sd-mode="export"] > .teamedit {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    padding: 0 32px 24px !important;
+  }
+  .teamwrapper[data-sd-mode="export"] > .teamedit textarea {
+    box-sizing: border-box !important;
+    width: 100% !important;
+    height: 100% !important;
+    padding: 14px 16px !important;
+    border-radius: 12px !important;
+    font: 13px/1.6 "Cascadia Mono", Consolas, "SF Mono", monospace !important;
+  }
+
+  /* Header */
+  .sd-te-head {
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    min-height: 44px !important;
+    margin: 0 0 16px !important;
+  }
+  .sd-te-head button[name="back"] {
+    appearance: none !important;
+    flex: none !important;
+    width: 36px !important;
+    height: 36px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 1px solid var(--sd-border-strong) !important;
+    border-radius: 8px !important;
+    background: var(--sd-panel) !important;
+    box-shadow: none !important;
+    color: var(--sd-text) !important;
+    cursor: pointer !important;
+  }
+  .sd-te-head button[name="back"]:hover {
+    border-color: var(--sd-accent) !important;
+    background: var(--sd-hover) !important;
+  }
+  .sd-te-name {
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    min-width: 0 !important;
+    cursor: text !important;
+  }
+  .sd-te-name > i {
+    color: var(--sd-text-2) !important;
+    font-size: 13px !important;
+  }
+  .sd-te-head input.teamnameedit {
+    box-sizing: border-box !important;
+    field-sizing: content !important;
+    width: auto !important;
+    max-width: 40ch !important;
+    min-width: 0 !important;
+    height: 40px !important;
+    margin: 0 !important;
+    padding: 0 8px !important;
+    border: 1px solid transparent !important;
+    border-radius: 8px !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    color: var(--sd-text) !important;
+    font-size: 24px !important;
+    font-weight: 700 !important;
+  }
+  .sd-te-head input.teamnameedit:hover {
+    border-color: var(--sd-border-strong) !important;
+  }
+  .sd-te-head input.teamnameedit:focus {
+    border-color: var(--sd-accent) !important;
+    background: var(--sd-input) !important;
+    outline: none !important;
+  }
+  .sd-te-title {
+    min-width: 0 !important;
+    margin: 0 !important;
+    overflow: hidden !important;
+    color: var(--sd-text) !important;
+    font-size: 22px !important;
+    font-weight: 700 !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+  .sd-te-actions {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    margin-left: auto !important;
+  }
+  .sd-te-actions button {
+    appearance: none !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    width: auto !important;
+    height: 36px !important;
+    margin: 0 !important;
+    padding: 0 14px !important;
+    border: 1px solid var(--sd-border-strong) !important;
+    border-radius: 8px !important;
+    background: var(--sd-panel) !important;
+    background-image: none !important;
+    box-shadow: none !important;
+    color: var(--sd-text) !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    line-height: 1 !important;
+    text-shadow: none !important;
+    white-space: nowrap !important;
+    cursor: pointer !important;
+  }
+  .sd-te-actions button:hover {
+    border-color: var(--sd-accent) !important;
+    background: var(--sd-hover) !important;
+  }
+  .sd-te-actions button.disabled {
+    opacity: 0.5 !important;
+    pointer-events: none !important;
+  }
+  .sd-te-actions button.teambuilderformatselect::before,
+  .sd-te-actions button.teambuilderformatselect::after {
+    position: static !important;
+    display: inline !important;
+    width: auto !important;
+    height: auto !important;
+    margin: 0 !important;
+    border: 0 !important;
+    background: none !important;
+  }
+  .sd-te-actions button.teambuilderformatselect::before {
+    content: "Format" !important;
+    font-family: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif !important;
+    color: var(--sd-text-2) !important;
+    font-size: 11px !important;
+    font-weight: 400 !important;
+  }
+  .sd-te-actions button.teambuilderformatselect::after {
+    content: "\f107" !important;
+    color: var(--sd-text-2) !important;
+    font: 13px/1 FontAwesome !important;
+  }
+  .sd-te-actions button.teambuilderformatselect em {
+    font-style: normal !important;
+  }
+  .sd-te-actions button.sd-te-primary {
+    border-color: var(--sd-primary) !important;
+    background: var(--sd-primary) !important;
+    color: var(--sd-on-primary) !important;
+  }
+  .sd-te-actions button.sd-te-primary:hover {
+    border-color: var(--sd-primary-hover) !important;
+    background: var(--sd-primary-hover) !important;
+  }
+  /* Moved into the header. */
+  .teamchart > li.format-select,
+  .teamchart > label[name="editMessage"] + br {
+    display: none !important;
   }
   .teamchart label[name="editMessage"] {
     color: var(--sd-text-2) !important;
     font-size: 12px !important;
-    font-weight: 400 !important;
   }
-  .teamchart .format-select .label {
+  .teamchart {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  .teamchart > li > em {
+    display: block !important;
+    padding: 24px 0 !important;
     color: var(--sd-text-2) !important;
-    font-size: 12px !important;
-    font-weight: 600 !important;
-    text-shadow: none !important;
+    font-size: 13px !important;
+    font-style: normal !important;
   }
-  .teamchart button.select.teambuilderformatselect {
+  .teamchart > li > .button,
+  .teambuilder-pokemon-import .button {
     appearance: none !important;
-    background-image: none !important;
-    border: 1px solid var(--sd-border-strong) !important;
-    border-radius: 3px !important;
-    background: var(--sd-panel) !important;
-    color: var(--sd-text) !important;
-    box-shadow: none !important;
-    text-shadow: none !important;
-    font-size: 13px !important;
-  }
-  .teamchart .teambuilderformatselect em {
-    font-style: normal !important;
-  }
-  .teamchart .button {
-    font-size: 13px !important;
-  }
-  .teamchart .button.big {
-    height: 38px !important;
+    height: 36px !important;
+    margin: 0 0 12px !important;
     padding: 0 16px !important;
-    font-size: 14px !important;
-    font-weight: 600 !important;
-  }
-  .teamchart li > em {
-    color: var(--sd-text-2) !important;
+    border: 1px solid var(--sd-border-strong) !important;
+    border-radius: 8px !important;
+    background: var(--sd-panel) !important;
+    box-shadow: none !important;
+    color: var(--sd-text) !important;
     font-size: 13px !important;
-    font-style: normal !important;
+    font-weight: 600 !important;
+    text-shadow: none !important;
+  }
+  .teamchart > li > .button:hover {
+    border-color: var(--sd-accent) !important;
   }
   .exportbutton {
-    height: 30px !important;
+    appearance: none !important;
+    height: 34px !important;
+    border-radius: 8px !important;
     font-size: 13px !important;
   }
 
-  /* A set: white card, quiet labels. Sizes and positions stay the client's. */
-  .setchart {
+  /* ----- A set: one card ----- */
+
+  .teamchart > li[value]:has(> .setchart) {
+    position: relative !important;
+    display: grid !important;
+    grid-template-columns: 112px minmax(0, 1fr) minmax(250px, 0.8fr) !important;
+    grid-template-areas:
+      "sp pk mn"
+      "sp meta meta"
+      "hr hr hr"
+      "dt dt ev"
+      "mv mv ev" !important;
+    column-gap: 24px !important;
+    row-gap: 4px !important;
+    margin: 0 0 16px !important;
+    padding: 20px 22px 22px !important;
     border: 1px solid var(--sd-border) !important;
-    border-radius: 4px !important;
-    background-color: var(--sd-panel) !important;
-    box-shadow: none !important;
-  }
-  .setchart-nickname {
-    border: 1px solid var(--sd-border) !important;
-    border-radius: 4px !important;
+    border-radius: 14px !important;
     background: var(--sd-panel) !important;
-    box-shadow: none !important;
   }
-  .setchart label,
-  .setchart-nickname label {
-    color: var(--sd-text-2) !important;
-    font-family: inherit !important;
-    font-weight: 600 !important;
+  .teamchart > li[value] > .setchart,
+  .teamchart > li[value] .setcol-icon {
+    display: contents !important;
+  }
+  .teamchart > li[value] .setchart * {
     text-shadow: none !important;
   }
-  .setchart input.textbox,
-  .setchart-nickname input.textbox {
-    font-size: 13px !important;
+  .teamchart > li[value] .setcol,
+  .teamchart > li[value] .setrow,
+  .teamchart > li[value] .setcell {
+    float: none !important;
+    width: auto !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
-  .setchart button.textbox {
+  .teamchart > li[value] .setcell {
+    position: relative !important;
+  }
+  /* Section labels */
+  .teamchart > li[value] .setcol-details .setcell > label,
+  .teamchart > li[value] .setcol-moves .setcell > label,
+  .teamchart > li[value] .setcol-stats .setrow > label {
+    display: block !important;
+    margin: 0 0 6px !important;
+    padding: 0 !important;
+    color: var(--sd-text-2) !important;
+    font-size: 10.5px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.08em !important;
+    text-transform: uppercase !important;
+  }
+  .teamchart > li[value] input.textbox {
+    box-sizing: border-box !important;
+    width: 100% !important;
+    height: 38px !important;
+    margin: 0 !important;
+    padding: 0 12px !important;
+    border: 1px solid var(--sd-border) !important;
+    border-radius: 8px !important;
+    background: var(--sd-input) !important;
+    box-shadow: none !important;
+    color: var(--sd-text) !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+  }
+  .teamchart > li[value] input.textbox:hover {
+    border-color: var(--sd-border-strong) !important;
+  }
+  .teamchart > li[value] input.textbox:focus {
+    border-color: var(--sd-accent) !important;
+    outline: none !important;
+  }
+
+  /* Header: sprite, species, types and nickname, set actions */
+  .teamchart > li[value] .setcell-sprite {
+    grid-area: sp !important;
+    align-self: start !important;
+    box-sizing: border-box !important;
+    width: 112px !important;
+    height: 112px !important;
+    border: 1px solid var(--sd-border) !important;
+    border-radius: 14px !important;
     background-color: var(--sd-subtle) !important;
+    background-position: center !important;
+    background-repeat: no-repeat !important;
+  }
+  .teamchart > li[value] .setcell-sprite.pixelated {
+    image-rendering: pixelated !important;
+  }
+  .teamchart > li[value] .setcell-sprite.changeform {
     cursor: pointer !important;
   }
-  .setchart .detailcell {
-    border-color: var(--sd-border) !important;
-    color: var(--sd-text) !important;
-  }
-  .setchart .detailcell label {
-    font-weight: 400 !important;
-  }
-  .setchart .statrow label,
-  .setchart .statrow em,
-  .setchart .statrow small {
-    color: var(--sd-text) !important;
-    font-style: normal !important;
-    font-weight: 400 !important;
-  }
-  .setchart .statrow-head em {
+  .teamchart > li[value] .setcell-sprite.changeform i {
+    position: absolute !important;
+    right: 8px !important;
+    bottom: 6px !important;
     color: var(--sd-text-2) !important;
   }
-  .setmenu button {
-    appearance: none !important;
-    padding: 2px 6px !important;
-    border: 1px solid transparent !important;
-    border-radius: 3px !important;
+  .teamchart > li[value] .setcell-pokemon {
+    grid-area: pk !important;
+    align-self: end !important;
+  }
+  .teamchart > li[value] .setcell-pokemon label {
+    display: none !important;
+  }
+  .teamchart > li[value] .setcell-pokemon input.textbox {
+    height: 42px !important;
+    padding: 0 8px !important;
+    margin-left: -8px !important;
+    border-color: transparent !important;
     background: transparent !important;
+    font-size: 22px !important;
+    font-weight: 700 !important;
+  }
+  .teamchart > li[value]:not(:has(.setcol-details)) .setcell-pokemon input.textbox {
+    border-color: var(--sd-border-strong) !important;
+    background: var(--sd-input) !important;
+  }
+  .sd-te-meta {
+    grid-area: meta !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    align-self: start !important;
+    gap: 8px 14px !important;
+  }
+  .sd-te-chips {
+    display: flex !important;
+    gap: 6px !important;
+  }
+  .sd-te-type,
+  .sd-te-tera {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    height: 22px !important;
+    padding: 0 9px !important;
+    border-radius: 999px !important;
+    font-size: 11.5px !important;
+    font-weight: 600 !important;
+  }
+  .sd-te-type {
+    background: color-mix(in srgb, var(--t) 20%, transparent) !important;
+    color: color-mix(in srgb, var(--t) 60%, var(--sd-text)) !important;
+  }
+  .sd-te-type::before {
+    content: "" !important;
+    width: 6px !important;
+    height: 6px !important;
+    border-radius: 50% !important;
+    background: var(--t) !important;
+  }
+  .sd-te-tera {
+    box-sizing: border-box !important;
+    border: 1px solid color-mix(in srgb, var(--t) 70%, transparent) !important;
+    color: color-mix(in srgb, var(--t) 60%, var(--sd-text)) !important;
+  }
+  .teamchart > li[value] .setchart-nickname {
+    position: static !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    width: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+  .teamchart > li[value] .setchart-nickname label {
+    margin: 0 !important;
+    padding: 0 !important;
     color: var(--sd-text-2) !important;
     font-size: 12px !important;
+    font-weight: 400 !important;
+  }
+  .teamchart > li[value] .setchart-nickname input.textbox {
+    width: 160px !important;
+    height: 28px !important;
+    padding: 0 8px !important;
+    border-radius: 6px !important;
+    font-size: 12.5px !important;
+    font-weight: 500 !important;
+  }
+  .teamchart > li[value] .setmenu {
+    grid-area: mn !important;
+    position: static !important;
+    display: flex !important;
+    justify-content: flex-end !important;
+    align-self: start !important;
+    gap: 2px !important;
+    width: auto !important;
+  }
+  .teamchart > li[value] .setmenu button {
+    appearance: none !important;
+    width: 32px !important;
+    height: 32px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 8px !important;
+    background: transparent !important;
     box-shadow: none !important;
-    text-shadow: none !important;
+    color: var(--sd-text-2) !important;
+    font-size: 0 !important;
     cursor: pointer !important;
   }
-  .setmenu button i {
-    margin-right: 4px !important;
+  .teamchart > li[value] .setmenu button i {
+    margin: 0 !important;
+    font-size: 14px !important;
   }
-  .setmenu button:hover {
-    border-color: var(--sd-border) !important;
+  .teamchart > li[value] .setmenu button:hover {
     background: var(--sd-hover) !important;
-    color: var(--sd-accent) !important;
+    color: var(--sd-text) !important;
   }
-  .setmenu button[name="deleteSet"]:hover {
-    color: #c93434 !important;
+  .teamchart > li[value] .setmenu button[name="deleteSet"]:hover {
+    color: #e5534b !important;
+  }
+  .teamchart > li[value] .setmenu-left {
+    display: none !important;
+  }
+  .sd-te-rule {
+    grid-area: hr !important;
+    height: 1px !important;
+    margin: 16px -22px 16px !important;
+    background: var(--sd-border) !important;
   }
 
-  /* Pokémon tabs above a single set. The open one is the disabled button. */
+  /* Body: details, item and ability, moves */
+  .teamchart > li[value] .setcol-details {
+    grid-area: dt !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 16px !important;
+  }
+  .teamchart > li[value] .setrow-icons {
+    display: none !important;
+  }
+  .teamchart > li[value] .setcol-details > .setrow:last-child {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 12px !important;
+  }
+  .teamchart > li[value] .setdetails {
+    appearance: none !important;
+    display: flex !important;
+    gap: 8px !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    color: var(--sd-text) !important;
+    cursor: pointer !important;
+  }
+  .teamchart > li[value] .setdetails .detailcell {
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 2px !important;
+    float: none !important;
+    padding: 7px 10px !important;
+    border: 1px solid var(--sd-border) !important;
+    border-radius: 8px !important;
+    background: var(--sd-input) !important;
+    color: var(--sd-text) !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    text-align: left !important;
+    white-space: nowrap !important;
+  }
+  .teamchart > li[value] .setdetails:hover .detailcell {
+    border-color: var(--sd-border-strong) !important;
+  }
+  .teamchart > li[value] .setdetails .detailcell label {
+    margin: 0 !important;
+    color: var(--sd-text-2) !important;
+    font-size: 10.5px !important;
+    font-weight: 400 !important;
+    text-align: left !important;
+  }
+  .teamchart > li[value] .setcell-item .itemicon {
+    position: absolute !important;
+    left: 9px !important;
+    bottom: 7px !important;
+    z-index: 1 !important;
+    width: 24px !important;
+    height: 24px !important;
+    margin: 0 !important;
+    pointer-events: none !important;
+  }
+  .teamchart > li[value] .setcell-item input.textbox {
+    padding-left: 40px !important;
+  }
+  .teamchart > li[value] .setcol-moves {
+    grid-area: mv !important;
+    position: relative !important;
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px 12px !important;
+    margin-top: 16px !important;
+    padding-top: 22px !important;
+    counter-reset: sd-move !important;
+  }
+  .teamchart > li[value] .setcol-moves .setcell {
+    counter-increment: sd-move !important;
+  }
+  .teamchart > li[value] .setcol-moves .setcell::before {
+    content: counter(sd-move) !important;
+    position: absolute !important;
+    left: 10px !important;
+    top: 10px !important;
+    z-index: 1 !important;
+    width: 18px !important;
+    height: 18px !important;
+    border-radius: 5px !important;
+    background: var(--sd-hover) !important;
+    color: var(--sd-text-2) !important;
+    font-size: 10.5px !important;
+    font-weight: 700 !important;
+    line-height: 18px !important;
+    text-align: center !important;
+    pointer-events: none !important;
+  }
+  .teamchart > li[value] .setcol-moves .setcell > label {
+    position: absolute !important;
+    top: -22px !important;
+    left: 0 !important;
+  }
+  .teamchart > li[value] .setcol-moves input.textbox {
+    padding-left: 38px !important;
+  }
+
+  /* EVs */
+  .teamchart > li[value] .setcol-stats {
+    grid-area: ev !important;
+    position: relative !important;
+  }
+  .teamchart > li[value] .setcol-stats .setrow > label {
+    font-size: 0 !important;
+  }
+  .teamchart > li[value] .setcol-stats .setrow > label::after {
+    content: "EVs" !important;
+    font-size: 10.5px !important;
+  }
+  .sd-te-evleft {
+    position: absolute !important;
+    top: 0 !important;
+    right: 0 !important;
+    color: var(--sd-text-2) !important;
+    font-size: 11px !important;
+  }
+  .teamchart > li[value] .setstats {
+    appearance: none !important;
+    display: block !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 10px 14px !important;
+    border: 1px solid var(--sd-border) !important;
+    border-radius: 12px !important;
+    background: var(--sd-subtle) !important;
+    box-shadow: none !important;
+    color: var(--sd-text) !important;
+    text-align: left !important;
+    cursor: pointer !important;
+  }
+  .teamchart > li[value] .setstats:hover {
+    border-color: var(--sd-border-strong) !important;
+  }
+  .teamchart > li[value] .setstats .statrow {
+    display: grid !important;
+    grid-template-columns: 34px minmax(0, 1fr) 36px 12px !important;
+    align-items: center !important;
+    column-gap: 10px !important;
+    height: 28px !important;
+  }
+  .teamchart > li[value] .setstats .statrow-head {
+    display: none !important;
+  }
+  .teamchart > li[value] .setstats .statrow label {
+    float: none !important;
+    width: auto !important;
+    height: auto !important;
+    color: var(--sd-text-2) !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    text-align: left !important;
+  }
+  .teamchart > li[value] .setstats .statgraph {
+    float: none !important;
+    width: auto !important;
+    height: 6px !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    border-radius: 3px !important;
+    background: var(--sd-hover) !important;
+  }
+  .teamchart > li[value] .setstats .statgraph span {
+    height: 100% !important;
+    margin: 0 !important;
+    border-radius: 3px !important;
+    background: var(--sd-accent) !important;
+  }
+  .teamchart > li[value] .setstats .sd-plus .statgraph span {
+    background: var(--sd-primary) !important;
+  }
+  .teamchart > li[value] .setstats em {
+    float: none !important;
+    width: auto !important;
+    height: auto !important;
+    color: var(--sd-text) !important;
+    font-size: 12.5px !important;
+    font-weight: 600 !important;
+    font-style: normal !important;
+    text-align: right !important;
+  }
+  .teamchart > li[value] .setstats .sd-zero em {
+    color: var(--sd-text-2) !important;
+    font-weight: 400 !important;
+  }
+  .teamchart > li[value] .setstats small {
+    float: none !important;
+    color: var(--sd-text-2) !important;
+    font-size: 13px !important;
+    font-weight: 700 !important;
+  }
+  .teamchart > li[value] .setstats .sd-plus small {
+    color: var(--sd-primary) !important;
+  }
+  .sd-te-nature {
+    appearance: none !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+    height: 40px !important;
+    margin: 10px 0 0 !important;
+    padding: 0 14px !important;
+    border: 1px solid var(--sd-border) !important;
+    border-radius: 10px !important;
+    background: var(--sd-subtle) !important;
+    color: var(--sd-text) !important;
+    font-size: 13px !important;
+    cursor: pointer !important;
+  }
+  .sd-te-nature:hover {
+    border-color: var(--sd-border-strong) !important;
+  }
+  .sd-te-nature span {
+    color: var(--sd-text-2) !important;
+    font-size: 11.5px !important;
+  }
+  .sd-te-nature strong {
+    font-weight: 600 !important;
+  }
+  .sd-te-nature .sd-te-effect {
+    margin-left: auto !important;
+  }
+
   .teambar button {
     appearance: none !important;
     border: 0 !important;
@@ -772,6 +1383,14 @@ html.sd-launcher-shell #room-teambuilder {
   }
   .teambuilder-results .result a {
     border-radius: 3px !important;
+    color: var(--sd-text) !important;
+  }
+  /* utilichart.css paints the name columns black. */
+  .teambuilder-results .namecol,
+  .teambuilder-results .pokemonnamecol,
+  .teambuilder-results .shortpokemonnamecol,
+  .teambuilder-results .movenamecol,
+  .teambuilder-results .shortmovenamecol {
     color: var(--sd-text) !important;
   }
   .teambuilder-results .result a:hover,

@@ -556,6 +556,179 @@ function installTeamsView() {
   return true;
 }
 
+// Lays the Teambuilder's team editor out as the launcher's design (client-teambuilder.css):
+// a header with the team's actions and a card per set. Like installTeamsView it only moves,
+// labels and adds elements around the client's own markup after each render, so every
+// input and button keeps the client's handlers. The client has three editor modes, read
+// from its markup: "team" (all sets), "set" (one set with the search pane) and "export".
+function installTeamEditor() {
+  if (window.__SD_TEAM_EDITOR || !document.body) return true;
+  window.__SD_TEAM_EDITOR = true;
+  const el = (tag, className, text) => {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text !== undefined) node.textContent = text;
+    return node;
+  };
+  const icon = (name) => el('i', `fa ${name}`);
+  const getRoom = () => window.app && app.rooms && app.rooms.teambuilder;
+  const statName = (id) => (window.BattleStatNames && BattleStatNames[id]) || id;
+  // Writes only on change, so the observer that called us settles instead of looping.
+  const setText = (node, text) => { if (node.textContent !== text) node.textContent = text; };
+
+  function buildHead(wrapper, room, mode) {
+    const pad = wrapper.querySelector(':scope > .pad');
+    if (!pad || pad.querySelector(':scope > .sd-te-head')) return;
+    const head = el('div', 'sd-te-head');
+    const back = pad.querySelector(':scope > button[name="back"]');
+    if (back) {
+      back.replaceChildren(icon('fa-chevron-left'));
+      back.title = mode === 'set' ? 'Back to team' : 'Back to teams';
+      back.setAttribute('aria-label', back.title);
+      head.append(back);
+    }
+    const name = pad.querySelector(':scope > input.teamnameedit');
+    if (name) {
+      const label = el('label', 'sd-te-name');
+      label.append(name, icon('fa-pencil'));
+      head.append(label);
+    } else {
+      head.append(el('h1', 'sd-te-title', room.curTeam.name || 'Untitled'));
+    }
+    const actions = el('div', 'sd-te-actions');
+    const format = pad.querySelector('button.teambuilderformatselect');
+    const validate = pad.querySelector('button[name="validate"]');
+    if (format) actions.append(format);
+    if (validate) actions.append(validate);
+    for (const button of pad.querySelectorAll(':scope > button[name="import"], :scope > button[name="saveImport"]')) {
+      actions.append(button);
+    }
+    const primary = actions.querySelector('button[name="import"]');
+    if (primary) primary.classList.add('sd-te-primary');
+    head.append(actions);
+    pad.prepend(head);
+  }
+
+  function natureText(set) {
+    const nature = set.nature || 'Serious';
+    const data = window.BattleNatures && BattleNatures[nature];
+    const effect = data && data.plus ? `+${statName(data.plus)} −${statName(data.minus)}` : 'Neutral';
+    return [nature, effect];
+  }
+
+  function decorateSet(li, room) {
+    const set = room.curSetList && room.curSetList[Number(li.getAttribute('value'))];
+    const chart = li.querySelector(':scope > .setchart');
+    if (!set || !chart) return;
+    const team = room.curTeam;
+    const format = team.format || '';
+    const usesEVs = team.gen > 2 && !format.includes('letsgo') && !format.includes('champions');
+
+    if (!li.dataset.sd) {
+      li.dataset.sd = '1';
+      if (set.species) {
+        const meta = el('div', 'sd-te-meta');
+        meta.append(el('span', 'sd-te-chips'));
+        const nickname = li.querySelector(':scope > .setchart-nickname');
+        if (nickname) meta.append(nickname);
+        li.append(meta, el('div', 'sd-te-rule'));
+      }
+      const itemIcon = li.querySelector('.setrow-icons .itemicon');
+      const itemCell = li.querySelector('.setcell-item');
+      if (itemIcon && itemCell) itemCell.prepend(itemIcon);
+      const stats = li.querySelector('.setcol-stats');
+      if (stats) {
+        stats.append(el('span', 'sd-te-evleft'));
+        if (usesEVs) {
+          const nature = el('button', 'sd-te-nature');
+          nature.type = 'button';
+          nature.name = 'stats'; // opens the client's stat form, like the stats panel
+          stats.append(nature);
+        }
+      }
+    }
+
+    // The client draws the sprite as the chart's background; the card shows it in its box.
+    const sprite = li.querySelector('.setcell-sprite');
+    if (sprite && sprite.style.backgroundImage !== chart.style.backgroundImage) {
+      sprite.style.backgroundImage = chart.style.backgroundImage;
+      sprite.style.backgroundSize = chart.style.backgroundSize;
+    }
+    if (sprite) sprite.classList.toggle('pixelated', chart.classList.contains('pixelated'));
+
+    const chips = li.querySelector('.sd-te-chips');
+    if (chips) {
+      const species = team.dex.species.get(set.species);
+      const types = species.types || [];
+      const tera = team.gen === 9 && !format.includes('champions') ?
+        (set.teraType || species.requiredTeraType || types[0] || '') : '';
+      const key = `${types.join(',')}|${tera}`;
+      if (chips.dataset.key !== key) {
+        chips.dataset.key = key;
+        chips.replaceChildren(...types.map((type) => el('span', `sd-te-type sd-t-${type}`, type)));
+        if (tera) chips.append(el('span', `sd-te-tera sd-t-${tera}`, `Tera ${tera}`));
+      }
+    }
+
+    const left = li.querySelector('.sd-te-evleft');
+    if (left) {
+      let text = '';
+      if (usesEVs && !room.ignoreEVLimits) {
+        const total = Object.values(set.evs || {}).reduce((sum, ev) => sum + (Number(ev) || 0), 0);
+        text = total > 510 ? `${total - 510} over` : `${Math.max(508 - total, 0)} left`;
+      }
+      setText(left, text);
+    }
+    const nature = li.querySelector('.sd-te-nature');
+    if (nature) {
+      const [name, effect] = natureText(set);
+      if (nature.dataset.key !== `${name}|${effect}`) {
+        nature.dataset.key = `${name}|${effect}`;
+        nature.replaceChildren(el('span', '', 'Nature'), el('strong', '', name), el('span', 'sd-te-effect', effect));
+      }
+    }
+
+    // Stat rows are re-rendered as markup on each change; restyle the fresh ones.
+    for (const row of li.querySelectorAll('.setstats .statrow:not(.statrow-head):not([data-sd])')) {
+      row.dataset.sd = '1';
+      const bar = row.querySelector('.statgraph span');
+      if (bar) bar.style.width = `${Math.min(100, (parseFloat(bar.style.width) || 0) / 75 * 100)}%`;
+      const mark = row.querySelector('small');
+      if (mark) row.classList.add(mark.textContent === '+' ? 'sd-plus' : 'sd-minus');
+      const ev = row.querySelector('em');
+      if (ev && !ev.textContent) {
+        ev.textContent = '0';
+        row.classList.add('sd-zero');
+      }
+    }
+  }
+
+  let watched = null;
+  const update = () => {
+    if (!document.documentElement.classList.contains('sd-launcher-shell')) return;
+    const root = document.getElementById('room-teambuilder');
+    if (!root) return;
+    if (watched !== root) {
+      // Sprite and stat updates change inline styles only; watch those inside the room.
+      watched = root;
+      new MutationObserver(update).observe(root, { attributes: true, attributeFilter: ['style'], subtree: true });
+    }
+    const room = getRoom();
+    const wrapper = root.querySelector(':scope > .teamwrapper');
+    if (!room || !room.curTeam || !wrapper) return;
+    const mode = wrapper.querySelector(':scope > .teambar') ? 'set' :
+      wrapper.querySelector(':scope > .teamedit') ? 'export' : 'team';
+    if (wrapper.dataset.sdMode !== mode) wrapper.dataset.sdMode = mode;
+    try {
+      buildHead(wrapper, room, mode);
+      for (const li of wrapper.querySelectorAll('.teamchart > li[value]')) decorateSet(li, room);
+    } catch (e) {} // the client's own editor stays usable if this ever fails
+  };
+  new MutationObserver(update).observe(document.body, { childList: true, subtree: true });
+  update();
+  return true;
+}
+
 function readShowdex() {
   const state = window.__SHOWDOWN_DESKTOP_SHOWDEX;
   // The pinned bootstrap sets this only after render; closing its room does not unload it.
@@ -704,6 +877,14 @@ class ShowdownBridge {
     if (!contents) return false;
     try {
       return await contents.executeJavaScript(call(installFormatModal)) === true;
+    } catch { return false; }
+  }
+
+  async installTeamEditor() {
+    const contents = this.getContents();
+    if (!contents) return false;
+    try {
+      return await contents.executeJavaScript(call(installTeamEditor)) === true;
     } catch { return false; }
   }
 
